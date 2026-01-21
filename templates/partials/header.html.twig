@@ -1,0 +1,176 @@
+
+<style>
+  .kuik-header{
+    padding: 26px 24px;
+    border-bottom: 1px solid #ddd;
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin:0 auto;
+    background-color:#00AFEA;
+  }
+  .kuik-title{ margin:0; color:#fff; }
+
+  .kuik-menu{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+
+  .kuik-menu-btn{
+    width:42px;
+    height:42px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.12);
+    color:#fff;
+    font-weight:900;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+  }
+  .kuik-menu-btn:hover{
+    background: rgba(255,255,255,.20);
+  }
+
+  .kuik-dropdown{
+    position:absolute;
+    right:0;
+    top:calc(100% + 10px);
+    min-width:300px;
+    background:#fff;
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    padding:8px;
+    display:none;
+    z-index:9999;
+  }
+  .kuik-dropdown.open{ display:block; }
+
+  .kuik-dropdown-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+
+  
+  .kuik-dropdown-list li{
+    margin: 15px;
+  }
+
+  .kuik-item{
+    width:100%;
+    text-align:left;
+    padding:15px 22px;
+    border-radius:10px;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    font-weight:700;
+    color:#111;
+    text-decoration: none;
+  }
+  .kuik-item:hover{
+    background: rgba(0,0,0,.06);
+  }
+
+  .kuik-item.danger{
+    color:#e74c3c;
+  }
+  .kuik-item.danger:hover{
+    background: rgba(231,76,60,.10);
+  }
+
+  .kuik-sep{
+    height:1px;
+    background: rgba(0,0,0,.10);
+    margin:6px 0;
+  }
+</style>
+
+<header class="kuik-header">
+  <h2 class="kuik-title">Configurador Kuik</h2>
+{% if app.user %}
+  <div class="kuik-menu">
+    <button type="button" class="kuik-menu-btn" id="kuikMenuBtn" aria-haspopup="true" aria-expanded="false">
+      ☰
+    </button>
+
+    <div class="kuik-dropdown" id="kuikDropdown" role="menu" aria-label="Opciones">
+      <ul class="kuik-dropdown-list">
+        <li>
+          <a
+            href="{{ path('configurations_list',{'user_id': app.user.id }) }}"
+            class="kuik-item"
+            role="menuitem"
+          >
+            Lista configuraciones
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="{{ path('configuration_index') }}"
+            class="kuik-item"
+            role="menuitem"
+          >
+            Nueva configuración
+          </a>
+        </li>
+        {% if is_granted('ROLE_ADMIN') %}
+          <li>
+            <a href="{{ path('admin_dashboard') }}"
+              class="kuik-item"
+              role="menuitem">
+              Panel administrador
+            </a>
+          </li>
+        {% endif %}
+
+        <li>
+          <a href="{{ path('app_logout') }}" 
+          class="kuik-item"
+            role="menuitem">Cerrar sesión</a>
+        </li>
+        
+        {#<li><button type="button" class="kuik-item" role="menuitem">Ver guardadas</button></li>
+        <li class="kuik-sep"></li>
+        <li><button type="button" class="kuik-item danger" role="menuitem">Reset</button></li>#}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</header>
+
+
+<script>
+  (function(){
+    const btn = document.getElementById('kuikMenuBtn');
+    const dd  = document.getElementById('kuikDropdown');
+
+    function closeMenu(){
+      dd.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dd.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    // cerrar al click fuera
+    document.addEventListener('click', () => closeMenu());
+
+    // cerrar con ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+
+    // evitar que click dentro cierre
+    dd.addEventListener('click', (e) => e.stopPropagation());
+  })();
+</script>

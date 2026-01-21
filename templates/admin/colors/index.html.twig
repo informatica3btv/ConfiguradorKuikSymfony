@@ -1,0 +1,62 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Colores{% endblock %}
+
+{% block content %}
+<div class="config-form">
+
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+    <h1>Colores ({{ type == 'door' ? 'Puerta' : 'Cuerpo' }})</h1>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="secondary-btn" href="{{ path('admin_colors_index', {type:'door'}) }}">Puerta</a>
+      <a class="secondary-btn" href="{{ path('admin_colors_index', {type:'body'}) }}">Cuerpo</a>
+      <a class="primary-btn" href="{{ path('admin_colors_new', {type: type}) }}">+ Nuevo color</a>
+    </div>
+  </div>
+
+  <table style="width:100%; margin-top:16px; border-collapse:collapse;">
+    <thead>
+      <tr style="text-align:left;">
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Hex</th>
+        <th>Ral</th>
+        <th>Muestra</th>
+        <th style="width:220px;">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in colors %}
+      <tr style="border-top:1px solid rgba(0,0,0,.1);">
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.hex }}</td>
+         <td>{{ c.ral }}</td>
+        <td>
+          <span style="display:inline-block; width:26px; height:26px; border-radius:8px; border:1px solid rgba(0,0,0,.2); background: {{ c.hex }};"></span>
+        </td>
+        <td>
+          <a class="secondary-btn" href="{{ path('admin_colors_edit', {id: c.id}) }}">Editar</a>
+
+          <form method="post" action="{{ path('admin_colors_delete', {id: c.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_color_' ~ c.id) }}">
+            <button class="secondary-btn" type="submit" onclick="return confirm('¿Eliminar color?')">
+              Eliminar
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="5" style="padding:10px; opacity:.75;">No hay colores para este tipo.</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:20px;">
+    <a class="secondary-btn" href="{{ path('admin_dashboard') }}">← Volver</a>
+  </div>
+
+</div>
+{% endblock %}

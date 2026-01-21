@@ -1,0 +1,53 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="config-form">
+  <h1>{{ title }}</h1>
+
+  {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
+    {{ form_row(form.name) }}
+    {{ form_row(form.hex) }}
+    {{ form_row(form.ral) }}
+    {{ form_row(form.type) }}
+
+    <div>
+      <label style="font-weight:800;">Vista previa</label>
+      <div id="hexPreview" style="margin-top:6px; width:52px; height:38px; border-radius:12px; border:1px solid rgba(0,0,0,.2);"></div>
+      <div style="font-size:12px; opacity:.7; margin-top:6px;">Se actualiza al escribir el HEX</div>
+    </div>
+
+    <div class="admin-form-actions">
+      <button class="primary-btn" type="submit">Guardar</button>
+      <a class="secondary-btn" href="{{ path('admin_colors_index', {type: form.type.vars.data ?: 'door'}) }}">Cancelar</a>
+    </div>
+  {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const hexInput = document.getElementById('admin_color_hex');
+  const preview = document.getElementById('hexPreview');
+
+  function normalize(v){
+    v = (v || '').trim();
+    if (!v) return '';
+    if (v[0] !== '#') v = '#'+v;
+    return v;
+  }
+
+  function paint(){
+    const v = normalize(hexInput ? hexInput.value : '');
+    preview.style.background = v || 'transparent';
+  }
+
+  if (hexInput) {
+    hexInput.addEventListener('input', paint);
+    paint();
+  }
+});
+</script>
+{% endblock %}

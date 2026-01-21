@@ -1,0 +1,21 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="config-form">
+  <h1>{{ title }}</h1>
+
+  {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
+    
+    {{ form_row(form.name) }}
+    {{ form_row(form.email) }}
+    {{ form_row(form.password) }}
+
+    <div class="admin-form-actions">
+      <button class="primary-btn" type="submit">Guardar</button>
+      <a class="secondary-btn" href="{{ path('admin_users') }}">Cancelar</a>
+    </div>
+
+  {{ form_end(form) }}
+</div>
+{% endblock %}

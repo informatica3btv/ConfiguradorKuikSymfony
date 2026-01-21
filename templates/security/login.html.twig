@@ -1,0 +1,51 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Iniciar sesión{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    .btnCode{
+        padding: 40px;
+        text-decoration: none;
+        color: #000;
+        font-size:16px;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:60px auto;background:#fff;border-radius:16px;padding:24px;box-shadow:0 10px 25px rgba(0,0,0,.1)">
+  <h2 style="margin-bottom:16px;">Iniciar sesión</h2>
+
+  {% if error %}
+    <div style="color:#e74c3c;font-weight:700;margin-bottom:12px;">
+      {{ error.messageKey|trans(error.messageData, 'security') }}
+    </div>
+  {% endif %}
+
+  <form method="post">
+    <div style="margin-bottom:12px;">
+      <label>Email</label>
+      <input type="email" name="email" value="{{ last_username }}" required autofocus
+             style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc">
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label>Contraseña</label>
+      <input type="password" name="password" required
+             style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc">
+    </div>
+
+    <input type="hidden" name="_csrf_token"
+           value="{{ csrf_token('authenticate') }}">
+
+    <button type="submit"
+            style="width:100%;padding:12px;border-radius:999px;border:0;
+                   background:linear-gradient(135deg,#0b76d8,#1187e6);
+                   color:#fff;font-weight:800;">
+      Entrar
+    </button>
+    <a href="" class="btnCode">¿Tienes un código de proyecto? Haz click aquí</a> 
+  </form>
+</div>
+{% endblock %}

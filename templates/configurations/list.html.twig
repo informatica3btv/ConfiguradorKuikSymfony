@@ -1,0 +1,160 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Configuraciones{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="stylesheet" href="{{ asset('css/kuik-configurator.css') }}">
+{% endblock %}
+
+{% block content %}
+  <h1>Configuraciones de {{user.email}}</h1>
+
+  {% if configurations is empty %}
+    <p>No hay configuraciones.</p>
+  {% else %}
+    <div style="display:flex; flex-direction:column; gap:14px; max-width:720px;">
+      {% for c in configurations %}
+        <div class="saved-card"
+             style="border:1px solid #ddd; border-radius:14px; padding:12px;"
+             data-payload="{{ c.payload|e('html_attr') }}">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <div>
+              <div style="font-weight:900; font-size:16px;">{{ c.projectName }}</div>
+              <div class="saved-summary" style="margin-top:6px; font-size:13px; opacity:.85;"></div>
+            </div>
+
+            <button type="button" class="secondary-btn rebuild-btn">Ver</button>
+          </div>
+
+          <div class="saved-columns" style="margin-top:12px; display:none;">
+            <div class="columns-grid"></div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+(function(){
+  const H_SCALE = 2;
+  const cards = document.querySelectorAll('.saved-card');
+
+  function buildColumnHTML(col, hex) {
+    const shell = document.createElement('div');
+    shell.className = 'col-shell';
+
+    const topBar = document.createElement('div');
+    topBar.className = 'col-toolbar-top';
+    topBar.innerHTML = `<div>Guardada</div>`;
+
+    const card = document.createElement('div');
+    card.className = 'col-card';
+
+    const body = document.createElement('div');
+    body.className = 'col-body';
+
+    const topHalf = document.createElement('div');
+    topHalf.className = 'col-half';
+    (col.top?.blocks || []).forEach(h => {
+      const b = document.createElement('div');
+      b.className = 'block';
+      b.style.height = (h * H_SCALE) + 'px';
+      b.textContent = `H${h}`;
+      if (hex) b.style.background = hex;
+      topHalf.appendChild(b);
+    });
+
+    const sep = document.createElement('div');
+    sep.className = 'half-separator';
+
+    const bottomHalf = document.createElement('div');
+    bottomHalf.className = 'col-half';
+    (col.bottom?.blocks || []).forEach(h => {
+      const b = document.createElement('div');
+      b.className = 'block';
+      b.style.height = (h * H_SCALE) + 'px';
+      b.textContent = `H${h}`;
+      if (hex) b.style.background = hex;
+      bottomHalf.appendChild(b);
+    });
+
+    body.appendChild(topHalf);
+    body.appendChild(sep);
+    body.appendChild(bottomHalf);
+
+    card.appendChild(body);
+
+    const foot = document.createElement('div');
+    foot.className = 'col-foot';
+    const total = col.total ?? ((col.top?.total || 0) + (col.bottom?.total || 0));
+    foot.innerHTML = `Usado H${total}/180 · Arriba H${col.top?.total || 0}/90 · Abajo H${col.bottom?.total || 0}/90`;
+
+    shell.appendChild(topBar);
+    shell.appendChild(card);
+    shell.appendChild(foot);
+
+    return shell;
+  }
+
+  function safeParse(jsonStr){
+    try { return JSON.parse(jsonStr); } catch(e) { return null; }
+  }
+
+  cards.forEach(card => {
+    const payloadStr = card.getAttribute('data-payload') || '';
+    const payload = safeParse(payloadStr);
+
+    const summaryEl = card.querySelector('.saved-summary');
+    const btn = card.querySelector('.rebuild-btn');
+    const box = card.querySelector('.saved-columns');
+    const grid = card.querySelector('.saved-columns .columns-grid');
+
+    if (!payload) {
+      summaryEl.textContent = 'Payload inválido (no es JSON).';
+      return;
+    }
+
+    const bg = payload.background_size || '-';
+    const pl = payload.placement || '-';
+    const model = payload.model || '-';
+    const nCols = Array.isArray(payload.columns) ? payload.columns.length : 0;
+    const hex = payload.colorDoor || '';
+    const colBorder = payload.colorBody || '';
+
+    summaryEl.innerHTML = `
+      Fondo: <strong>${bg}</strong> ·
+      Tipo: <strong>${pl}</strong> ·
+      Modelo: <strong>${model}</strong> ·
+      Columnas: <strong>${nCols}</strong>
+    `;
+
+    btn.addEventListener('click', () => {
+      const isOpen = box.style.display === 'block';
+
+      if (isOpen) {
+        box.style.display = 'none';
+        btn.textContent = 'Ver';
+        return;
+      }
+
+      // ✅ IMPORTANTE: solo afecta a ESTA card
+      card.style.setProperty('--col-border', colBorder || '#000');
+
+      grid.innerHTML = '';
+      (payload.columns || []).forEach(col => {
+        grid.appendChild(buildColumnHTML(col, hex));
+      });
+
+      box.style.display = 'block';
+      btn.textContent = 'Ocultar';
+    });
+  });
+})();
+});
+</script>
+{% endblock %}

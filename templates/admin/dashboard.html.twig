@@ -1,0 +1,27 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Panel de Administración{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+{% endblock %}
+
+{% block content %}
+<div class="config-form">
+  <h1>Panel de Administración</h1>
+
+  <div class="option-row admin-grid">
+    
+    <a href="{{ path('admin_users') }}" class="option-card admin-card">
+      <div class="option-title">Usuarios</div>
+      <div class="option-sub">Gestión de usuarios</div>
+    </a>
+
+    <a href="{{ path('admin_colors_index', {type:'door'}) }}" class="option-card admin-card">
+      <div class="option-title">Colores</div>
+      <div class="option-sub">Puerta y Cuerpo</div>
+    </a>
+
+  </div>
+</div>
+{% endblock %}

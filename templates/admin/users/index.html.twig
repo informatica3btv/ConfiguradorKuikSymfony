@@ -1,0 +1,52 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Usuarios{% endblock %}
+
+{% block content %}
+<div class="config-form">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <h1 style="margin:0;">Usuarios</h1>
+    <a class="primary-btn" href="{{ path('admin_users_new') }}">+ Nuevo usuario</a>
+  </div>
+
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th style="width:80px;">ID</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th style="width:240px;">Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.name ?? '-' }}</td>
+        <td>{{ u.email ?? u.mail ?? '-' }}</td>
+        <td>
+          <div class="admin-actions">
+            <a class="secondary-btn" href="{{ path('admin_users_edit', {id: u.id}) }}">Editar</a>
+
+            <form method="post" action="{{ path('admin_users_delete', {id: u.id}) }}" style="margin:0;">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ u.id) }}">
+              <button class="secondary-btn" type="submit" onclick="return confirm('¿Eliminar usuario?')">
+                Eliminar
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="4" style="opacity:.7;">No hay usuarios.</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:20px;">
+    <a class="secondary-btn" href="{{ path('admin_dashboard') }}">← Volver</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,361 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Complementos{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{ --hscale: 2px; }
+
+    .preview-wrap{
+      max-width: 980px;
+      margin: 18px auto;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .cols{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .col-shell{ width:140px; display:flex; flex-direction:column; gap:6px; }
+    .col-topbar{
+      padding:6px 8px;
+      border-radius:8px;
+      background:#003b73;
+      color:#fff;
+      font-weight:900;
+    }
+
+    .col-card{
+      width:140px;
+      border-style:solid;
+      border-color: var(--col-border, #000);
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:8px;
+      overflow:hidden;
+      background:#f7f7f7;
+    }
+
+    .col-body{
+      height:calc(180 * var(--hscale));
+      background:#eaeaea;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .col-half{
+      height:calc(90 * var(--hscale));
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .half-sep{ border-top:2px dashed rgba(0,0,0,.35); }
+
+    /* PUERTA clicable */
+    .door{
+      width:100%;
+      border:1px solid rgba(44,62,80,.9);
+      background: var(--door-color, #3a9efc);
+      position:relative;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    /* Numero discreto de la puerta */
+    .door .num{
+      position:absolute;
+      left:6px;
+      top:4px;
+      font-weight:900;
+      font-size:12px;
+      background: rgba(0,0,0,.65);
+      color:#fff;
+      border-radius:999px;
+      padding:2px 7px;
+      line-height:1.2;
+    }
+
+    /* Badges de complementos */
+    .door .badges{
+      position:absolute;
+      right:6px;
+      top:4px;
+      display:flex;
+      gap:4px;
+    }
+    .badge{
+      font-size:11px;
+      font-weight:900;
+      background: rgba(255,255,255,.9);
+      border:1px solid rgba(0,0,0,.25);
+      border-radius:999px;
+      padding:1px 6px;
+    }
+
+    .door.selected{
+      outline:3px solid rgba(17,135,230,.35);
+      outline-offset:-2px;
+    }
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:16px;
+    }
+    .modal{
+      width:min(420px, 100%);
+      background:#fff;
+      border-radius:16px;
+      border:1px solid rgba(15,23,42,.12);
+      box-shadow: 0 18px 40px rgba(0,0,0,.2);
+      padding:14px;
+    }
+    .modal h3{ margin:0 0 10px; }
+    .modal .row{ display:flex; gap:10px; flex-wrap:wrap; }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .btn.primary{ background:#0b76d8; border-color:#0b76d8; color:#fff; }
+    .btn.danger{ background:#e74c3c; border-color:#e74c3c; color:#fff; }
+    .modal .muted{ color:#6b7280; font-size:13px; margin-top:8px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  {% set doorColor = payload.colorDoor ?? '#3a9efc' %}
+  {% set bodyColor = payload.colorBody ?? '#000' %}
+
+  <div class="preview-wrap">
+    <h2 style="margin:0;">Selecciona complementos por puerta</h2>
+    <div style="opacity:.75; margin-top:6px;">
+      Click en una puerta para añadir: Enchufe / USB / Ambos.
+    </div>
+
+    {% if columns is empty %}
+      <div style="margin-top:12px; color:#c0392b; font-weight:900;">
+        No hay columnas en esta configuración.
+      </div>
+    {% else %}
+      <div class="cols" id="cols"
+           style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+        {% set doorIndex = 0 %}
+
+        {% for col in columns %}
+          <div class="col-shell">
+            <div class="col-topbar">Columna {{ loop.index }}</div>
+
+            <div class="col-card">
+              <div class="col-body">
+
+                <div class="col-half">
+                  {% for h in col.top.blocks %}
+                    {% set doorIndex = doorIndex + 1 %}
+                    <div class="door"
+                         style="height: {{ h * 2 }}px;"
+                         data-door="{{ doorIndex }}"
+                         data-col="{{ loop.parent.loop.index }}"
+                         data-half="top">
+                      <div class="num">{{ doorIndex }}</div>
+                      <div class="badges" data-badges></div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <div class="half-sep"></div>
+
+                <div class="col-half">
+                  {% for h in col.bottom.blocks %}
+                    {% set doorIndex = doorIndex + 1 %}
+                    <div class="door"
+                         style="height: {{ h * 2 }}px;"
+                         data-door="{{ doorIndex }}"
+                         data-col="{{ loop.parent.loop.index }}"
+                         data-half="bottom">
+                      <div class="num">{{ doorIndex }}</div>
+                      <div class="badges" data-badges></div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post"
+          action="{{ path('configuration_addons_next', { id: configuration.id }) }}"
+          id="addonsForm"
+          style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <input type="hidden" name="configuration_id" value="{{ configuration.id }}">
+      <input type="hidden" name="addons_payload" id="addons_payload" value="{}">
+      <a class="btn" style="text-decoration:none; color:#000"
+   href="{{ path('configuration_columns', {
+      config_id: configuration.id,
+      type: payload.type|default('')
+   }) }}">
+  Volver atrás
+</a>
+
+      <button type="submit" class="btn primary">Siguiente</button>
+      <button type="button" id="clearAll" class="btn danger">Borrar todo</button>
+    </form>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="modalTitle">Puerta</h3>
+      <div class="row">
+        <button type="button" class="btn" data-set="socket">Enchufe</button>
+        <button type="button" class="btn" data-set="usb">USB</button>
+        <button type="button" class="btn" data-set="both">Ambos</button>
+        <button type="button" class="btn" data-set="none">Ninguno</button>
+      </div>
+      <div class="muted">Se guardará para la siguiente pantalla.</div>
+      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+        <button type="button" class="btn" id="closeModal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+
+  <script>
+    window.PRELOADED_ADDONS = {{ (payload.addons ?? {})|json_encode|raw }};
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Estado: doorNumber -> { socket:bool, usb:bool }
+      const addons = (window.PRELOADED_ADDONS && typeof window.PRELOADED_ADDONS === 'object')
+        ? window.PRELOADED_ADDONS
+        : {};
+
+      const payloadInput = document.getElementById('addons_payload');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const modalTitle = document.getElementById('modalTitle');
+      const closeModalBtn = document.getElementById('closeModal');
+      const clearAllBtn = document.getElementById('clearAll');
+
+      let currentDoorEl = null;
+      let currentDoorNum = null;
+
+      function openModal(doorEl){
+        currentDoorEl = doorEl;
+        currentDoorNum = doorEl.getAttribute('data-door');
+
+        document.querySelectorAll('.door.selected').forEach(el => el.classList.remove('selected'));
+        doorEl.classList.add('selected');
+
+        modalTitle.textContent = `Puerta ${currentDoorNum}`;
+        modalBackdrop.style.display = 'flex';
+        modalBackdrop.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal(){
+        modalBackdrop.style.display = 'none';
+        modalBackdrop.setAttribute('aria-hidden', 'true');
+        currentDoorEl = null;
+        currentDoorNum = null;
+      }
+
+      function setSelection(doorNum, mode){
+        if (!doorNum) return;
+
+        if (mode === 'none'){
+          delete addons[doorNum];
+        } else if (mode === 'socket'){
+          addons[doorNum] = { socket: true, usb: false };
+        } else if (mode === 'usb'){
+          addons[doorNum] = { socket: false, usb: true };
+        } else if (mode === 'both'){
+          addons[doorNum] = { socket: true, usb: true };
+        }
+
+        payloadInput.value = JSON.stringify(addons);
+        paintDoorBadges(doorNum);
+      }
+
+      function paintDoorBadges(doorNum){
+        const doorEl = document.querySelector(`.door[data-door="${doorNum}"]`);
+        if (!doorEl) return;
+
+        const badgesWrap = doorEl.querySelector('[data-badges]');
+        badgesWrap.innerHTML = '';
+
+        const sel = addons[doorNum];
+        if (!sel) return;
+
+        if (sel.socket){
+          const b = document.createElement('div');
+          b.className = 'badge';
+          b.textContent = 'ENCH';
+          badgesWrap.appendChild(b);
+        }
+        if (sel.usb){
+          const b = document.createElement('div');
+          b.className = 'badge';
+          b.textContent = 'USB';
+          badgesWrap.appendChild(b);
+        }
+      }
+
+      // ✅ Precargar badges
+      payloadInput.value = JSON.stringify(addons);
+      Object.keys(addons).forEach(paintDoorBadges);
+
+      // Click en puertas
+      document.querySelectorAll('.door').forEach(door => {
+        door.addEventListener('click', () => openModal(door));
+      });
+
+      // Botones del modal
+      modalBackdrop.querySelectorAll('button[data-set]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setSelection(currentDoorNum, btn.getAttribute('data-set'));
+          closeModal();
+        });
+      });
+
+      // Cerrar modal
+      closeModalBtn.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) closeModal();
+      });
+
+      // Borrar todo
+      clearAllBtn.addEventListener('click', () => {
+        for (const k of Object.keys(addons)) delete addons[k];
+        payloadInput.value = JSON.stringify(addons);
+        document.querySelectorAll('[data-badges]').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('.door.selected').forEach(el => el.classList.remove('selected'));
+      });
+
+    });
+  </script>
+{% endblock %}

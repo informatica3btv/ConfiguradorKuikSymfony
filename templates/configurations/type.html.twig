@@ -1,0 +1,154 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Tipo de columnas{% endblock %}
+
+
+{% block stylesheets %}
+  {{ parent() }}
+    <style>
+    /* =========================
+    FORM / LAYOUT
+    ========================= */
+    body{
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background:#f6f9fc;
+    color:#0b1220;
+    }
+
+    .config-form{
+    max-width: 980px;
+    margin: 28px auto 60px;
+    padding: 10px 10px 30px;
+    font-size: 16px;
+    }
+
+    /* =========================
+    OPCIONES (cards)
+    ========================= */
+    .option-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    }
+
+    /* por si algún grupo necesita 2 columnas */
+    .option-row[data-group="placement"]{
+    grid-template-columns:repeat(2,1fr);
+    }
+
+    .option-card{
+    padding:18px;
+    border-radius:18px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    cursor:pointer;
+    transition:.15s;
+
+    /* IMPORTANTE: resetea estilo de botón */
+    appearance:none;
+    -webkit-appearance:none;
+    text-align:center;
+    }
+
+    .option-card:hover{
+    transform:translateY(-1px);
+    box-shadow: 0 6px 14px rgba(2,20,60,.10);
+    }
+
+    .option-card.selected{
+    border-color:#1187e6;
+    box-shadow:0 0 0 4px rgba(17,135,230,.15);
+    }
+
+    .option-title{
+    font-weight:800;
+    font-size:16px;
+    }
+
+    .option-sub{
+    font-size:14px;
+    color:#6b7280;
+    }
+
+    /* =========================
+    BOTONES
+    ========================= */
+    .primary-btn{
+    padding:14px 24px;
+    border-radius:999px;
+    border:0;
+    background:linear-gradient(135deg,#0b76d8,#1187e6);
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 10px 20px rgba(17,135,230,.25);
+    transition:.15s;
+    }
+    .primary-btn:hover{
+    transform:translateY(-1px);
+    }
+
+    </style>
+
+{% endblock %}
+
+{% block content %}
+<form method="get" action="{{ path('configuration_columns') }}" id="typeForm" class="config-form">
+  <input type="hidden" name="config_id" value="{{ config_id ?? '' }}">
+  <input type="hidden" name="type" id="type" value="">
+
+  <div style="margin:16px 0;">
+    <h3 style="margin-bottom: 8px;">Selecciona tipo de columna</h3>
+
+    <div class="option-row" data-group="type" style="grid-template-columns:repeat(3,1fr);">
+      <button type="button" class="option-card" data-value="taquilla">
+        <div class="option-title">Taquillas</div>
+        <div class="option-sub">Columnas estándar</div>
+      </button>
+
+      <button type="button" class="option-card" data-value="frigo">
+        <div class="option-title">Frigorífico</div>
+        <div class="option-sub">Para frío</div>
+      </button>
+
+      <button type="button" class="option-card" data-value="perifericos">
+        <div class="option-title">Periféricos</div>
+        <div class="option-sub">Columna técnica</div>
+      </button>
+    </div>
+  </div>
+
+  <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
+    <button type="submit" class="primary-btn">Siguiente</button>
+    <div id="typeError" class="warn"></div>
+  </div>
+</form>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const hidden = document.getElementById('type');
+  const err = document.getElementById('typeError');
+
+  document.querySelectorAll('.option-row[data-group="type"] .option-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.option-row[data-group="type"] .option-card')
+        .forEach(b => b.classList.remove('selected'));
+
+      btn.classList.add('selected');
+      hidden.value = btn.getAttribute('data-value');
+      err.textContent = '';
+    });
+  });
+
+  document.getElementById('typeForm').addEventListener('submit', (e) => {
+    if (!hidden.value) {
+      e.preventDefault();
+      err.textContent = 'Selecciona un tipo de columna para continuar.';
+    }
+  });
+});
+</script>
+{% endblock %}
