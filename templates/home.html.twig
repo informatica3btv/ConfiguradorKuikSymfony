@@ -5,13 +5,10 @@
 {% block stylesheets %}
   {{ parent() }}
 <style>
-/* =========================
-   RESET / BASE
-   ========================= */
 :root{
-  --hscale: 2px;
+  /* ✅ +40% altura (antes 2px) */
+  --hscale: 4.16px;
 
-  /* Paleta Kuik */
   --kuik-blue-900:#003b73;
   --kuik-blue-700:#005fae;
   --kuik-blue-600:#0b76d8;
@@ -28,14 +25,10 @@
   --shadow: 0 10px 25px rgba(2,20,60,.10);
   --shadow-sm: 0 6px 14px rgba(2,20,60,.10);
 
-  /* ✅ Color dinámico del borde de la columna (lo setea JS con el color-body) */
   --col-border: #000;
 }
 
-/* ✅ IMPORTANTÍSIMO: evita que los bordes “sumen” al height y corten puertas */
-*, *::before, *::after{
-  box-sizing: border-box;
-}
+*, *::before, *::after{ box-sizing:border-box; }
 
 body{
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -43,28 +36,17 @@ body{
   color: var(--ink);
 }
 
-h1{
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-h2{ margin-top: 28px; }
-h3{
-  font-size: 16px;
-  font-weight: 800;
-}
+h1{ font-size:34px; font-weight:800; letter-spacing:-0.02em; }
+h2{ margin-top:28px; }
+h3{ font-size:16px; font-weight:800; }
 
-/* =========================
-   OPCIONES (cards)
-   ========================= */
+/* OPCIONES */
 .option-row{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:12px;
 }
-.option-row[data-group="placement"]{
-  grid-template-columns:repeat(2,1fr);
-}
+.option-row[data-group="placement"]{ grid-template-columns:repeat(2,1fr); }
 
 .option-card{
   padding:14px;
@@ -74,25 +56,15 @@ h3{
   cursor:pointer;
   transition:.15s;
 }
-.option-card:hover{
-  transform:translateY(-1px);
-  box-shadow:var(--shadow-sm);
-}
+.option-card:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
 .option-card.selected{
   border-color:var(--kuik-blue-500);
   box-shadow:0 0 0 4px rgba(17,135,230,.15);
 }
-.option-title{
-  font-weight:800;
-}
-.option-sub{
-  font-size:13px;
-  color:var(--muted);
-}
+.option-title{ font-weight:800; }
+.option-sub{ font-size:13px; color:var(--muted); }
 
-/* =========================
-   SELECTS
-   ========================= */
+/* SELECTS */
 select{
   width:100%;
   padding:12px;
@@ -105,9 +77,7 @@ select:focus{
   box-shadow:0 0 0 4px rgba(17,135,230,.15);
 }
 
-/* =========================
-   BOTONES
-   ========================= */
+/* BOTONES */
 .primary-btn{
   padding:12px 20px;
   border-radius:999px;
@@ -119,9 +89,7 @@ select:focus{
   box-shadow:0 10px 20px rgba(17,135,230,.25);
   transition:.15s;
 }
-.primary-btn:hover{
-  transform:translateY(-1px);
-}
+.primary-btn:hover{ transform:translateY(-1px); }
 
 .secondary-btn{
   padding:11px 16px;
@@ -133,9 +101,7 @@ select:focus{
   cursor:pointer;
 }
 
-/* =========================
-   BUILDER
-   ========================= */
+/* BUILDER */
 .builder-wrap{
   margin:18px 0;
   padding:14px;
@@ -151,30 +117,22 @@ select:focus{
   flex-wrap:wrap;
   margin-bottom:12px;
 }
-.builder-toolbar label{
-  font-weight:800;
-}
+.builder-toolbar label{ font-weight:800; }
 
-/* =========================
-   GRID COLUMNAS
-   ========================= */
 .columns-grid{
   display:flex;
   gap:12px;
   flex-wrap:wrap;
 }
 
-/* =========================
-   ✅ NUEVO LAYOUT EXTERNO POR COLUMNA
-   ========================= */
+/* SHELL ✅ +30% ancho (160 * 1.3 = 208) */
 .col-shell{
-  width:140px;
+  width:190px;
   display:flex;
   flex-direction:column;
   gap:6px;
 }
 
-/* ✅ menos redondeado */
 .col-toolbar-top{
   display:flex;
   justify-content:space-between;
@@ -187,10 +145,7 @@ select:focus{
   box-shadow:var(--shadow-sm);
 }
 
-.col-actions{
-  display:flex;
-  gap:6px;
-}
+.col-actions{ display:flex; gap:6px; }
 .icon-btn{
   width:26px;
   height:26px;
@@ -203,24 +158,15 @@ select:focus{
 .icon-plus{ background:var(--success); }
 .icon-del{ background:var(--danger); color:#fff; }
 
-/* =========================
-   DIBUJO COLUMNA
-   - ✅ bordes el doble de grosor
-   - ✅ color del borde con --col-border
-   ========================= */
+/* COLUMNA ✅ +30% ancho */
 .col-card{
-  width:140px;
+  width:190px;
   border-style:solid;
   border-color:var(--col-border);
-
-  /* ✅ DOBLE grosor */
   border-left-width:4px;
   border-right-width:4px;
-
-  /* ✅ arriba/abajo más grueso todavía */
   border-top-width:8px;
   border-bottom-width:8px;
-
   border-radius:8px;
   overflow:hidden;
   background:#f7f7f7;
@@ -250,9 +196,7 @@ select:focus{
   margin:0;
 }
 
-/* =========================
-   PUERTAS / BLOQUES
-   ========================= */
+/* BLOQUES */
 .block{
   width:100%;
   display:flex;
@@ -269,24 +213,25 @@ select:focus{
   margin:0;
   border-radius:0;
   box-shadow:none;
-
   cursor:grab;
-
-  position:relative; /* ✅ para el botón eliminar */
+  position:relative;
 }
 
-.col-half .block:last-child{
-  border-bottom:2px solid #2c3e50;
+.col-half .block:last-child{ border-bottom:2px solid #2c3e50; }
+
+.block.dragging{ opacity:.55; cursor:grabbing; }
+
+/* BLOQUE PANTALLA */
+.block.screen{ padding:6px; }
+.block.screen img{
+  width:125%;
+  height:125%;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
 }
 
-.block.dragging{
-  opacity:.55;
-  cursor:grabbing;
-}
-
-/* =========================
-   ✅ BOTON ELIMINAR PUERTA (hover)
-   ========================= */
+/* BOTON ELIMINAR */
 .block .delete-block{
   position:absolute;
   top:2px;
@@ -303,28 +248,20 @@ select:focus{
   opacity:0;
   transform:scale(.9);
   transition:.12s;
-
-  pointer-events:none; /* para que no interfiera hasta que se vea */
+  pointer-events:none;
 }
-
 .block:hover .delete-block{
   opacity:1;
   transform:scale(1);
   pointer-events:auto;
 }
+.block .delete-block:hover{ background:rgba(231,76,60,.95); }
 
-.block .delete-block:hover{
-  background:rgba(231,76,60,.95);
-}
-
-/* =========================
-   DRAG & DROP
-   ========================= */
+/* DND */
 .col-half.drag-over{
   outline:2px dashed rgba(0,0,0,.35);
   outline-offset:-2px;
 }
-
 .drop-indicator{
   height:6px;
   background:rgba(0,0,0,.35);
@@ -332,115 +269,53 @@ select:focus{
   border-radius:0;
 }
 
-/* =========================
-   ✅ FOOTER FUERA DEL DIBUJO
-   - ✅ SIEMPRE NEGRO (no hereda el color-body)
-   ========================= */
+/* FOOT */
 .col-foot{
   text-align:center;
   font-size:12px;
   padding:6px;
   background:#fff;
-  border:2px solid #000; /* ✅ siempre negro */
+  border:2px solid #000;
   border-radius:8px;
 }
 
-/* =========================
-   WARN
-   ========================= */
-.warn{
-  color:#c0392b;
-  font-weight:800;
-}
-/* =========================
-   LAYOUT CENTRADO + MAS GRANDE
-   ========================= */
+.warn{ color:#c0392b; font-weight:800; }
 
+/* LAYOUT */
 .config-form{
-  /* más ancho */
-  max-width: 980px;
-  margin: 28px auto 60px;
-  padding: 10px 10px 30px;
+  max-width:980px;
+  margin:28px auto 60px;
+  padding:10px 10px 30px;
+  font-size:16px;
 }
-
-/* un poco más grande todo dentro */
-.config-form{
-  font-size: 16px;
-}
-
-/* títulos más grandes */
-.config-form h3{
-  font-size: 18px;
-}
-
-/* cards más grandes */
-.option-card{
-  padding: 18px;
-  border-radius: 18px;
-}
-
-/* texto dentro de cards */
-.option-title{
-  font-size: 16px;
-}
-.option-sub{
-  font-size: 14px;
-}
-
-/* selects más grandes */
-select{
-  padding: 14px;
-  border-radius: 16px;
-  font-size: 15px;
-}
-
-/* botones más grandes */
-.primary-btn{
-  padding: 14px 24px;
-  font-size: 15px;
-}
-.secondary-btn{
-  padding: 13px 18px;
-  font-size: 14px;
-}
-
-/* bloque “builder” un pelín más espacioso */
-.builder-wrap{
-  padding: 18px;
-  border-radius: 22px;
-}
-
-/* columnas un poco más grandes (opcional, se nota bastante) */
-.col-shell{ width: 160px; }
-.col-card{ width: 160px; }
-
+.config-form h3{ font-size:18px; }
+.option-card{ padding:18px; border-radius:18px; }
+.option-title{ font-size:16px; }
+.option-sub{ font-size:14px; }
+select{ padding:14px; border-radius:16px; font-size:15px; }
+.primary-btn{ padding:14px 24px; font-size:15px; }
+.secondary-btn{ padding:13px 18px; font-size:14px; }
+.builder-wrap{ padding:18px; border-radius:22px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <h1>{{type}}</h1>
+
 <form method="post" action="/api/create-configuration" id="configForm" class="config-form">
   <input type="hidden" name="background_size" id="background_size" value="">
   <input type="hidden" name="placement" id="placement" value="">
   <input type="hidden" name="material" id="material" value="">
-  <input type="hidden" name="user_id" id="user_id" value="{{app.user.id}}">
-  <input type="hidden" name="configuration_id" id="configuration_id" value="{{ config_id ?? '' }}">
+  <input type="hidden" name="configuration_id" id="configuration_id" value="{{ configuration.id }}">
+  <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
   <input type="hidden" name="type" id="type" value="{{ type|default('') }}">
 
   <div style="margin: 16px 0;">
     <h3 style="margin-bottom: 8px;">Medida de fondo</h3>
     <div class="option-row" data-group="background_size">
-      <button type="button" class="option-card" data-value="small">
-        <div class="option-title">Serie 300</div>
-      </button>
-
-      <button type="button" class="option-card" data-value="medium">
-        <div class="option-title">Serie 400</div>
-      </button>
-
-      <button type="button" class="option-card" data-value="large">
-        <div class="option-title">Serie 500</div>
-      </button>
+      <button type="button" class="option-card" data-value="small"><div class="option-title">Serie 300</div></button>
+      <button type="button" class="option-card" data-value="medium"><div class="option-title">Serie 400</div></button>
+      <button type="button" class="option-card" data-value="large"><div class="option-title">Serie 500</div></button>
     </div>
   </div>
 
@@ -448,13 +323,10 @@ select{
     <h3 style="margin-bottom: 8px;">Interior / Exterior</h3>
     <div class="option-row" data-group="placement">
       <button type="button" class="option-card" data-value="interior">
-        <div class="option-title">Interior</div>
-        <div class="option-sub">Uso interior</div>
+        <div class="option-title">Interior</div><div class="option-sub">Uso interior</div>
       </button>
-
       <button type="button" class="option-card" data-value="exterior">
-        <div class="option-title">Exterior</div>
-        <div class="option-sub">Resistente a intemperie</div>
+        <div class="option-title">Exterior</div><div class="option-sub">Resistente a intemperie</div>
       </button>
     </div>
   </div>
@@ -463,17 +335,13 @@ select{
     <h3 style="margin-bottom: 8px;">Material</h3>
     <div class="option-row" data-group="material">
       <button type="button" class="option-card" data-value="kuik">
-        <div class="option-title">Kuik</div>
-        <div class="option-sub">Material Kuik</div>
+        <div class="option-title">Kuik</div><div class="option-sub">Material Kuik</div>
       </button>
-
       <button type="button" class="option-card" data-value="kuik2">
-        <div class="option-title">Kuik2</div>
-        <div class="option-sub">Material Kuik2</div>
+        <div class="option-title">Kuik2</div><div class="option-sub">Material Kuik2</div>
       </button>
     </div>
   </div>
-
 
   <div style="margin: 16px 0;">
     <h3 style="margin-bottom: 8px;">Color Puerta</h3>
@@ -495,12 +363,17 @@ select{
     </select>
   </div>
 
-  {# ====== Constructor de columnas ====== #}
   <div class="builder-wrap">
     <h3 style="margin: 0 0 10px;">Columnas</h3>
 
     <div class="builder-toolbar">
       <button type="button" id="addColumnBtn" class="secondary-btn">+ Añadir columna</button>
+
+      <label for="itemTypeSelect">Elemento:</label>
+      <select id="itemTypeSelect" style="max-width:180px;">
+        <option value="door" selected>Puerta</option>
+        <option value="screen">Pantalla (H30)</option>
+      </select>
 
       <label for="hSizeSelect">Tamaño a añadir:</label>
       <select id="hSizeSelect" style="max-width:180px;">
@@ -516,7 +389,7 @@ select{
     <div class="columns-grid" id="columnsGrid"></div>
   </div>
 
-   <div style="margin: 16px 0;">
+  <div style="margin: 16px 0;">
     <h3 style="margin-bottom: 8px;">Hardware</h3>
     <select name="hardware" id="hardware">
       <option value="" selected disabled>Selecciona un hardware</option>
@@ -527,9 +400,9 @@ select{
     </select>
   </div>
 
-   <div style="margin: 16px 0;">
+  <div style="margin: 16px 0;">
     <h3 style="margin-bottom: 8px;">Puertas periféricos</h3>
-    <select name="color-body" id="color-body">
+    <select name="periferico" id="periferico">
       <option value="" selected disabled>Selecciona el periférico</option>
       <option value="collect">Electrónica KUIK COLLECT</option>
       <option value="consigna">Electrónica KUIK CONSIGNA SIN PAGO</option>
@@ -537,7 +410,7 @@ select{
     </select>
   </div>
 
-   <div style="margin: 16px 0;">
+  <div style="margin: 16px 0;">
     <h3 style="margin-bottom: 8px;">Licencia de Software</h3>
     <select name="softwareLicense" id="softwareLicense">
       <option value="" selected disabled>Selecciona una licencia de software</option>
@@ -552,13 +425,11 @@ select{
     <div id="formError" class="warn"></div>
   </div>
 </form>
-
 {% endblock %}
 
 {% block javascripts %}
   {{ parent() }}
 
-  {# ✅ PRELOADED antes del JS principal #}
   <script>
     window.PRELOADED_CONFIG = {{ (payload ?? {})|json_encode|raw }};
   </script>
@@ -585,17 +456,17 @@ select{
     });
 
     // -------- Column builder (2 mitades H90) --------
-    const hScale = 2; // debe coincidir con --hscale
+    const hScale = 4.16; // ✅ debe coincidir con --hscale (2.8px)
     const state = { columns: [], selectedColor: '' };
 
     const columnsGrid = document.getElementById('columnsGrid');
     const addColumnBtn = document.getElementById('addColumnBtn');
+    const itemTypeSelect = document.getElementById('itemTypeSelect');
     const hSizeSelect = document.getElementById('hSizeSelect');
     const builderMsg = document.getElementById('builderMsg');
     const colorDoorSelect = document.getElementById('color-door');
     const colorBodySelect = document.getElementById('color-body');
 
-    // ✅ Aplica el color-body al borde de TODAS las columnas (builder + guardadas)
     function setColumnsBorderColor(hex){
       document.documentElement.style.setProperty('--col-border', hex || '#000');
     }
@@ -603,6 +474,28 @@ select{
     function uid() {
       return Math.random().toString(16).slice(2) + Date.now().toString(16);
     }
+
+    // ✅ Compatibilidad: si antes guardabas números, eso era una puerta
+    function normalizeBlock(b){
+      if (typeof b === 'number') return { type:'door', h: b };
+      if (b && typeof b === 'object' && b.type && b.h) return b;
+      return { type:'door', h: 10 };
+    }
+    function blockHeight(b){
+      const nb = normalizeBlock(b);
+      return parseInt(nb.h, 10) || 0;
+    }
+
+    // ✅ UX: si es pantalla, fijo H30 y desactivo selector
+    function syncSizeControl(){
+      const isScreen = (itemTypeSelect?.value === 'screen');
+      if (hSizeSelect){
+        hSizeSelect.disabled = isScreen;
+        if (isScreen) hSizeSelect.value = '30';
+      }
+    }
+    itemTypeSelect?.addEventListener('change', syncSizeControl);
+    syncSizeControl();
 
     function render() {
       columnsGrid.innerHTML = '';
@@ -626,20 +519,25 @@ select{
         plus.type = 'button';
         plus.className = 'icon-btn icon-plus';
         plus.textContent = '+';
-        plus.title = 'Añadir bloque (según tamaño seleccionado)';
+        plus.title = 'Añadir bloque';
 
         plus.addEventListener('click', () => {
-          const h = parseInt(hSizeSelect.value, 10);
+          const type = itemTypeSelect?.value || 'door';
+
+          // ✅ Pantalla SIEMPRE H30
+          const h = (type === 'screen') ? 30 : parseInt(hSizeSelect.value, 10);
+
+          const newBlock = { type, h };
 
           if (col.top.sum + h <= 90) {
-            col.top.blocks.push(h);
+            col.top.blocks.push(newBlock);
             col.top.sum += h;
             render();
             return;
           }
 
           if (col.bottom.sum + h <= 90) {
-            col.bottom.blocks.push(h);
+            col.bottom.blocks.push(newBlock);
             col.bottom.sum += h;
             render();
             return;
@@ -718,23 +616,34 @@ select{
           arr.splice(to, 0, moved);
         }
 
-        function makeBlock(h, halfName, fromIndex) {
+        function makeBlock(block, halfName, fromIndex) {
+          const nb = normalizeBlock(block);
+          const h = blockHeight(nb);
+
           const b = document.createElement('div');
-          b.className = 'block';
+          b.className = 'block' + (nb.type === 'screen' ? ' screen' : '');
           b.style.height = (h * hScale) + 'px';
           b.draggable = true;
 
+          // ✅ Fondo del mismo color que las puertas (incluida la pantalla)
           if (state.selectedColor) b.style.background = state.selectedColor;
 
-          const label = document.createElement('div');
-          label.textContent = `H${h}`;
-          b.appendChild(label);
+          if (nb.type === 'screen') {
+            const img = document.createElement('img');
+            img.src = '/assets/pantalla.png';
+            img.alt = 'Pantalla';
+            b.appendChild(img);
+          } else {
+            const label = document.createElement('div');
+            label.textContent = `H${h}`;
+            b.appendChild(label);
+          }
 
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
           delBtn.className = 'delete-block';
           delBtn.textContent = '×';
-          delBtn.title = 'Eliminar puerta';
+          delBtn.title = 'Eliminar';
 
           delBtn.addEventListener('mousedown', (e) => e.stopPropagation());
           delBtn.addEventListener('click', (e) => {
@@ -745,7 +654,7 @@ select{
 
             if (typeof fromIndex === 'number' && fromIndex >= 0) {
               const removed = targetHalf.blocks.splice(fromIndex, 1)[0];
-              targetHalf.sum -= removed;
+              targetHalf.sum -= blockHeight(removed);
               render();
             }
           });
@@ -817,7 +726,7 @@ select{
         // TOP
         const topHalf = document.createElement('div');
         topHalf.className = 'col-half';
-        col.top.blocks.forEach((h, i) => topHalf.appendChild(makeBlock(h, 'top', i)));
+        col.top.blocks.forEach((blk, i) => topHalf.appendChild(makeBlock(blk, 'top', i)));
         wireHalfDnD(topHalf, 'top');
 
         const sep = document.createElement('div');
@@ -826,7 +735,7 @@ select{
         // BOTTOM
         const bottomHalf = document.createElement('div');
         bottomHalf.className = 'col-half';
-        col.bottom.blocks.forEach((h, i) => bottomHalf.appendChild(makeBlock(h, 'bottom', i)));
+        col.bottom.blocks.forEach((blk, i) => bottomHalf.appendChild(makeBlock(blk, 'bottom', i)));
         wireHalfDnD(bottomHalf, 'bottom');
 
         body.appendChild(topHalf);
@@ -835,7 +744,6 @@ select{
 
         card.appendChild(body);
 
-        // Footer
         const foot = document.createElement('div');
         foot.className = 'col-foot';
         const total = col.top.sum + col.bottom.sum;
@@ -873,7 +781,7 @@ select{
     });
 
     // =========================
-    // ✅ CARGAR CONFIG (si existe)
+    // CARGAR CONFIG (si existe)
     // =========================
     const pre = window.PRELOADED_CONFIG || null;
 
@@ -900,17 +808,19 @@ select{
       setColumnsBorderColor(pre.colorBody || '#000');
 
       if (Array.isArray(pre.columns)) {
-        state.columns = pre.columns.map(c => ({
-          id: uid(),
-          top: {
-            blocks: (c.top?.blocks || []),
-            sum: (c.top?.total ?? (c.top?.blocks || []).reduce((a,b)=>a+b,0))
-          },
-          bottom: {
-            blocks: (c.bottom?.blocks || []),
-            sum: (c.bottom?.total ?? (c.bottom?.blocks || []).reduce((a,b)=>a+b,0))
-          }
-        }));
+        state.columns = pre.columns.map(c => {
+          const topBlocks = (c.top?.blocks || []).map(normalizeBlock);
+          const bottomBlocks = (c.bottom?.blocks || []).map(normalizeBlock);
+
+          const topSum = (c.top?.total ?? topBlocks.reduce((a,b)=>a+blockHeight(b),0));
+          const bottomSum = (c.bottom?.total ?? bottomBlocks.reduce((a,b)=>a+blockHeight(b),0));
+
+          return {
+            id: uid(),
+            top: { blocks: topBlocks, sum: topSum },
+            bottom: { blocks: bottomBlocks, sum: bottomSum }
+          };
+        });
       }
 
       render();
@@ -934,6 +844,7 @@ select{
         error.textContent = 'Selecciona medida, interior/exterior, material, color puerta y color cuerpo.';
         return;
       }
+
       if (state.columns.length === 0) {
         e.preventDefault();
         error.textContent = 'Añade al menos 1 columna.';
@@ -968,9 +879,10 @@ select{
         el.value = value;
       };
 
-      ensureHidden.call(this, 'project_name', 22);
+      ensureHidden.call(this, 'project_id', document.getElementById('project_id').value);
       ensureHidden.call(this, 'colorDoor', colorDoor);
       ensureHidden.call(this, 'colorBody', colorBody);
+
       const type = document.getElementById('type')?.value || '';
 
       ensureHidden.call(this, 'payload', JSON.stringify({

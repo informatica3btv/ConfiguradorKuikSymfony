@@ -1,4 +1,26 @@
 {% extends 'layout.html.twig' %}
+
+{% set p = payload ?? {} %}
+{% set columns = p.columns ?? [] %}
+{% set type = p.type %}
+{% set doorColor = p.colorDoor ?? '#3a9efc' %}
+{% set bodyColor = p.colorBody ?? '#000' %}
+{% set bg = p.background_size ?? '' %}
+{% set placement = p.placement ?? '' %}
+{% set material = p.material ?? '' %}
+
+{% set bgLabel =
+  bg == 'small'  ? 'Serie 300' :
+  bg == 'medium' ? 'Serie 400' :
+  bg == 'large'  ? 'Serie 500' : '—'
+%}
+
+{% set placementLabel =
+  placement == 'interior' ? 'Interior' :
+  placement == 'exterior' ? 'Exterior' : '—'
+%}
+
+
 {% block page_title %}Resumen{% endblock %}
 
 {% block stylesheets %}
@@ -14,7 +36,6 @@
       border-radius:16px;
       padding:14px;
     }
-
     .grid{
       display:grid;
       grid-template-columns: 1.2fr .8fr;
@@ -91,13 +112,11 @@
 
     .half-sep{ border-top:2px dashed rgba(0,0,0,.35); }
 
-    /* PUERTA */
     .door{
       width:100%;
       border:1px solid rgba(44,62,80,.9);
       background: var(--door-color, #3a9efc);
       position:relative;
-      user-select:none;
     }
 
     .door .num{
@@ -113,37 +132,6 @@
       line-height:1.2;
     }
 
-    .door .badges{
-      position:absolute;
-      right:6px;
-      top:4px;
-      display:flex;
-      gap:4px;
-    }
-    .badge{
-      font-size:11px;
-      font-weight:900;
-      background: rgba(255,255,255,.92);
-      border:1px solid rgba(0,0,0,.25);
-      border-radius:999px;
-      padding:1px 6px;
-    }
-
-    .field label{
-      display:block;
-      font-weight:900;
-      font-size:18px;
-      margin: 0 0 6px;
-    }
-    .field input, .field textarea{
-      width:90%;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(15,23,42,.14);
-      outline:none;
-    }
-    .field textarea{ min-height: 96px; resize: vertical; }
-
     .btn{
       border:1px solid rgba(15,23,42,.12);
       background:#fff;
@@ -157,206 +145,201 @@
     }
     .btn.primary{ background:#0b76d8; border-color:#0b76d8; color:#fff; }
     .btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-    .muted{ color:#6b7280; font-size:13px; }
+    .muted{ color:#6b7280; font-size:16px; }
   </style>
 {% endblock %}
 
 {% block content %}
-  {% set p = payload ?? {} %}
-  {% set columns = p.columns ?? [] %}
-  {% set addons = p.addons ?? {} %}
-  {% set type = p.type %}
-  {% set doorColor = p.colorDoor ?? '#3a9efc' %}
-  {% set bodyColor = p.colorBody ?? '#000' %}
-
-  {% set bg = p.background_size ?? '' %}
-  {% set placement = p.placement ?? '' %}
-  {% set material = p.material ?? '' %}
-
-  {% set bgLabel =
-    bg == 'small'  ? 'Serie 300' :
-    bg == 'medium' ? 'Serie 400' :
-    bg == 'large'  ? 'Serie 500' : '—'
-  %}
-
-  {% set placementLabel =
-    placement == 'interior' ? 'Interior' :
-    placement == 'exterior' ? 'Exterior' : '—'
-  %}
-
   <div class="wrap">
 
     <h2 style="margin:0 0 10px;">Resumen</h2>
-    <div class="muted">ID configuración: <b>{{ configuration.id }}</b></div>
+    <div class="muted">
 
+      ID configuración:
+      <b>{{ configuration.id }}</b>
+
+      {% if configuration.status == 0 %}
+        <span class="badge open">Abierta</span>
+      {% elseif configuration.status == 1 %}
+        <span class="badge closed">Cerrada</span>
+      {% else %}
+        <span class="badge accepted">Aceptada</span>
+      {% endif %}
+
+    </div>
+    
     <div class="grid" style="margin-top:12px;">
 
-      {# ======================
-         IZQUIERDA: PREVIEW
-         ====================== #}
+      {# IZQUIERDA #}
       <div class="card">
-        <h3 style="margin:0;">Vista previa</h3>
-        <div class="muted" style="margin-top:6px;">
-          Puertas numeradas con complementos marcados (ENCH / USB).
-        </div>
+        <h3>Vista previa</h3>
 
-        {% if columns is empty %}
-          <div style="margin-top:12px; color:#c0392b; font-weight:900;">
-            No hay columnas en esta configuración.
-          </div>
-        {% else %}
-          <div class="cols"
-               style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
-            {% set doorIndex = 0 %}
+        <div id="previewCols" class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+          {% set doorIndex = 0 %}
 
-            {% for col in columns %}
-              <div class="col-shell">
-                <div class="col-topbar">Columna {{ loop.index }}</div>
+          {% for col in columns %}
+            <div class="col-shell">
+              <div class="col-topbar">Columna {{ loop.index }}</div>
 
-                <div class="col-card">
-                  <div class="col-body">
+              <div class="col-card">
+                <div class="col-body">
 
-                    <div class="col-half">
-                      {% for h in col.top.blocks %}
-                        {% set doorIndex = doorIndex + 1 %}
-                        {% set sel = addons[doorIndex ~ ''] ?? null %}
-
-                        <div class="door" style="height: {{ h * 2 }}px;">
-                          <div class="num">{{ doorIndex }}</div>
-                          <div class="badges">
-                            {% if sel and sel.socket %}
-                              <div class="badge">ENCH</div>
-                            {% endif %}
-                            {% if sel and sel.usb %}
-                              <div class="badge">USB</div>
-                            {% endif %}
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-
-                    <div class="half-sep"></div>
-
-                    <div class="col-half">
-                      {% for h in col.bottom.blocks %}
-                        {% set doorIndex = doorIndex + 1 %}
-                        {% set sel = addons[doorIndex ~ ''] ?? null %}
-
-                        <div class="door" style="height: {{ h * 2 }}px;">
-                          <div class="num">{{ doorIndex }}</div>
-                          <div class="badges">
-                            {% if sel and sel.socket %}
-                              <div class="badge">ENCH</div>
-                            {% endif %}
-                            {% if sel and sel.usb %}
-                              <div class="badge">USB</div>
-                            {% endif %}
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-
+                  <div class="col-half">
+                    {% for h in col.top.blocks %}
+                      {% set doorIndex = doorIndex + 1 %}
+                      <div class="door" style="height: {{ h * 2 }}px;">
+                        <div class="num">{{ doorIndex }}</div>
+                      </div>
+                    {% endfor %}
                   </div>
+
+                  <div class="half-sep"></div>
+
+                  <div class="col-half">
+                    {% for h in col.bottom.blocks %}
+                      {% set doorIndex = doorIndex + 1 %}
+                      <div class="door" style="height: {{ h * 2 }}px;">
+                        <div class="num">{{ doorIndex }}</div>
+                      </div>
+                    {% endfor %}
+                  </div>
+
                 </div>
               </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </div>
-
-      {# ======================
-         DERECHA: DATOS + FORM
-         ====================== #}
-      <div class="card">
-        <h3>Configuración elegida</h3>
-
-        <div class="kvs">
-          <div class="kv">
-            <div class="k">Tipo</div>
-            <div class="v">{{ type }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Medida de fondo</div>
-            <div class="v">{{ bgLabel }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Interior / Exterior</div>
-            <div class="v">{{ placementLabel }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Material</div>
-            <div class="v">{{ material ?: '—' }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Color puerta</div>
-            <div class="v">{{ doorColor }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Color cuerpo</div>
-            <div class="v">{{ bodyColor }}</div>
-          </div>
-
-          <div class="kv">
-            <div class="k">Columnas</div>
-            <div class="v">{{ columns|length }}</div>
-          </div>
+            </div>
+          {% endfor %}
         </div>
 
-        <hr style="border:0; border-top:1px solid rgba(15,23,42,.10); margin:12px 0;">
+       {# <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button class="btn primary" type="button" id="btnIA">Generar imagen IA</button>
+          <span class="muted" id="iaStatus" style="display:none;">Generando…</span>
+        </div>
 
-        <h3 style="margin-top:0; font-size:22px;">Datos del cliente</h3>
+        <img id="resultadoIA"
+             style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">#}
+      </div>
 
-        {# ⚠️ Pon aquí tu action real cuando tengas endpoint #}
-        <form method="post" action="{{ path('configuration_save_customer', { id: configuration.id }) }}">
-          <input type="hidden" name="configuration_id" value="{{ configuration.id }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('customer_' ~ configuration.id) }}">
-          
-          <div class="form-row">
-            <div class="field">
-              <label for="customer_name">Nombre</label>
-              <input id="customer_name" name="customer_name" type="text" required>
-            </div>
+      {# DERECHA #}
+      <div class="card">
+        <h3>Configuración</h3>
 
-            <div class="field">
-              <label for="customer_phone">Teléfono</label>
-              <input id="customer_phone" name="customer_phone" type="text">
-            </div>
+        <div class="kvs">
+          <div class="kv"><div class="k">Tipo</div><div class="v">{{ type }}</div></div>
+          <div class="kv"><div class="k">Fondo</div><div class="v">{{ bgLabel }}</div></div>
+          <div class="kv"><div class="k">Ubicación</div><div class="v">{{ placementLabel }}</div></div>
+          <div class="kv"><div class="k">Material</div><div class="v">{{ material }}</div></div>
+          <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColor }}</div></div>
+          <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColor }}</div></div>
+          <div class="kv"><div class="k">Columnas</div><div class="v">{{ columns|length }}</div></div>
+        </div>
 
-            <div class="field">
-              <label for="customer_email">Correo</label>
-              <input id="customer_email" name="customer_email" type="email" required>
-            </div>
+        <hr style="margin:14px 0;">
 
-            <div class="field">
-              <label for="customer_city">Ciudad</label>
-              <input id="customer_city" name="customer_city" type="text">
-            </div>
-          </div>
+        <h3>Datos del cliente</h3>
 
-          <div class="field" style="margin-top:10px;">
-            <label for="customer_address">Dirección</label>
-            <textarea id="customer_address" name="customer_address" placeholder="Calle, número, piso, código postal..."></textarea>
-          </div>
+        <div class="kvs">
+          <div class="kv"><div class="k">Proyecto</div><div class="v">{{ project.projectName }}</div></div>
+          <div class="kv"><div class="k">Cliente</div><div class="v">{{ project.clientName }}</div></div>
+          <div class="kv"><div class="k">Teléfono</div><div class="v">{{ project.phone ?: '—' }}</div></div>
+          <div class="kv"><div class="k">Email</div><div class="v">{{ project.email ?: '—' }}</div></div>
+          <div class="kv"><div class="k">Ciudad</div><div class="v">{{ project.city ?: '—' }}</div></div>
+          <div class="kv"><div class="k">Dirección</div><div class="v">{{ project.address ?: '—' }}</div></div>
+        </div>
 
-          <div class="btn-row">
-            <a class="btn" href="{{ path('configuration_index', { config_id: configuration.id }) }}">
-              Volver al configurador
-            </a>
-
-            <button type="submit" class="btn primary">
-              Guardar solicitud
-            </button>
-          </div>
-        </form>
-
-        
+        <div class="btn-row">
+          <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
+          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+          {% if configuration.status == 0 %}
+            <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
+          {% endif %}
+          <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
+        </div>
       </div>
 
     </div>
   </div>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+ <script>
+  window.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('btnIA');
+    const status = document.getElementById('iaStatus');
+    const node = document.getElementById('previewCols');
+
+    if (!btn || !status || !node) {
+      console.error('Faltan elementos:', { btn, status, node });
+      return;
+    }
+
+    btn.addEventListener('click', async function () {
+      console.log('CLICK IA'); // <-- para confirmar
+
+      status.style.display = 'inline';
+      status.textContent = 'Generando…';
+      btn.disabled = true;
+
+      try {
+        const canvas = await html2canvas(node, { backgroundColor: '#ffffff', scale: 1 });
+
+        const dataUrl = canvas.toDataURL('image/png');
+
+        const prompt =
+`Genera un render realista del armario/taquillas basado en el esquema adjunto.
+- Color puertas: {{ doorColor|e('js') }}
+- Color cuerpo/bordes: {{ bodyColor|e('js') }}
+- Fondo: {{ bgLabel|e('js') }}
+- Ubicación: {{ placementLabel|e('js') }}
+- Material: {{ material|e('js') }}
+Respeta el número de puertas y proporciones del esquema.`;
+
+        const form = new FormData();
+        form.append('prompt', prompt);
+        form.append('preview_base64', dataUrl);
+
+        const res = await fetch('{{ path("api_generar_imagen") }}', {
+          method: 'POST',
+          body: form
+        });
+
+        const text = await res.text();
+        let json = null;
+
+        try {
+          json = JSON.parse(text);
+        } catch (e) {
+          console.error('Respuesta NO JSON del servidor:', text);
+          alert('El servidor devolvió un error (no JSON). Mira la consola y el log de Symfony.');
+          return;
+        }
+
+        if (!res.ok) {
+          alert(json.error || 'Error generando imagen');
+          return;
+        }
+
+
+        if (!res.ok) {
+          alert(json.error || 'Error generando imagen');
+          return;
+        }
+
+        const img = document.getElementById('resultadoIA');
+        img.src = 'data:' + json.mime + ';base64,' + json.image_base64;
+        img.style.display = 'block';
+
+      } catch (e) {
+        console.error(e);
+        alert('Error inesperado (mira consola).');
+      } finally {
+        status.style.display = 'none';
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
 {% endblock %}

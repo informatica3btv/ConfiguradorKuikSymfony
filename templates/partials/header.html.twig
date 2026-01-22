@@ -89,10 +89,16 @@
     background: rgba(0,0,0,.10);
     margin:6px 0;
   }
+
+  .btnLogo{
+    text-decoration: none;
+  }
 </style>
 
 <header class="kuik-header">
-  <h2 class="kuik-title">Configurador Kuik</h2>
+  <a class="btnLogo" href="{{ path('configuration_project_new')}}">
+    <h2 class="kuik-title">Configurador Kuik</h2>
+  </a>
 {% if app.user %}
   <div class="kuik-menu">
     <button type="button" class="kuik-menu-btn" id="kuikMenuBtn" aria-haspopup="true" aria-expanded="false">
@@ -101,9 +107,20 @@
 
     <div class="kuik-dropdown" id="kuikDropdown" role="menu" aria-label="Opciones">
       <ul class="kuik-dropdown-list">
+
         <li>
           <a
-            href="{{ path('configurations_list',{'user_id': app.user.id }) }}"
+            href="{{ path('projects_list') }}"
+            class="kuik-item"
+            role="menuitem"
+          >
+            Lista proyectos
+          </a>
+        </li>
+
+        <li>
+          <a
+            href="{{ path('configurations_list') }}"
             class="kuik-item"
             role="menuitem"
           >
@@ -113,11 +130,11 @@
 
         <li>
           <a
-            href="{{ path('configuration_index') }}"
+            href="{{ path('configuration_project_new') }}"
             class="kuik-item"
             role="menuitem"
           >
-            Nueva configuración
+            Nuevo proyecto
           </a>
         </li>
         {% if is_granted('ROLE_ADMIN') %}

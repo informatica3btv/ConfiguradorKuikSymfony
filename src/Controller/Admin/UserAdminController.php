@@ -9,13 +9,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserAdminController extends AbstractController
 {
 
-/**
- * @Route("/admin/users", name="admin_users", methods={"GET"})
- */
+    /**
+     * @Route("/admin/users", name="admin_users", methods={"GET"})
+     */
     public function index(EntityManagerInterface $em): Response
     {
         $users = $em->getRepository(User::class)->findBy([], ['id' => 'DESC']);
@@ -28,13 +29,20 @@ class UserAdminController extends AbstractController
     /**
      * @Route("/new", name="admin_users_new", methods={"GET","POST"})
      */
-    public function new(Request $request, EntityManagerInterface $em): Response
-    {
+    public function new(
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response {
         $user = new User();
         $form = $this->createForm(AdminUserType::class, $user, ['is_edit' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            $plain = (string) $form->get('plainPassword')->getData();
+            $user->setPassword($passwordHasher->hashPassword($user, $plain));
+
             $em->persist($user);
             $em->flush();
 
@@ -48,11 +56,16 @@ class UserAdminController extends AbstractController
         ]);
     }
 
-     /**
+
+    /**
      * @Route("/{id}/edit", name="admin_users_edit", methods={"GET","POST"})
-    */
-    public function edit(int $id, Request $request, EntityManagerInterface $em): Response
-    {
+     */
+    public function edit(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response {
         $user = $em->getRepository(User::class)->find($id);
         if (!$user) {
             throw $this->createNotFoundException('Usuario no encontrado');
@@ -62,6 +75,13 @@ class UserAdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            // ✅ Solo cambia password si se escribió una nueva
+            $plain = (string) $form->get('plainPassword')->getData();
+            if ($plain !== '') {
+                $user->setPassword($passwordHasher->hashPassword($user, $plain));
+            }
+
             $em->flush();
 
             $this->addFlash('success', 'Usuario actualizado.');
@@ -75,24 +95,24 @@ class UserAdminController extends AbstractController
     }
 
     /**
- * @Route("/{id}/delete", name="admin_users_delete", methods={"POST"})
- */
-public function delete(int $id, Request $request, EntityManagerInterface $em): Response
-{
-    $user = $em->getRepository(User::class)->find($id);
-    if (!$user) {
-        throw $this->createNotFoundException('Usuario no encontrado');
+     * @Route("/{id}/delete", name="admin_users_delete", methods={"POST"})
+     */
+    public function delete(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $user = $em->getRepository(User::class)->find($id);
+        if (!$user) {
+            throw $this->createNotFoundException('Usuario no encontrado');
+        }
+
+        if (!$this->isCsrfTokenValid('delete_user_'.$user->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $em->remove($user);
+        $em->flush();
+
+        $this->addFlash('success', 'Usuario eliminado.');
+        return $this->redirectToRoute('admin_users');
     }
-
-    if (!$this->isCsrfTokenValid('delete_user_'.$user->getId(), $request->request->get('_token'))) {
-        throw $this->createAccessDeniedException();
-    }
-
-    $em->remove($user);
-    $em->flush();
-
-    $this->addFlash('success', 'Usuario eliminado.');
-    return $this->redirectToRoute('admin_users');
-}
 
 }

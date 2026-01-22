@@ -39,6 +39,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     private string $password;
 
+
+    public function __construct()
+    {
+        // si quieres que por defecto ya nazca con ROLE_USER en BD
+        $this->roles = ['ROLE_USER'];
+    }
+
+
     public function getId(): ?int
     {
         return $this->id;
@@ -78,17 +86,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // 👇 ROLES
     public function getRoles(): array
     {
-        $roles = $this->roles;
-        $roles[] = 'ROLE_USER'; // siempre al menos ROLE_USER
-        return array_unique($roles);
+        // devolvemos lo que haya en BD
+        $roles = $this->roles ?? [];
+
+        // (opcional) asegurar unique por seguridad
+        return array_values(array_unique($roles));
     }
+
 
     public function setRoles(array $roles): self
     {
-        $this->roles = $roles;
+        $roles[] = 'ROLE_USER'; // siempre
+        $this->roles = array_values(array_unique($roles));
         return $this;
     }
 

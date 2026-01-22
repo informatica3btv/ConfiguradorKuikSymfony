@@ -7,32 +7,63 @@
 {% endblock %}
 
 {% block content %}
-  <h1>Configuraciones de {{user.email}}</h1>
+  <h1>Configuraciones</h1>
 
-  {% if configurations is empty %}
-    <p>No hay configuraciones.</p>
-  {% else %}
-    <div style="display:flex; flex-direction:column; gap:14px; max-width:720px;">
-      {% for c in configurations %}
-        <div class="saved-card"
-             style="border:1px solid #ddd; border-radius:14px; padding:12px;"
-             data-payload="{{ c.payload|e('html_attr') }}">
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-            <div>
-              <div style="font-weight:900; font-size:16px;">{{ c.projectName }}</div>
-              <div class="saved-summary" style="margin-top:6px; font-size:13px; opacity:.85;"></div>
+  <div style="max-width:720px; display:flex; gap:10px; align-items:center; margin: 12px 0 18px; flex-wrap:wrap;">
+    <input id="searchId" type="number" min="1" placeholder="Buscar por ID (ej: 123)"
+          style="flex:1; padding:12px 14px; border-radius:14px; border:1px solid rgba(15,23,42,.14);">
+
+    <input id="searchUser" type="text" placeholder="Buscar por usuario (nombre o email)"
+          style="flex:1; padding:12px 14px; border-radius:14px; border:1px solid rgba(15,23,42,.14);">
+
+    <button id="searchBtn" type="button" class="primary-btn">Buscar</button>
+    <button id="resetBtn" type="button" class="secondary-btn">Reset</button>
+  </div>
+
+  <div id="searchMsg" class="warn" style="max-width:720px;"></div>
+
+  <div id="configsWrap">
+    {% if configurations is empty %}
+      <p>No hay configuraciones.</p>
+    {% else %}
+      <div style="display:flex; flex-direction:column; gap:14px; max-width:720px;">
+        {% for c in configurations %}
+          <div class="saved-card"
+              style="border:1px solid #ddd; border-radius:14px; padding:12px;"
+              data-id="{{ c.id }}"
+              data-project="{# c.projectName|e('html_attr') #}"
+              data-payload="{{ c.payload|e('html_attr') }}">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+              <div>
+                <div style="font-weight:900; font-size:16px;">
+                  {# c.projectName #} (#{{ c.id }})
+
+                  {% if c.status == 0 %}
+                    <span class="badge open">Abierta</span>
+                  {% elseif c.status == 1 %}
+                    <span class="badge closed">Cerrada</span>
+                  {% else %}
+                    <span class="badge accepted">Aceptada</span>
+                  {% endif %}
+                </div>
+
+                {# En carga inicial no tenemos userName/userEmail (a no ser que lo pases desde backend).
+                   Por AJAX sí lo mostraremos. #}
+
+                <div class="saved-summary" style="margin-top:6px; font-size:13px; opacity:.85;"></div>
+              </div>
+
+              <button type="button" class="secondary-btn rebuild-btn">Ver</button>
             </div>
 
-            <button type="button" class="secondary-btn rebuild-btn">Ver</button>
+            <div class="saved-columns" style="margin-top:12px; display:none;">
+              <div class="columns-grid"></div>
+            </div>
           </div>
-
-          <div class="saved-columns" style="margin-top:12px; display:none;">
-            <div class="columns-grid"></div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}
 
 {% block javascripts %}
@@ -42,7 +73,17 @@
 document.addEventListener('DOMContentLoaded', () => {
 (function(){
   const H_SCALE = 2;
-  const cards = document.querySelectorAll('.saved-card');
+
+  const wrap = document.getElementById('configsWrap');
+  const inputId = document.getElementById('searchId');
+  const inputUser = document.getElementById('searchUser');
+  const btn = document.getElementById('searchBtn');
+  const reset = document.getElementById('resetBtn');
+  const msg = document.getElementById('searchMsg');
+
+  function safeParse(jsonStr){
+    try { return JSON.parse(jsonStr); } catch(e) { return null; }
+  }
 
   function buildColumnHTML(col, hex) {
     const shell = document.createElement('div');
@@ -86,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
     body.appendChild(topHalf);
     body.appendChild(sep);
     body.appendChild(bottomHalf);
-
     card.appendChild(body);
 
     const foot = document.createElement('div');
@@ -101,59 +141,176 @@ document.addEventListener('DOMContentLoaded', () => {
     return shell;
   }
 
-  function safeParse(jsonStr){
-    try { return JSON.parse(jsonStr); } catch(e) { return null; }
-  }
+  function wireCards(root){
+    const cards = root.querySelectorAll('.saved-card');
 
-  cards.forEach(card => {
-    const payloadStr = card.getAttribute('data-payload') || '';
-    const payload = safeParse(payloadStr);
+    cards.forEach(card => {
+      const payloadStr = card.getAttribute('data-payload') || '';
+      const payload = safeParse(payloadStr);
 
-    const summaryEl = card.querySelector('.saved-summary');
-    const btn = card.querySelector('.rebuild-btn');
-    const box = card.querySelector('.saved-columns');
-    const grid = card.querySelector('.saved-columns .columns-grid');
+      const summaryEl = card.querySelector('.saved-summary');
+      const toggleBtn = card.querySelector('.rebuild-btn');
+      const box = card.querySelector('.saved-columns');
+      const grid = card.querySelector('.saved-columns .columns-grid');
 
-    if (!payload) {
-      summaryEl.textContent = 'Payload inválido (no es JSON).';
-      return;
-    }
-
-    const bg = payload.background_size || '-';
-    const pl = payload.placement || '-';
-    const model = payload.model || '-';
-    const nCols = Array.isArray(payload.columns) ? payload.columns.length : 0;
-    const hex = payload.colorDoor || '';
-    const colBorder = payload.colorBody || '';
-
-    summaryEl.innerHTML = `
-      Fondo: <strong>${bg}</strong> ·
-      Tipo: <strong>${pl}</strong> ·
-      Modelo: <strong>${model}</strong> ·
-      Columnas: <strong>${nCols}</strong>
-    `;
-
-    btn.addEventListener('click', () => {
-      const isOpen = box.style.display === 'block';
-
-      if (isOpen) {
-        box.style.display = 'none';
-        btn.textContent = 'Ver';
+      if (!payload) {
+        summaryEl.textContent = 'Payload inválido (no es JSON).';
         return;
       }
 
-      // ✅ IMPORTANTE: solo afecta a ESTA card
-      card.style.setProperty('--col-border', colBorder || '#000');
+      const type = payload.type || '-';
+      const bg = payload.background_size || '-';
+      const pl = payload.placement || '-';
+      const material = payload.material || '-';
+      const nCols = Array.isArray(payload.columns) ? payload.columns.length : 0;
 
-      grid.innerHTML = '';
-      (payload.columns || []).forEach(col => {
-        grid.appendChild(buildColumnHTML(col, hex));
+      const hexDoor = payload.colorDoor || '';
+      const colBorder = payload.colorBody || '';
+
+      summaryEl.innerHTML = `
+        Tipo: <strong>${type}</strong> ·
+        Fondo: <strong>${bg}</strong> ·
+        Interior/Exterior: <strong>${pl}</strong> ·
+        Material: <strong>${material}</strong> ·
+        Columnas: <strong>${nCols}</strong>
+      `;
+
+      toggleBtn.addEventListener('click', () => {
+        const isOpen = box.style.display === 'block';
+
+        if (isOpen) {
+          box.style.display = 'none';
+          toggleBtn.textContent = 'Ver';
+          return;
+        }
+
+        // solo afecta a ESTA card
+        card.style.setProperty('--col-border', colBorder || '#000');
+
+        grid.innerHTML = '';
+        (payload.columns || []).forEach(col => {
+          grid.appendChild(buildColumnHTML(col, hexDoor));
+        });
+
+        box.style.display = 'block';
+        toggleBtn.textContent = 'Ocultar';
       });
-
-      box.style.display = 'block';
-      btn.textContent = 'Ocultar';
     });
+  }
+
+  // Wire inicial (lo que viene de Twig)
+  wireCards(document);
+
+  function renderCards(items){
+    if (!items || items.length === 0){
+      wrap.innerHTML = `<p>No hay configuraciones.</p>`;
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.style.cssText = "display:flex; flex-direction:column; gap:14px; max-width:720px;";
+
+    items.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'saved-card';
+      card.style.cssText = "border:1px solid #ddd; border-radius:14px; padding:12px;";
+      card.setAttribute('data-id', c.id);
+      card.setAttribute('data-project', c.projectName || '');
+      card.setAttribute('data-payload', c.payload || '');
+
+      const userLine = (c.userName || c.userEmail)
+        ? `<div style="font-size:12px; opacity:.7; margin-top:4px;">
+             Usuario: <b>${(c.userName || '-')}</b>${c.userEmail ? ` · ${c.userEmail}` : ''}
+           </div>`
+        : '';
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+          <div>
+            <div style="font-weight:900; font-size:16px;">
+              ${(c.projectName || 'Configuración')} (#${c.id})
+            </div>
+            ${userLine}
+            <div class="saved-summary" style="margin-top:6px; font-size:13px; opacity:.85;"></div>
+          </div>
+          <button type="button" class="secondary-btn rebuild-btn">Ver</button>
+        </div>
+
+        <div class="saved-columns" style="margin-top:12px; display:none;">
+          <div class="columns-grid"></div>
+        </div>
+      `;
+
+      list.appendChild(card);
+    });
+
+    wrap.innerHTML = '';
+    wrap.appendChild(list);
+
+    // vuelve a cablear eventos
+    wireCards(wrap);
+  }
+
+  async function fetchItems(id, user){
+    const params = new URLSearchParams();
+    if (id) params.set('id', id);
+    if (user) params.set('user', user);
+
+    const qs = params.toString() ? `?${params.toString()}` : '';
+
+    const res = await fetch(`/api/configurations/search${qs}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('Error cargando datos');
+    return res.json();
+  }
+
+  async function runSearch(){
+    msg.textContent = '';
+
+    const id = (inputId.value || '').trim();
+    const user = (inputUser.value || '').trim();
+
+    if (id && (!/^\d+$/.test(id) || parseInt(id,10) <= 0)){
+      msg.textContent = 'Introduce un ID válido.';
+      return;
+    }
+
+    try{
+      const data = await fetchItems(id, user);
+      renderCards(data.items || []);
+
+      if ((id || user) && (!data.items || data.items.length === 0)){
+        msg.textContent = 'No hay resultados con ese filtro.';
+      }
+    }catch(e){
+      msg.textContent = 'No se pudo cargar la búsqueda.';
+    }
+  }
+
+  btn.addEventListener('click', runSearch);
+
+  inputId.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch();
+    }
   });
+
+  inputUser.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runSearch();
+    }
+  });
+
+  reset.addEventListener('click', async () => {
+    inputId.value = '';
+    inputUser.value = '';
+    msg.textContent = '';
+    await runSearch(); // vuelve a últimas 10
+  });
+
 })();
 });
 </script>

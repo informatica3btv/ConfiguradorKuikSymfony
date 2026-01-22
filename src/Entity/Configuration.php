@@ -10,12 +10,16 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(
  *     name="configuration",
  *     indexes={
- *         @ORM\Index(name="IDX_CONFIGURATION_USER", columns={"user_id"})
+ *         @ORM\Index(name="IDX_CONFIGURATION_PROJECT", columns={"project_id"})
  *     }
  * )
  */
 class Configuration
-{
+{   
+    public const STATUS_OPEN = 0;
+    public const STATUS_CLOSED = 1;
+    public const STATUS_ACCEPTED = 2;
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -24,44 +28,21 @@ class Configuration
     private ?int $id = null;
 
     /**
-     * @ORM\Column(name="user_id", type="integer")
+     * @ORM\ManyToOne(targetEntity=Project::class)
+     * @ORM\JoinColumn(name="project_id", referencedColumnName="id", nullable=false, onDelete="CASCADE")
      */
-    private int $userId;
+    private ?Project $project = null;
 
     /**
-     * @ORM\Column(name="project_name", type="string", length=255)
+     * @ORM\Column(type="smallint")
      */
-    private string $projectName;
+    private int $status = 0;
+
 
     /**
      * @ORM\Column(type="text")
      */
     private string $payload = '{}';
-
-    /**
-     * @ORM\Column(name="client_name", type="string", length=255)
-     */
-    private string $clientName;
-
-    /**
-     * @ORM\Column(name="client_email", type="string", length=255)
-     */
-    private string $clientEmail;
-
-    /**
-     * @ORM\Column(name="client_phone", type="string", length=50, nullable=true)
-     */
-    private ?string $clientPhone = null;
-
-    /**
-     * @ORM\Column(name="client_city", type="string", length=255, nullable=true)
-     */
-    private ?string $clientCity = null;
-
-    /**
-     * @ORM\Column(name="client_address", type="string", length=255, nullable=true)
-     */
-    private ?string $clientAddress = null;
 
     /**
      * @ORM\Column(name="created_at", type="datetime")
@@ -84,27 +65,28 @@ class Configuration
         return $this->id;
     }
 
-    public function getUserId(): int
+    public function getProject(): ?Project
     {
-        return $this->userId;
+        return $this->project;
     }
 
-    public function setUserId(int $userId): self
+    public function setProject(?Project $project): self
     {
-        $this->userId = $userId;
+        $this->project = $project;
         return $this;
     }
 
-    public function getProjectName(): string
+    public function getStatus(): int
     {
-        return $this->projectName;
+        return $this->status;
     }
 
-    public function setProjectName(string $projectName): self
+    public function setStatus(int $status): self
     {
-        $this->projectName = $projectName;
+        $this->status = $status;
         return $this;
     }
+
 
     public function getPayload(): string
     {
@@ -114,61 +96,6 @@ class Configuration
     public function setPayload(string $payload): self
     {
         $this->payload = $payload;
-        return $this;
-    }
-
-    public function getClientName(): string
-    {
-        return $this->clientName;
-    }
-
-    public function setClientName(string $clientName): self
-    {
-        $this->clientName = $clientName;
-        return $this;
-    }
-
-    public function getClientEmail(): string
-    {
-        return $this->clientEmail;
-    }
-
-    public function setClientEmail(string $clientEmail): self
-    {
-        $this->clientEmail = $clientEmail;
-        return $this;
-    }
-
-    public function getClientPhone(): ?string
-    {
-        return $this->clientPhone;
-    }
-
-    public function setClientPhone(?string $clientPhone): self
-    {
-        $this->clientPhone = $clientPhone;
-        return $this;
-    }
-
-    public function getClientAddress(): ?string
-    {
-        return $this->clientAddress;
-    }
-
-    public function setClientAddress(?string $clientAddress): self
-    {
-        $this->clientAddress = $clientAddress;
-        return $this;
-    }
-
-     public function getClientCity(): ?string
-    {
-        return $this->clientCity;
-    }
-
-    public function setClientCity(?string $clientCity): self
-    {
-        $this->clientCity = $clientCity;
         return $this;
     }
 
@@ -183,7 +110,7 @@ class Configuration
         return $this;
     }
 
-       public function getUpdatedAt(): \DateTimeInterface
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
@@ -193,4 +120,20 @@ class Configuration
         $this->updatedAt = $updatedAt;
         return $this;
     }
+
+    public function getStatusLabel(): string
+    {
+        switch ($this->status) {
+            case self::STATUS_OPEN:
+                return 'Abierta';
+            case self::STATUS_CLOSED:
+                return 'Cerrada';
+            case self::STATUS_ACCEPTED:
+                return 'Aceptada';
+            default:
+                return 'Desconocido';
+        }
+    }
+
+
 }

@@ -1,0 +1,351 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Recuperar proyecto{% endblock %}
+
+{% block content %}
+<div class="config-form" style="max-width:980px;">
+  <h1>Recuperar proyecto</h1>
+
+  <p style="opacity:.75">
+    Escribe el ID del proyecto.
+  </p>
+
+  <div style="max-width:720px; display:flex; gap:10px; align-items:center; margin: 12px 0 10px; flex-wrap:wrap;">
+    <input id="codeInput" type="number" min="1" placeholder="Ej: 123" required
+           style="flex:1; padding:14px; border-radius:14px; border:1px solid rgba(15,23,42,.14);">
+
+    <button id="btnSearch" class="primary-btn" type="button">Buscar</button>
+    <button id="btnClear" class="secondary-btn" type="button">Limpiar</button>
+  </div>
+
+  <div id="msg" class="warn" style="max-width:720px; margin-top:6px;"></div>
+
+  {# ===== Resultado AJAX ===== #}
+  <div id="result" style="display:none; margin-top:18px;">
+    <div style="display:grid; grid-template-columns: 1.2fr .8fr; gap:14px;">
+      {# PREVIEW #}
+      <div style="background:#fff; border:1px solid rgba(15,23,42,.12); border-radius:16px; padding:14px;">
+        <h3 style="margin:0 0 10px;">Vista previa</h3>
+
+        <div id="previewCols"
+             style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+        </div>
+      </div>
+
+      {# INFO + TABLA #}
+      <div style="background:#fff; border:1px solid rgba(15,23,42,.12); border-radius:16px; padding:14px;">
+        <h3 style="margin:0 0 10px;">Datos</h3>
+
+        <div id="infoBox"
+             style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        </div>
+
+        <hr style="border:0; border-top:1px solid rgba(15,23,42,.10); margin:12px 0;">
+
+        <h3 style="margin:0 0 10px;">Puertas por tamaño</h3>
+        <div id="doorsTable"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('codeInput');
+  const btnSearch = document.getElementById('btnSearch');
+  const btnClear = document.getElementById('btnClear');
+  const msg = document.getElementById('msg');
+
+  const result = document.getElementById('result');
+  const previewCols = document.getElementById('previewCols');
+  const infoBox = document.getElementById('infoBox');
+  const doorsTable = document.getElementById('doorsTable');
+
+  const H_SCALE = 2;
+
+  function safeParse(jsonStr){
+    try { return JSON.parse(jsonStr); } catch(e) { return null; }
+  }
+
+  function clearUI(){
+    msg.textContent = '';
+    result.style.display = 'none';
+    previewCols.innerHTML = '';
+    infoBox.innerHTML = '';
+    doorsTable.innerHTML = '';
+  }
+
+  function labelBg(bg){
+    if (bg === 'small') return 'Serie 300';
+    if (bg === 'medium') return 'Serie 400';
+    if (bg === 'large') return 'Serie 500';
+    return '—';
+  }
+
+  function labelPlacement(p){
+    if (p === 'interior') return 'Interior';
+    if (p === 'exterior') return 'Exterior';
+    return '—';
+  }
+
+  function kv(title, value){
+    const div = document.createElement('div');
+    div.style.cssText = "border:1px solid rgba(15,23,42,.10); border-radius:14px; padding:10px; background:#fbfcfe;";
+    div.innerHTML = `
+      <div style="font-size:12px; color:#6b7280; font-weight:900;">${title}</div>
+      <div style="font-size:14px; font-weight:900; margin-top:4px;">${value ?? '—'}</div>
+    `;
+    return div;
+  }
+
+  // ✅ helper para pintar badges ENCH/USB
+  function makeBadges(sel){
+    const wrap = document.createElement('div');
+    wrap.style.cssText = "position:absolute; right:6px; top:5px; display:flex; gap:4px;";
+
+    const make = (txt) => {
+      const b = document.createElement('span');
+      b.textContent = txt;
+      b.style.cssText = "font-size:9px; font-weight:900; background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.25); border-radius:999px; padding:1px 6px; line-height:1.2;";
+      return b;
+    };
+
+    if (sel && sel.socket) wrap.appendChild(make('ENCH'));
+    if (sel && sel.usb) wrap.appendChild(make('USB'));
+
+    return wrap;
+  }
+
+  // ✅ buildColumn ahora recibe addons y un contador global por referencia (obj)
+  function buildColumn(col, doorHex, bodyHex, addons, counterRef){
+    const shell = document.createElement('div');
+    shell.style.cssText = "width:140px; display:flex; flex-direction:column; gap:6px;";
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+      width:140px;
+      border-style:solid;
+      border-color:${bodyHex || '#000'};
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:8px;
+      overflow:hidden;
+      background:#f7f7f7;
+    `;
+
+    const body = document.createElement('div');
+    body.style.cssText = `height:${180 * H_SCALE}px; background:#eaeaea; display:flex; flex-direction:column;`;
+
+    function half(blocks){
+      const halfEl = document.createElement('div');
+      halfEl.style.cssText = `height:${90 * H_SCALE}px; display:flex; flex-direction:column; overflow:hidden;`;
+
+      const arr = (blocks || []);
+      arr.forEach((h, idx) => {
+        counterRef.value += 1;
+        const doorIndex = counterRef.value;
+
+        const sel = addons ? (addons[String(doorIndex)] || addons[doorIndex] || null) : null;
+
+        const d = document.createElement('div');
+        d.style.cssText = `
+          height:${h * H_SCALE}px;
+          border-left:1px solid rgba(44,62,80,.9);
+          border-right:1px solid rgba(44,62,80,.9);
+          border-top:1px solid rgba(44,62,80,.9);
+          background:${doorHex || '#3a9efc'};
+          position:relative;
+        `;
+
+        // cerrar borde inferior si es la última de la mitad
+        if (idx === arr.length - 1) {
+          d.style.borderBottom = '1px solid rgba(44,62,80,.9)';
+        }
+
+        // número
+        const num = document.createElement('div');
+        num.textContent = doorIndex;
+        num.style.cssText = "position:absolute; left:5px; top:4px; font-weight:900; font-size:9px; background:rgba(0,0,0,.65); color:#fff; border-radius:999px; padding:1px 6px; line-height:1.2;";
+        d.appendChild(num);
+
+        // badges
+        const badges = makeBadges(sel);
+        if (badges.childNodes.length) d.appendChild(badges);
+
+        halfEl.appendChild(d);
+      });
+
+      return halfEl;
+    }
+
+    const sep = document.createElement('div');
+    sep.style.cssText = "border-top:2px dashed rgba(0,0,0,.35); height:0;";
+
+    body.appendChild(half(col.top?.blocks || []));
+    body.appendChild(sep);
+    body.appendChild(half(col.bottom?.blocks || []));
+
+    card.appendChild(body);
+    shell.appendChild(card);
+
+    return shell;
+  }
+
+  function computeDoorCounts(columns){
+    const counts = {};
+    let totalDoors = 0;
+
+    (columns || []).forEach(col => {
+      const all = []
+        .concat(col?.top?.blocks || [])
+        .concat(col?.bottom?.blocks || []);
+      all.forEach(h => {
+        totalDoors++;
+        counts[h] = (counts[h] || 0) + 1;
+      });
+    });
+
+    return { counts, totalDoors };
+  }
+
+  function renderCountsTable(columns){
+    const { counts, totalDoors } = computeDoorCounts(columns);
+
+    const sizes = Object.keys(counts)
+      .map(n => parseInt(n, 10))
+      .filter(n => counts[n] > 0)
+      .sort((a,b) => a - b);
+
+    if (!sizes.length){
+      const div = document.createElement('div');
+      div.className = 'muted';
+      div.textContent = 'No hay puertas para contabilizar.';
+      return div;
+    }
+
+    const table = document.createElement('table');
+    table.style.cssText = "width:100%; border-collapse:collapse; font-size:14px;";
+    table.innerHTML = `
+      <thead>
+        <tr style="text-align:left;">
+          <th style="padding:8px; border-bottom:1px solid rgba(15,23,42,.12);">Tamaño</th>
+          <th style="padding:8px; border-bottom:1px solid rgba(15,23,42,.12);">Cantidad</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <td style="padding:8px; border-top:1px solid rgba(15,23,42,.12); font-weight:900;">Total puertas</td>
+          <td style="padding:8px; border-top:1px solid rgba(15,23,42,.12); font-weight:900;">${totalDoors}</td>
+        </tr>
+      </tfoot>
+    `;
+
+    const tbody = table.querySelector('tbody');
+
+    sizes.forEach(h => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:8px; border-bottom:1px solid rgba(15,23,42,.08);">H${h}</td>
+        <td style="padding:8px; border-bottom:1px solid rgba(15,23,42,.08);">${counts[h]}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    return table;
+  }
+
+  async function fetchById(id){
+    const res = await fetch(`/api/configurations/search?id=${encodeURIComponent(id)}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  async function search(){
+    clearUI();
+
+    const id = (input.value || '').trim();
+    if (!id || !/^\d+$/.test(id) || parseInt(id,10) <= 0){
+      msg.textContent = 'Introduce un ID válido.';
+      return;
+    }
+
+    btnSearch.disabled = true;
+
+    try{
+      const data = await fetchById(id);
+      const item = (data.items && data.items.length) ? data.items[0] : null;
+
+      if (!item){
+        msg.textContent = `No existe ninguna configuración con ID ${id}.`;
+        return;
+      }
+
+      const payload = safeParse(item.payload || '');
+      if (!payload){
+        msg.textContent = 'El payload de esta configuración no es JSON válido.';
+        return;
+      }
+
+      const columns = payload.columns || [];
+      const addons = payload.addons || {};
+      const doorColor = payload.colorDoor || '#3a9efc';
+      const bodyColor = payload.colorBody || '#000';
+
+      // INFO
+      infoBox.innerHTML = '';
+      infoBox.appendChild(kv('ID', item.id));
+      infoBox.appendChild(kv('Proyecto', item.projectName || '—'));
+      infoBox.appendChild(kv('Tipo', payload.type || '—'));
+      infoBox.appendChild(kv('Medida fondo', labelBg(payload.background_size)));
+      infoBox.appendChild(kv('Interior/Exterior', labelPlacement(payload.placement)));
+      infoBox.appendChild(kv('Material', payload.material || '—'));
+      infoBox.appendChild(kv('Color puerta', doorColor));
+      infoBox.appendChild(kv('Color cuerpo', bodyColor));
+      infoBox.appendChild(kv('Columnas', Array.isArray(columns) ? columns.length : 0));
+
+      // PREVIEW (✅ con numeración + accesorios)
+      previewCols.innerHTML = '';
+      if (!columns.length){
+        previewCols.innerHTML = `<div class="warn">No hay columnas en esta configuración.</div>`;
+      } else {
+        const counterRef = { value: 0 }; // contador global puertas
+        columns.forEach(col => {
+          previewCols.appendChild(buildColumn(col, doorColor, bodyColor, addons, counterRef));
+        });
+      }
+
+      // TABLA
+      doorsTable.innerHTML = '';
+      doorsTable.appendChild(renderCountsTable(columns));
+
+      result.style.display = 'block';
+    }catch(e){
+      msg.textContent = 'No se pudo recuperar el proyecto (error de red o servidor).';
+    }finally{
+      btnSearch.disabled = false;
+    }
+  }
+
+  btnSearch.addEventListener('click', search);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      search();
+    }
+  });
+
+  btnClear.addEventListener('click', () => {
+    input.value = '';
+    clearUI();
+  });
+});
+</script>
+{% endblock %}

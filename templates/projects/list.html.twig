@@ -1,0 +1,83 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Proyectos{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.wrap{
+  max-width:1100px;
+  margin:30px auto;
+}
+.card{
+  background:#fff;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:16px;
+  padding:16px;
+}
+.table{
+  width:100%;
+  border-collapse: collapse;
+}
+.table th, .table td{
+  padding:10px 12px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+}
+.table th{
+  font-size:12px;
+  color:#6b7280;
+}
+.actions a{
+  text-decoration:none;
+  padding:6px 12px;
+  border-radius:999px;
+  font-weight:800;
+  font-size:12px;
+}
+.btn-view{ background:#0b76d8; color:#fff; }
+.btn-new{ background:#16a34a; color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <h2>Lista de proyectos</h2>
+
+  <div class="card">
+    {% if projects is empty %}
+      <p>No tienes proyectos todavía.</p>
+      <a href="{{ path('configuration_project_new') }}" class="btn-new">
+        Crear primer proyecto
+      </a>
+    {% else %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Proyecto</th>
+            <th>Cliente</th>
+            <th>Ciudad</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for project in projects %}
+          <tr>
+            <td>#{{ project.id }}</td>
+            <td>{{ project.projectName }}</td>
+            <td>{{ project.clientName }}</td>
+            <td>{{ project.city }}</td>
+            <td class="actions">
+                <a class="btn-view"
+                    href="{{ path('project_configurations', { project_id: project.id }) }}">
+                    Ver configuraciones
+                </a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

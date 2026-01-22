@@ -1,0 +1,323 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Configuraciones{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{ --hscale: 1px; } /* mini: 1H = 1px */
+
+    .wrap{ max-width: 1400px; margin: 22px auto; padding: 0 10px; }
+    .muted{ color:#6b7280; font-size:18px; }
+
+    .card{
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px;
+      padding:12px;
+      margin-top:12px;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .left{
+      flex: 1 1 380px;
+      min-width: 320px;
+    }
+
+    .right{
+      flex: 0 0 320px;
+      min-width: 520px;
+    }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-block;
+      text-decoration:none;
+      color:#0b1220;
+      font-size:12px;
+    }
+    .btn.primary{ background:#0b76d8; border-color:#0b76d8; color:#fff; }
+
+    .btn-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+    /* ===== MINI PREVIEW ===== */
+    .mini-wrap{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:14px;
+      padding:10px;
+      background:#fbfcfe;
+    }
+
+    .cols{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    .col-shell{ width:90px; display:flex; flex-direction:column; gap:5px; }
+    .col-topbar{
+      padding:5px 7px;
+      border-radius:8px;
+      background:#003b73;
+      color:#fff;
+      font-weight:900;
+      font-size:11px;
+      text-align:center;
+    }
+
+    .col-card{
+      width:90px;
+      border-style:solid;
+      border-color: var(--col-border, #000);
+      border-left-width:3px;
+      border-right-width:3px;
+      border-top-width:6px;
+      border-bottom-width:6px;
+      border-radius:8px;
+      overflow:hidden;
+      background:#f7f7f7;
+    }
+
+    .col-body{
+      height:calc(180 * var(--hscale));
+      background:#eaeaea;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .col-half{
+      height:calc(90 * var(--hscale));
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .half-sep{ border-top:2px dashed rgba(0,0,0,.25); height:0; }
+
+    .door{
+      width:100%;
+      border-left:1px solid rgba(44,62,80,.7);
+      border-right:1px solid rgba(44,62,80,.7);
+      border-top:1px solid rgba(44,62,80,.7);
+      background: var(--door-color, #3a9efc);
+      position:relative;
+    }
+    .door.last{ border-bottom:1px solid rgba(44,62,80,.7); }
+
+    .door .num{
+      position:absolute;
+      left:4px;
+      top:3px;
+      font-weight:900;
+      font-size:9px;
+      background: rgba(0,0,0,.65);
+      color:#fff;
+      border-radius:999px;
+      padding:1px 5px;
+      line-height:1.2;
+    }
+
+    .kvs{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:8px;
+      margin-top:8px;
+    }
+    .kv{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:12px;
+      padding:8px 10px;
+      background:#fff;
+    }
+    .kv .k{ font-size:11px; color:#6b7280; font-weight:900; }
+    .kv .v{ font-size:12px; font-weight:900; margin-top:3px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <h2 style="margin:0; font-size: 34px;">Configuraciones del proyecto</h2>
+  <div class="muted" style="margin-top:6px;">
+    Proyecto: <b>{{ project.projectName }}</b> · Cliente: <b>{{ project.clientName }}</b>
+  </div>
+
+<div class="card" style="margin-top:14px;">
+    <div class="btn-row" style="justify-content:flex-start;">
+      <a class="btn" href="{{ path('projects_list', { user_id: app.user.id }) }}">
+        Volver a proyectos
+      </a>
+      <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
+        Nueva configuración
+      </a>
+    </div>
+  </div>
+  {% if items is empty %}
+    <div class="card" style="margin-top:14px;">
+      <b>No hay configuraciones aún.</b>
+      <div style="margin-top:10px;">
+        <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
+          Nueva configuración
+        </a>
+      </div>
+    </div>
+  {% else %}
+
+    {% for it in items %}
+        {% set c = it.configuration %}
+        {% set p = it.payload %}
+
+      {% if p is not iterable %}{% set p = {} %}{% endif %}
+
+      {% set columns = p.columns ?? [] %}
+      {% set doorColor = p.colorDoor ?? '#3a9efc' %}
+      {% set bodyColor = p.colorBody ?? '#000' %}
+      {% set type = p.type ?? '—' %}
+
+      <div class="card">
+        <div class="row">
+
+          <div class="left">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:900; font-size:16px;">
+                    
+                    Configuración #{{ c.id }}
+
+                    {% if c.status == 0 %}
+                        <span class="badge open">Abierta</span>
+                    {% elseif c.status == 1 %}
+                        <span class="badge closed">Cerrada</span>
+                    {% else %}
+                        <span class="badge accepted">Aceptada</span>
+                    {% endif %}
+
+                </div>
+
+                <div class="muted" style="margin-top:4px;">
+                  Tipo: <b>{{ type }}</b>
+                  {% if c.createdAt is defined and c.createdAt %}
+                    · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="btn-row">
+                <a class="btn" href="{{ path('configuration_summary', { id: c.id }) }}">Resumen</a>
+
+                <a class="btn primary"
+                   href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
+                  Editar
+                </a>
+
+                <a class="btn" href="{{ path('configuration_pdf', { id: c.id }) }}">PDF</a>
+              </div>
+            </div>
+
+            <div class="kvs">
+            <div class="kv">
+                <div class="k">Estado</div>
+                <div class="v">{{ c.statusLabel }}</div>
+            </div>
+
+              <div class="kv">
+                <div class="k">Columnas</div>
+                <div class="v">{{ columns|length }}</div>
+              </div>
+              <div class="kv">
+                <div class="k">Color cuerpo</div>
+                <div class="v">{{ bodyColor }}</div>
+              </div>
+              <div class="kv">
+                <div class="k">Color puerta</div>
+                <div class="v">{{ doorColor }}</div>
+              </div>
+              <div class="kv">
+                <div class="k">Config ID</div>
+                <div class="v">#{{ c.id }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="mini-wrap">
+              <div style="font-weight:900; color:#003b73;">Vista previa</div>
+              <div class="muted" style="margin-top:3px;">
+                (miniatura)
+              </div>
+
+              {% if columns is empty %}
+                <div style="margin-top:8px; color:#c0392b; font-weight:900;">
+                  Sin columnas
+                </div>
+              {% else %}
+                {# Mostrar solo las 4 primeras columnas para que no se desmadre #}
+                {% set colsToShow = columns|slice(0, 4) %}
+
+                <div class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+                  {% set doorIndex = 0 %}
+
+                  {% for col in colsToShow %}
+                    <div class="col-shell">
+                      <div class="col-topbar">Col {{ loop.index }}</div>
+
+                      <div class="col-card">
+                        <div class="col-body">
+
+                          <div class="col-half">
+                            {% for h in (col.top.blocks ?? []) %}
+                              {% set doorIndex = doorIndex + 1 %}
+                              <div class="door {% if loop.last %}last{% endif %}" style="height: {{ h * 1 }}px;">
+                                <div class="num">{{ doorIndex }}</div>
+                              </div>
+                            {% endfor %}
+                          </div>
+
+                          <div class="half-sep"></div>
+
+                          <div class="col-half">
+                            {% for h in (col.bottom.blocks ?? []) %}
+                              {% set doorIndex = doorIndex + 1 %}
+                              <div class="door {% if loop.last %}last{% endif %}" style="height: {{ h * 1 }}px;">
+                                <div class="num">{{ doorIndex }}</div>
+                              </div>
+                            {% endfor %}
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                {% if columns|length > 4 %}
+                  <div class="muted" style="margin-top:6px;">
+                    Mostrando 3 de {{ columns|length }} columnas…
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+
+  {% endif %}
+
+  
+
+</div>
+{% endblock %}

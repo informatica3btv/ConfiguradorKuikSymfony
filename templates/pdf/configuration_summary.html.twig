@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body{ font-family: DejaVu Sans, Arial, sans-serif; font-size:12px; color:#0b1220; }
+    .page{ padding: 18px 22px; }
+
+    /* Header */
+    .head{
+      border-bottom: 2px solid #0b76d8;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .brand{
+      font-size: 16px;
+      font-weight: 900;
+      margin:0;
+      color:#003b73;
+    }
+    .doc-title{
+      font-size: 18px;
+      font-weight: 900;
+      margin: 2px 0 0;
+    }
+    .meta{
+      margin-top: 6px;
+      font-size: 11px;
+      color:#6b7280;
+    }
+
+    /* Blocks */
+    .row{ font-size:0; margin-top: 10px; }
+    .col{ display:inline-block; vertical-align: top; font-size:12px; }
+    .col-50{ width:49%; }
+    .col-50 + .col-50{ margin-left:2%; }
+
+    .card{
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:10px;
+      padding:10px;
+      margin-bottom: 10px;
+      background:#fff;
+      page-break-inside: avoid;
+    }
+    .card h3{
+      margin:0 0 8px;
+      font-size: 12px;
+      font-weight: 900;
+      color:#003b73;
+    }
+
+    .muted{ color:#6b7280; font-size:11px; }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    th, td{
+      border:1px solid #e5e7eb;
+      padding:7px 8px;
+      text-align:left;
+      vertical-align: top;
+    }
+    th{
+      background:#f3f4f6;
+      font-weight:900;
+      color:#111827;
+      width: 40%;
+    }
+
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(15,23,42,.12);
+      background:#fbfcfe;
+      font-weight:900;
+      font-size: 10px;
+      color:#003b73;
+    }
+
+    /* ===== Cliente 2 por fila (PDF reliable: TABLE) ===== */
+    .kvs-table{ width:100%; border-collapse: collapse; }
+    .kvs-table td{ border:0; padding:0 0 8px 0; vertical-align: top; }
+    .kvs-table td.gap{ width:2%; }
+    .kv{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:10px;
+      padding:8px 10px;
+      background:#fbfcfe;
+      box-sizing:border-box;
+    }
+    .kv .k{
+      font-size:10px;
+      color:#6b7280;
+      font-weight:900;
+      margin:0;
+    }
+    .kv .v{
+      font-size:11px;
+      font-weight:900;
+      margin:3px 0 0;
+      color:#111827;
+    }
+
+    /* ===== Dibujo (portrait friendly) ===== */
+    :root{ --hscale: 2px; }  /* 1H = 2px */
+
+    .preview-note{ margin: 2px 0 8px; }
+
+    .cols-wrap{
+      font-size:0;
+      margin-top: 6px;
+    }
+
+    .col-shell{
+      width:130px;
+      display:inline-block;
+      vertical-align: top;
+      margin-right:10px;
+      margin-bottom:10px;
+      font-size:12px;
+      page-break-inside: avoid;
+    }
+
+    .col-topbar{
+      padding:6px 8px;
+      border-radius:8px;
+      background:#003b73;
+      color:#fff;
+      font-weight:900;
+      margin-bottom:6px;
+    }
+
+    .col-card{
+      width:130px;
+      border-style:solid;
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:8px;
+      overflow:hidden;
+      background:#f7f7f7;
+    }
+
+    .col-body{
+      height:calc(180 * var(--hscale));
+      background:#eaeaea;
+    }
+
+    .col-half{
+      height:calc(90 * var(--hscale));
+      overflow:hidden;
+    }
+
+    .half-sep{
+      border-top:2px dashed rgba(255,255,255,.95);
+      border-bottom:1px dashed rgba(0,0,0,.18);
+      height:0;
+    }
+
+    .door{
+      width:100%;
+      position:relative;
+      border-left:1px solid rgba(11,18,32,.55);
+      border-right:1px solid rgba(11,18,32,.55);
+      border-top:1px solid rgba(11,18,32,.55);
+    }
+    .door.last{ border-bottom:1px solid rgba(11,18,32,.55); }
+
+    .door .num{
+      position:absolute;
+      left:6px;
+      top:6px;
+      font-weight:900;
+      font-size:10px;
+      background: rgba(0,0,0,.65);
+      color:#fff;
+      border-radius:999px;
+      padding:2px 6px;
+      line-height:1.2;
+    }
+    .door .badges{
+      position:absolute;
+      right:6px;
+      top:6px;
+      white-space:nowrap;
+    }
+    .badge{
+      display:inline-block;
+      font-size:9px;
+      font-weight:900;
+      background: rgba(255,255,255,.92);
+      border:1px solid rgba(0,0,0,.25);
+      border-radius:999px;
+      padding:1px 6px;
+      margin-left:4px;
+    }
+
+    .footer{
+      margin-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+      font-size: 10px;
+      color:#6b7280;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  {# =========================
+     Datos base
+     ========================= #}
+  {% set p = payload ?? {} %}
+  {% set columns = p.columns ?? [] %}
+  {% set addons = p.addons ?? {} %}
+  {% set doorColor = p.colorDoor ?? '#3a9efc' %}
+  {% set bodyColor = p.colorBody ?? '#000' %}
+
+  {# Etiquetas más “humanas” #}
+  {% set bg = p.background_size ?? '' %}
+  {% set placement = p.placement ?? '' %}
+  {% set material = p.material ?? '' %}
+
+  {% set bgLabel =
+    bg == 'small'  ? 'Serie 300' :
+    bg == 'medium' ? 'Serie 400' :
+    bg == 'large'  ? 'Serie 500' : (bg ?: '—')
+  %}
+  {% set placementLabel =
+    placement == 'interior' ? 'Interior' :
+    placement == 'exterior' ? 'Exterior' : (placement ?: '—')
+  %}
+
+  {# =========================
+     Cálculo puertas + addons
+     ========================= #}
+  {% set doorCounts = {} %}
+  {% set totalDoors = 0 %}
+  {% set enchCount = 0 %}
+  {% set usbCount = 0 %}
+
+  {% for col in columns %}
+    {% for h in (col.top.blocks ?? []) %}
+      {% set totalDoors = totalDoors + 1 %}
+      {% set key = 'H' ~ h %}
+      {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
+      {% set sel = addons[totalDoors ~ ''] ?? null %}
+      {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
+      {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+    {% endfor %}
+    {% for h in (col.bottom.blocks ?? []) %}
+      {% set totalDoors = totalDoors + 1 %}
+      {% set key = 'H' ~ h %}
+      {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
+      {% set sel = addons[totalDoors ~ ''] ?? null %}
+      {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
+      {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+    {% endfor %}
+  {% endfor %}
+
+  {# =========================
+     Cabecera presupuesto
+     ========================= #}
+  <div class="head">
+    <div class="row" style="margin-top:0;">
+      <div class="col col-50">
+        {# <img src="{{ absolute_url(asset('images/logo-kuik.png')) }}" style="height:38px; display:block; margin-bottom:6px;"> #}
+        <p class="brand">Kuik</p>
+        <p class="muted" style="margin:2px 0 0;">
+          Documento técnico (sin precios)<br>
+          Configurador Kuik
+        </p>
+      </div>
+      <div class="col col-50" style="text-align:right;">
+        <p class="doc-title" style="margin:0;">Presupuesto</p>
+        <div class="meta">
+          Nº: <b>#{{ configuration.id }}</b><br>
+          Fecha: <b>{{ "now"|date("d/m/Y") }}</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# =========================
+     Cliente + Proyecto (2 por fila ✅)
+     ========================= #}
+  <div class="card">
+    <h3>Datos del cliente</h3>
+
+    <table class="kvs-table">
+      <tbody>
+        <tr>
+          <td>
+            <div class="kv"><div class="k">Proyecto</div><div class="v">{{ project.projectName ?? '—' }}</div></div>
+          </td>
+          <td class="gap"></td>
+          <td>
+            <div class="kv"><div class="k">Cliente</div><div class="v">{{ project.clientName ?? '—' }}</div></div>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="kv"><div class="k">Email</div><div class="v">{{ project.email ?: '—' }}</div></div>
+          </td>
+          <td class="gap"></td>
+          <td>
+            <div class="kv"><div class="k">Teléfono</div><div class="v">{{ project.phone ?: '—' }}</div></div>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <div class="kv"><div class="k">Ciudad</div><div class="v">{{ project.city ?: '—' }}</div></div>
+          </td>
+          <td class="gap"></td>
+          <td>
+            <div class="kv"><div class="k">Dirección</div><div class="v">{{ project.address ?: '—' }}</div></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {# =========================
+     Vista previa (justo debajo)
+     ========================= #}
+  <div class="card">
+    <h3>Vista previa (columnas)</h3>
+    <div class="muted preview-note">
+      Puertas numeradas · color puerta aplicado · borde cuerpo aplicado · ENCH/USB marcados
+    </div>
+
+    {% if columns is empty %}
+      <div style="color:#c0392b; font-weight:900;">No hay columnas en esta configuración.</div>
+    {% else %}
+      <div class="cols-wrap" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+        {% set doorIndex = 0 %}
+
+        {% for col in columns %}
+          <div class="col-shell">
+            <div class="col-topbar">Columna {{ loop.index }}</div>
+
+            <div class="col-card" style="border-color: {{ bodyColor }};">
+              <div class="col-body">
+
+                <div class="col-half">
+                  {% for h in (col.top.blocks ?? []) %}
+                    {% set doorIndex = doorIndex + 1 %}
+                    {% set sel = addons[doorIndex ~ ''] ?? null %}
+
+                    <div class="door {% if loop.last %}last{% endif %}"
+                         style="height: {{ h * 2 }}px; background: {{ doorColor }};">
+                      <div class="num">{{ doorIndex }}</div>
+                      <div class="badges">
+                        {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
+                        {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <div class="half-sep"></div>
+
+                <div class="col-half">
+                  {% for h in (col.bottom.blocks ?? []) %}
+                    {% set doorIndex = doorIndex + 1 %}
+                    {% set sel = addons[doorIndex ~ ''] ?? null %}
+
+                    <div class="door {% if loop.last %}last{% endif %}"
+                         style="height: {{ h * 2 }}px; background: {{ doorColor }};">
+                      <div class="num">{{ doorIndex }}</div>
+                      <div class="badges">
+                        {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
+                        {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {# =========================
+     Configuración + puertas
+     ========================= #}
+  <div class="row">
+    <div class="col col-50">
+      <div class="card">
+        <h3>Configuración</h3>
+        <table>
+          <tbody>
+            <tr><th>Tipo</th><td><span class="pill">{{ p.type ?? '—' }}</span></td></tr>
+            <tr><th>Medida de fondo</th><td>{{ bgLabel }}</td></tr>
+            <tr><th>Interior / Exterior</th><td>{{ placementLabel }}</td></tr>
+            <tr><th>Material</th><td>{{ material ?: '—' }}</td></tr>
+            <tr><th>Color puerta</th><td>{{ doorColor }}</td></tr>
+            <tr><th>Color cuerpo</th><td>{{ bodyColor }}</td></tr>
+            <tr><th>Nº columnas</th><td>{{ columns|length }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col col-50">
+      <div class="card">
+        <h3>Puertas y complementos</h3>
+
+        <table>
+          <tbody>
+            <tr><th>Total puertas</th><td><b>{{ totalDoors }}</b></td></tr>
+            <tr><th>ENCH usados</th><td>{{ enchCount }}</td></tr>
+            <tr><th>USB usados</th><td>{{ usbCount }}</td></tr>
+          </tbody>
+        </table>
+
+        <div style="height:8px;"></div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%;">Tipo de puerta</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, count in doorCounts %}
+              <tr>
+                <td>{{ key }}</td>
+                <td>{{ count }}</td>
+              </tr>
+            {% endfor %}
+            {% if doorCounts is empty %}
+              <tr><td colspan="2">—</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Documento generado automáticamente desde el configurador. Sin precios ni condiciones comerciales.
+  </div>
+
+</div>
+</body>
+</html>
