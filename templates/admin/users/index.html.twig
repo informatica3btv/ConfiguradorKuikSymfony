@@ -1,52 +1,137 @@
 {% extends 'layout.html.twig' %}
-{% block page_title %}Usuarios{% endblock %}
+{% block page_title %}Administración · Usuarios{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+      --danger:#ef4444;
+    }
+
+    .admin-wrap{ max-width:1200px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:14px;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .table th, .table td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      text-align:left;
+      font-size:14px;
+    }
+    .table th{
+      background:#fbfcfe;
+      color:#334155;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+    .table tr:last-child td{ border-bottom:0; }
+
+    .row-actions{ display:flex; gap:10px; align-items:center; justify-content:flex-end; }
+    .trash-btn{
+      border:1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.10);
+      color: var(--danger);
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .trash-btn:hover{ background: rgba(239,68,68,.16); }
+  </style>
+{% endblock %}
 
 {% block content %}
-<div class="config-form">
-  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-    <h1 style="margin:0;">Usuarios</h1>
-    <a class="primary-btn" href="{{ path('admin_users_new') }}">+ Nuevo usuario</a>
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">Administración</div>
+    <div class="admin-sub">Gestión de usuarios del sistema</div>
   </div>
 
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th style="width:80px;">ID</th>
-        <th>Nombre</th>
-        <th>Email</th>
-        <th style="width:240px;">Acciones</th>
-      </tr>
-    </thead>
+  <div class="admin-card">
+    <div class="toolbar">
+      <div style="font-weight:900; font-size:22px;">Usuarios</div>
+      <a class="btn primary" href="{{ path('admin_users_new') }}">+ Nuevo usuario</a>
+    </div>
 
-    <tbody>
-    {% for u in users %}
-      <tr>
-        <td>{{ u.id }}</td>
-        <td>{{ u.name ?? '-' }}</td>
-        <td>{{ u.email ?? u.mail ?? '-' }}</td>
-        <td>
-          <div class="admin-actions">
-            <a class="secondary-btn" href="{{ path('admin_users_edit', {id: u.id}) }}">Editar</a>
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:90px;">ID</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th style="width:260px; text-align:right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.name ?? '-' }}</td>
+          <td>{{ u.email ?? u.mail ?? '-' }}</td>
+          <td>
+            <div class="row-actions">
+              <a class="btn" href="{{ path('admin_users_edit', {id: u.id}) }}">Editar</a>
 
-            <form method="post" action="{{ path('admin_users_delete', {id: u.id}) }}" style="margin:0;">
-              <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ u.id) }}">
-              <button class="secondary-btn" type="submit" onclick="return confirm('¿Eliminar usuario?')">
-                Eliminar
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-    {% else %}
-      <tr>
-        <td colspan="4" style="opacity:.7;">No hay usuarios.</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+              <form method="post" action="{{ path('admin_users_delete', {id: u.id}) }}" style="margin:0;">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ u.id) }}">
+                <button class="trash-btn" type="submit" onclick="return confirm('¿Eliminar usuario?')">
+                  Eliminar
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="4" style="opacity:.7;">No hay usuarios.</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
 
-  <div style="margin-top:20px;">
-    <a class="secondary-btn" href="{{ path('admin_dashboard') }}">← Volver</a>
+    <div style="margin-top:16px;">
+      <a class="btn" href="{{ path('admin_dashboard') }}">← Volver</a>
+    </div>
   </div>
 </div>
 {% endblock %}

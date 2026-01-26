@@ -20,7 +20,13 @@ class ProjectController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        $projects = $projectRepo->findBy(['user' => $this->getUser()], ['id' => 'DESC']);
+        $projects = $projectRepo->findBy([], ['id' => 'DESC']);
+
+        foreach($projects as $project){
+            
+             $total = $projectRepo->countConfigurationsByProject($project->getId());
+             $project->totalConfigurations = $total;
+        }
 
         return $this->render('projects/list.html.twig', [
             'projects' => $projects,

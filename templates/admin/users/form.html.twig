@@ -1,23 +1,89 @@
 {% extends 'layout.html.twig' %}
 {% block page_title %}{{ title }}{% endblock %}
 
-{% block content %}
-<div class="config-form">
-  <h1>{{ title }}</h1>
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+    }
 
-  {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
+    .admin-wrap{ max-width:980px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .admin-form{ display:grid; gap:12px; margin-top:10px; }
+    .admin-form label{ font-weight:900; }
+    .admin-form input, .admin-form select{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      outline:none;
+    }
+    .admin-form input:focus, .admin-form select:focus{
+      box-shadow: 0 0 0 4px rgba(11,118,216,.12);
+      border-color: rgba(11,118,216,.35);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top:10px;
+    }
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
     
-    {{ form_row(form.name) }}
-    {{ form_row(form.email) }}
-    {{ form_row(form.roles) }}
-    {{ form_row(form.plainPassword) }}
+  </style>
+{% endblock %}
 
+{% block content %}
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">{{ title }}</div>
+    <div class="admin-sub">Crea o edita un usuario</div>
+  </div>
 
-    <div class="admin-form-actions">
-      <button class="primary-btn" type="submit">Guardar</button>
-      <a class="secondary-btn" href="{{ path('admin_users') }}">Cancelar</a>
-    </div>
+  <div class="admin-card">
+    {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
 
-  {{ form_end(form) }}
+      {{ form_row(form.name) }}
+      {{ form_row(form.email) }}
+      {{ form_row(form.roles) }}
+      {{ form_row(form.plainPassword) }}
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Guardar</button>
+        <a class="btn" href="{{ path('admin_users') }}">Cancelar</a>
+      </div>
+
+    {{ form_end(form) }}
+  </div>
 </div>
 {% endblock %}

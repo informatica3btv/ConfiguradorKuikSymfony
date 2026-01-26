@@ -1,62 +1,185 @@
 {% extends 'layout.html.twig' %}
-{% block page_title %}Colores{% endblock %}
+{% block page_title %}Administración · Colores{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc; --ink:#0b1220; --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08); --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+      --danger:#ef4444;
+    }
+
+    .admin-wrap{ max-width:1200px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-tabs{
+      margin-top:18px;
+      display:flex;
+      gap:10px;
+      background:rgba(255,255,255,.65);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:8px;
+      width:fit-content;
+      box-shadow: var(--shadow-sm);
+    }
+    .admin-tab{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:900;
+      color:#0b1220;
+      background:transparent;
+      border:1px solid transparent;
+    }
+    .admin-tab.active{
+      background:#fff;
+      border-color: rgba(15,23,42,.10);
+      box-shadow: 0 8px 18px rgba(2,20,60,.08);
+    }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+    .btn:active{ transform: translateY(1px); }
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+    }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 620px){ .grid{ grid-template-columns: 1fr; } }
+
+    .color-card{
+      background:#fff;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:16px;
+      padding:14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .color-left{ display:flex; align-items:center; gap:12px; }
+    .swatch{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.10);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);
+      background: var(--c);
+    }
+    .color-name{ font-weight:900; margin:0; }
+    .color-meta{ margin-top:4px; color:var(--muted); font-size:13px; }
+
+    .trash-btn{
+      width:40px; height:40px;
+      border-radius:14px;
+      border:1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.10);
+      color: var(--danger);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    .trash-btn:hover{ background: rgba(239,68,68,.16); }
+    .trash-form{ margin:0; }
+  </style>
+{% endblock %}
 
 {% block content %}
-<div class="config-form">
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">Colores</div>
+  </div>
 
-  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-    <h1>Colores ({{ type == 'door' ? 'Puerta' : 'Cuerpo' }})</h1>
+  <div class="admin-card">
+    <div class="toolbar">
+      <div style="font-weight:900; font-size:22px;">
+        Colores <span style="opacity:.6;">·</span> {{ type == 'door' ? 'Puerta' : 'Cuerpo' }}
+      </div>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="secondary-btn" href="{{ path('admin_colors_index', {type:'door'}) }}">Puerta</a>
-      <a class="secondary-btn" href="{{ path('admin_colors_index', {type:'body'}) }}">Cuerpo</a>
-      <a class="primary-btn" href="{{ path('admin_colors_new', {type: type}) }}">+ Nuevo color</a>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="{{ path('admin_colors_index', {type:'door'}) }}">Puerta</a>
+        <a class="btn" href="{{ path('admin_colors_index', {type:'body'}) }}">Cuerpo</a>
+        <a class="btn primary" href="{{ path('admin_colors_new', {type: type}) }}">+ Añadir</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      {% for c in colors %}
+        <div class="color-card">
+          <div class="color-left">
+            <div class="swatch" style="--c: {{ c.hex }};"></div>
+            <div>
+              <div class="color-name">{{ c.name }}</div>
+              <div class="color-meta">
+                {{ c.hex }} · {{ c.type }}{% if c.ral %} · RAL {{ c.ral }}{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center;">
+            <a class="btn" href="{{ path('admin_colors_edit', {id: c.id}) }}">Editar</a>
+
+            <form class="trash-form" method="post" action="{{ path('admin_colors_delete', {id: c.id}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete_color_' ~ c.id) }}">
+              <button class="trash-btn" type="submit" onclick="return confirm('¿Eliminar color?')" aria-label="Eliminar">
+                <!-- papelera -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M6 7l1 14h10l1-14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M9 7V4h6v3" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <div style="opacity:.75;">No hay colores para este tipo.</div>
+      {% endfor %}
+    </div>
+
+    <div style="margin-top:16px;">
+      <a class="btn" href="{{ path('admin_dashboard') }}">← Volver</a>
     </div>
   </div>
-
-  <table style="width:100%; margin-top:16px; border-collapse:collapse;">
-    <thead>
-      <tr style="text-align:left;">
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Hex</th>
-        <th>Ral</th>
-        <th>Muestra</th>
-        <th style="width:220px;">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for c in colors %}
-      <tr style="border-top:1px solid rgba(0,0,0,.1);">
-        <td>{{ c.id }}</td>
-        <td>{{ c.name }}</td>
-        <td>{{ c.hex }}</td>
-         <td>{{ c.ral }}</td>
-        <td>
-          <span style="display:inline-block; width:26px; height:26px; border-radius:8px; border:1px solid rgba(0,0,0,.2); background: {{ c.hex }};"></span>
-        </td>
-        <td>
-          <a class="secondary-btn" href="{{ path('admin_colors_edit', {id: c.id}) }}">Editar</a>
-
-          <form method="post" action="{{ path('admin_colors_delete', {id: c.id}) }}" style="display:inline;">
-            <input type="hidden" name="_token" value="{{ csrf_token('delete_color_' ~ c.id) }}">
-            <button class="secondary-btn" type="submit" onclick="return confirm('¿Eliminar color?')">
-              Eliminar
-            </button>
-          </form>
-        </td>
-      </tr>
-    {% else %}
-      <tr>
-        <td colspan="5" style="padding:10px; opacity:.75;">No hay colores para este tipo.</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-
-  <div style="margin-top:20px;">
-    <a class="secondary-btn" href="{{ path('admin_dashboard') }}">← Volver</a>
-  </div>
-
 </div>
 {% endblock %}

@@ -25,7 +25,8 @@ class GeminiImageService
         string $img1Binary, string $img1Mime,
         string $img2Binary, string $img2Mime
     ) {
-        $model = 'gemini-1.5-flash';
+       $model = 'gemini-2.5-flash-image';
+
 
 
         $url = sprintf(

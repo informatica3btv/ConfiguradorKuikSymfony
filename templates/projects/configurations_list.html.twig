@@ -4,59 +4,184 @@
 {% block stylesheets %}
   {{ parent() }}
   <style>
-    :root{ --hscale: 1px; } /* mini: 1H = 1px */
+    :root{ --hscale: 1.7; }
 
-    .wrap{ max-width: 1400px; margin: 22px auto; padding: 0 10px; }
-    .muted{ color:#6b7280; font-size:18px; }
+    /* ===== PAGE WRAP ===== */
+    .wrap{ max-width: 1400px; margin: 26px auto; padding: 0 14px; }
+    .muted{ color:#6b7280; font-size:16px; }
 
+    h1.page-title{
+      margin:0;
+      font-size:34px;
+      letter-spacing:-0.02em;
+    }
+
+    /* ===== TOP INFO BAR (cliente/email/teléfono/ubicación) ===== */
+    .info-bar{
+      margin-top:14px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:14px;
+      padding:14px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+      align-items:center;
+    }
+    @media (max-width: 1020px){
+      .info-bar{ grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 620px){
+      .info-bar{ grid-template-columns: 1fr; }
+    }
+
+    .info-item{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:52px;
+    }
+    .info-ico{
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      background: rgba(11,118,216,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 44px;
+    }
+    .info-ico svg{ display:block; }
+    .info-k{ font-size:12px; color:#6b7280; font-weight:900; }
+    .info-v{ font-size:14px; font-weight:900; margin-top:2px; }
+
+    /* ===== ACTIONS ROW ===== */
+    .top-actions{
+      margin-top:14px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    /* ===== CARDS ===== */
     .card{
       background:#fff;
       border:1px solid rgba(15,23,42,.12);
       border-radius:16px;
-      padding:12px;
-      margin-top:12px;
+      padding:16px;
+      margin-top:16px;
     }
 
-    .row{
+    /* ===== CONFIG ITEM CARD ===== */
+    .config-head{
       display:flex;
+      align-items:flex-start;
       justify-content:space-between;
       gap:14px;
-      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .config-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      font-weight:900;
+      font-size:18px;
+    }
+    .config-sub{
+      margin-top:6px;
+      color:#6b7280;
+      font-size:14px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
       flex-wrap:wrap;
     }
 
-    .left{
-      flex: 1 1 380px;
-      min-width: 320px;
-    }
-
-    .right{
-      flex: 0 0 320px;
-      min-width: 520px;
-    }
-
+    /* ===== BUTTONS ===== */
     .btn{
       border:1px solid rgba(15,23,42,.12);
       background:#fff;
-      border-radius:999px;
-      padding:8px 12px;
+      border-radius:12px;
+      padding:10px 14px;
       font-weight:900;
       cursor:pointer;
-      display:inline-block;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
       text-decoration:none;
       color:#0b1220;
-      font-size:12px;
+      font-size:13px;
+      box-shadow: 0 1px 0 rgba(15,23,42,.04);
     }
-    .btn.primary{ background:#0b76d8; border-color:#0b76d8; color:#fff; }
+    .btn:hover{ background: rgba(2,6,23,.03); }
+    .btn.primary{
+      background:#0b76d8;
+      border-color:#0b76d8;
+      color:#fff;
+    }
+    .btn.primary:hover{ filter: brightness(.97); }
+    .btn.icon svg{ display:block; }
 
-    .btn-row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    /* ===== BODY GRID (kvs + preview) ===== */
+    .config-body{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .config-body{ grid-template-columns: 1fr; }
+    }
 
-    /* ===== MINI PREVIEW ===== */
-    .mini-wrap{
-      border:1px solid rgba(15,23,42,.10);
+    /* KV CARDS */
+    .kvs{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .kv{
+      border:0;
       border-radius:14px;
-      padding:10px;
-      background:#fbfcfe;
+      padding:14px;
+      background:#f8fafc;
+      min-height:74px;
+    }
+    .kv .k{ font-size:12px; color:#6b7280; font-weight:900; }
+    .kv .v{ font-size:14px; font-weight:900; margin-top:4px; }
+
+    .kv.wide{ grid-column: 1 / -1; }
+
+    /* Color swatch */
+    .swatch{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+    }
+    .dot{
+      width:14px;
+      height:14px;
+      border-radius:4px;
+      border:1px solid rgba(0,0,0,.15);
+      display:inline-block;
+    }
+
+    /* ===== MINI PREVIEW (NO CAMBIAR DIBUJO) ===== */
+    .mini-wrap{
+      border:0;
+      border-radius:14px;
+      padding:14px;
+      background:#f8fafc;
+    }
+    .mini-title{
+      font-weight:900;
+      color:#0b1220;
+      margin-bottom:10px;
     }
 
     .cols{
@@ -66,7 +191,7 @@
       margin-top:6px;
     }
 
-    .col-shell{ width:90px; display:flex; flex-direction:column; gap:5px; }
+    .col-shell{ width:80px; display:flex; flex-direction:column; gap:5px; }
     .col-topbar{
       padding:5px 7px;
       border-radius:8px;
@@ -78,7 +203,7 @@
     }
 
     .col-card{
-      width:90px;
+      width:80px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:3px;
@@ -91,14 +216,14 @@
     }
 
     .col-body{
-      height:calc(180 * var(--hscale));
+      height:calc(180px * var(--hscale));
       background:#eaeaea;
       display:flex;
       flex-direction:column;
     }
 
     .col-half{
-      height:calc(90 * var(--hscale));
+      height:calc(90px * var(--hscale));
       display:flex;
       flex-direction:column;
       overflow:hidden;
@@ -113,6 +238,9 @@
       border-top:1px solid rgba(44,62,80,.7);
       background: var(--door-color, #3a9efc);
       position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
     .door.last{ border-bottom:1px solid rgba(44,62,80,.7); }
 
@@ -129,43 +257,116 @@
       line-height:1.2;
     }
 
-    .kvs{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:8px;
-      margin-top:8px;
+    .door.screen{ padding:3px; }
+    .door.screen img{
+      width:135%;
+      height:135%;
+      object-fit:contain;
+      pointer-events:none;
+      user-select:none;
     }
-    .kv{
+
+    /* helper */
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
       border:1px solid rgba(15,23,42,.10);
-      border-radius:12px;
-      padding:8px 10px;
       background:#fff;
+      margin-left:6px;
     }
-    .kv .k{ font-size:11px; color:#6b7280; font-weight:900; }
-    .kv .v{ font-size:12px; font-weight:900; margin-top:3px; }
   </style>
 {% endblock %}
 
 {% block content %}
 <div class="wrap">
 
-  <h2 style="margin:0; font-size: 34px;">Configuraciones del proyecto</h2>
+  <h1 class="page-title">Configuraciones del proyecto</h1>
   <div class="muted" style="margin-top:6px;">
     Proyecto: <b>{{ project.projectName }}</b> · Cliente: <b>{{ project.clientName }}</b>
   </div>
 
-<div class="card" style="margin-top:14px;">
-    <div class="btn-row" style="justify-content:flex-start;">
-      <a class="btn" href="{{ path('projects_list', { user_id: app.user.id }) }}">
-        Volver a proyectos
-      </a>
-      <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
-        Nueva configuración
-      </a>
+  {# Barra info (si algún campo no existe, muestra —) #}
+  <div class="info-bar">
+    <div class="info-item">
+      <div class="info-ico" aria-hidden="true">
+        <!-- user -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="#0b76d8" stroke-width="2"/>
+          <path d="M4 21a8 8 0 0 1 16 0" stroke="#0b76d8" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="info-k">Cliente</div>
+        <div class="info-v">{{ project.clientName ?: '—' }}</div>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-ico" aria-hidden="true">
+        <!-- mail -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16v12H4V6Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
+          <path d="m4 7 8 6 8-6" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="info-k">Email</div>
+        <div class="info-v">{{ project.email ?: '—' }}</div>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-ico" aria-hidden="true">
+        <!-- phone -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1A19.5 19.5 0 0 1 3.2 10.8 19.8 19.8 0 0 1 .1 2.2 2 2 0 0 1 2.1 0h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L6 8a16 16 0 0 0 10 10l1.5-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6A2 2 0 0 1 22 16.9Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="info-k">Teléfono</div>
+        <div class="info-v">{{ project.phone ?: '—' }}</div>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <div class="info-ico" aria-hidden="true">
+        <!-- pin -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 22s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="#0b76d8" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="info-k">Ubicación</div>
+        <div class="info-v">{{ project.city ?: '—' }}</div>
+      </div>
     </div>
   </div>
+
+  <div class="top-actions">
+    <a class="btn" href="{{ path('projects_list', { user_id: app.user.id }) }}">
+      <!-- arrow -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver a proyectos
+    </a>
+
+    <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
+      <!-- plus -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Nueva configuración
+    </a>
+  </div>
+
   {% if items is empty %}
-    <div class="card" style="margin-top:14px;">
+    <div class="card">
       <b>No hay configuraciones aún.</b>
       <div style="margin-top:10px;">
         <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
@@ -176,9 +377,8 @@
   {% else %}
 
     {% for it in items %}
-        {% set c = it.configuration %}
-        {% set p = it.payload %}
-
+      {% set c = it.configuration %}
+      {% set p = it.payload %}
       {% if p is not iterable %}{% set p = {} %}{% endif %}
 
       {% set columns = p.columns ?? [] %}
@@ -187,137 +387,187 @@
       {% set type = p.type ?? '—' %}
 
       <div class="card">
-        <div class="row">
-
-          <div class="left">
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-              <div>
-                <div style="font-weight:900; font-size:16px;">
-                    
-                    Configuración #{{ c.id }}
-
-                    {% if c.status == 0 %}
-                        <span class="badge open">Abierta</span>
-                    {% elseif c.status == 1 %}
-                        <span class="badge closed">Cerrada</span>
-                    {% else %}
-                        <span class="badge accepted">Aceptada</span>
-                    {% endif %}
-
-                </div>
-
-                <div class="muted" style="margin-top:4px;">
-                  Tipo: <b>{{ type }}</b>
-                  {% if c.createdAt is defined and c.createdAt %}
-                    · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
-                  {% endif %}
-                </div>
-              </div>
-
-              <div class="btn-row">
-                <a class="btn" href="{{ path('configuration_summary', { id: c.id }) }}">Resumen</a>
-
-                <a class="btn primary"
-                   href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
-                  Editar
-                </a>
-
-                <a class="btn" href="{{ path('configuration_pdf', { id: c.id }) }}">PDF</a>
-              </div>
+        <div class="config-head">
+          <div>
+            <div class="config-title">
+              Configuración #{{ c.id }}
+              {% if c.status == 0 %}
+                <span class="badge open">Abierta</span>
+              {% elseif c.status == 1 %}
+                <span class="badge closed">Cerrada</span>
+              {% else %}
+                <span class="badge accepted">Aceptada</span>
+              {% endif %}
             </div>
 
+            <div class="config-sub">
+              Tipo: <b>{{ type }}</b>
+              {% if c.createdAt is defined and c.createdAt %}
+                · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="actions">
+            <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
+              <!-- copy -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Copiar
+            </a>
+
+            <a class="btn icon" href="{{ path('configuration_summary', { id: c.id }) }}">
+              <!-- file -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              Resumen
+            </a>
+
+            <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
+              <!-- edit -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              Editar
+            </a>
+
+            {# ✅ mantener botón PDF #}
+            <a class="btn icon" href="{{ path('configuration_pdf', { id: c.id }) }}">
+              <!-- pdf/doc -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              PDF
+            </a>
+          </div>
+        </div>
+
+        <div class="config-body">
+          <div>
             <div class="kvs">
-            <div class="kv">
+              <div class="kv">
                 <div class="k">Estado</div>
                 <div class="v">{{ c.statusLabel }}</div>
-            </div>
+              </div>
 
               <div class="kv">
                 <div class="k">Columnas</div>
                 <div class="v">{{ columns|length }}</div>
               </div>
+
               <div class="kv">
                 <div class="k">Color cuerpo</div>
-                <div class="v">{{ bodyColor }}</div>
+                <div class="v">
+                  <span class="swatch">
+                    <span class="dot" style="background: {{ bodyColor }};"></span>
+                    {{ bodyColor }}
+                  </span>
+                </div>
               </div>
+
               <div class="kv">
                 <div class="k">Color puerta</div>
-                <div class="v">{{ doorColor }}</div>
+                <div class="v">
+                  <span class="swatch">
+                    <span class="dot" style="background: {{ doorColor }};"></span>
+                    {{ doorColor }}
+                  </span>
+                </div>
               </div>
-              <div class="kv">
+
+              <div class="kv wide">
                 <div class="k">Config ID</div>
                 <div class="v">#{{ c.id }}</div>
               </div>
             </div>
           </div>
 
-          <div class="right">
-            <div class="mini-wrap">
-              <div style="font-weight:900; color:#003b73;">Vista previa</div>
-              <div class="muted" style="margin-top:3px;">
-                (miniatura)
+          <div class="mini-wrap">
+            <div class="mini-title">Vista previa (miniatura)</div>
+
+            {% if columns is empty %}
+              <div style="margin-top:8px; color:#c0392b; font-weight:900;">
+                Sin columnas
               </div>
+            {% else %}
+              {% set colsToShow = columns|slice(0, 4) %}
 
-              {% if columns is empty %}
-                <div style="margin-top:8px; color:#c0392b; font-weight:900;">
-                  Sin columnas
-                </div>
-              {% else %}
-                {# Mostrar solo las 4 primeras columnas para que no se desmadre #}
-                {% set colsToShow = columns|slice(0, 4) %}
+              {# ✅ NO cambiar forma de dibujar la miniatura: bloque intacto #}
+              <div class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+                {% set doorIndex = 0 %}
 
-                <div class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
-                  {% set doorIndex = 0 %}
+                {% for col in colsToShow %}
+                  <div class="col-shell">
+                    <div class="col-topbar">Col {{ loop.index }}</div>
 
-                  {% for col in colsToShow %}
-                    <div class="col-shell">
-                      <div class="col-topbar">Col {{ loop.index }}</div>
+                    <div class="col-card">
+                      <div class="col-body">
 
-                      <div class="col-card">
-                        <div class="col-body">
+                        <div class="col-half">
+                          {% for blk in (col.top.blocks ?? []) %}
+                            {% set hh = blk.h|default(blk) %}
+                            {% set btype = blk.type|default('door') %}
 
-                          <div class="col-half">
-                            {% for h in (col.top.blocks ?? []) %}
+                            {% if btype != 'screen' %}
                               {% set doorIndex = doorIndex + 1 %}
-                              <div class="door {% if loop.last %}last{% endif %}" style="height: {{ h * 1 }}px;">
+                            {% endif %}
+
+                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                 style="height: calc({{ hh }}px * var(--hscale));">
+                              {% if btype == 'screen' %}
+                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                              {% else %}
                                 <div class="num">{{ doorIndex }}</div>
-                              </div>
-                            {% endfor %}
-                          </div>
-
-                          <div class="half-sep"></div>
-
-                          <div class="col-half">
-                            {% for h in (col.bottom.blocks ?? []) %}
-                              {% set doorIndex = doorIndex + 1 %}
-                              <div class="door {% if loop.last %}last{% endif %}" style="height: {{ h * 1 }}px;">
-                                <div class="num">{{ doorIndex }}</div>
-                              </div>
-                            {% endfor %}
-                          </div>
-
+                              {% endif %}
+                            </div>
+                          {% endfor %}
                         </div>
+
+                        <div class="half-sep"></div>
+
+                        <div class="col-half">
+                          {% for blk in (col.bottom.blocks ?? []) %}
+                            {% set hh = blk.h|default(blk) %}
+                            {% set btype = blk.type|default('door') %}
+
+                            {% if btype != 'screen' %}
+                              {% set doorIndex = doorIndex + 1 %}
+                            {% endif %}
+
+                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                 style="height: calc({{ hh }}px * var(--hscale));">
+                              {% if btype == 'screen' %}
+                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                              {% else %}
+                                <div class="num">{{ doorIndex }}</div>
+                              {% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+
                       </div>
                     </div>
-                  {% endfor %}
-                </div>
-
-                {% if columns|length > 4 %}
-                  <div class="muted" style="margin-top:6px;">
-                    Mostrando 3 de {{ columns|length }} columnas…
                   </div>
-                {% endif %}
-              {% endif %}
-            </div>
-          </div>
+                {% endfor %}
+              </div>
 
+              {% if columns|length > 4 %}
+                <div class="muted" style="margin-top:10px;">
+                  Mostrando 4 de {{ columns|length }} columnas…
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
         </div>
       </div>
     {% endfor %}
 
   {% endif %}
-
-  
-
 </div>
 {% endblock %}

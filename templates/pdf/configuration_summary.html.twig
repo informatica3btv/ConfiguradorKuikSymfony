@@ -1,3 +1,5 @@
+{% set pxPerH = 2.2 %} {# ✅ +10% (antes 2) #}
+
 <!doctype html>
 <html lang="es">
 <head>
@@ -12,24 +14,26 @@
       padding-bottom: 10px;
       margin-bottom: 14px;
     }
+
     .brand{
       font-size: 16px;
       font-weight: 900;
       margin:0;
       color:#003b73;
     }
+
     .doc-title{
       font-size: 18px;
       font-weight: 900;
       margin: 2px 0 0;
     }
+
     .meta{
       margin-top: 6px;
       font-size: 11px;
       color:#6b7280;
     }
 
-    /* Blocks */
     .row{ font-size:0; margin-top: 10px; }
     .col{ display:inline-block; vertical-align: top; font-size:12px; }
     .col-50{ width:49%; }
@@ -105,8 +109,7 @@
       color:#111827;
     }
 
-    /* ===== Dibujo (portrait friendly) ===== */
-    :root{ --hscale: 2px; }  /* 1H = 2px */
+    :root{ --hscale: {{ pxPerH }}px; } 
 
     .preview-note{ margin: 2px 0 8px; }
 
@@ -116,7 +119,7 @@
     }
 
     .col-shell{
-      width:130px;
+      width:100px;
       display:inline-block;
       vertical-align: top;
       margin-right:10px;
@@ -135,7 +138,7 @@
     }
 
     .col-card{
-      width:130px;
+      width:100px;
       border-style:solid;
       border-left-width:4px;
       border-right-width:4px;
@@ -169,6 +172,7 @@
       border-right:1px solid rgba(11,18,32,.55);
       border-top:1px solid rgba(11,18,32,.55);
     }
+
     .door.last{ border-bottom:1px solid rgba(11,18,32,.55); }
 
     .door .num{
@@ -183,12 +187,14 @@
       padding:2px 6px;
       line-height:1.2;
     }
+
     .door .badges{
       position:absolute;
       right:6px;
       top:6px;
       white-space:nowrap;
     }
+
     .badge{
       display:inline-block;
       font-size:9px;
@@ -200,6 +206,31 @@
       margin-left:4px;
     }
 
+    .door.screen{
+      position:relative;
+      background:#0f172a;
+    }
+
+    .door.screen .screen-img{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      width:95%;
+      height:105%;
+      display:block;
+    }
+
+    /* opcional: marco */
+    .door.screen:before{
+      content:"";
+      position:absolute;
+      left:10px; right:10px;
+      top:10px; bottom:10px;
+      border-radius:6px;
+      pointer-events:none;
+    }
+
     .footer{
       margin-top: 12px;
       border-top: 1px solid #e5e7eb;
@@ -209,6 +240,7 @@
     }
   </style>
 </head>
+
 <body>
 <div class="page">
 
@@ -221,15 +253,16 @@
   {% set doorColor = p.colorDoor ?? '#3a9efc' %}
   {% set bodyColor = p.colorBody ?? '#000' %}
 
-  {# Etiquetas más “humanas” #}
-  {% set bg = p.background_size ?? '' %}
-  {% set placement = p.placement ?? '' %}
+  {# ✅ claves nuevas (dynamic attrs por value del type)
+     Ej: fondo => "300", material => "inox", etc #}
+  {% set fondo = p.fondo ?? '' %}
   {% set material = p.material ?? '' %}
+  {% set placement = p.placement ?? '' %}
 
-  {% set bgLabel =
-    bg == 'small'  ? 'Serie 300' :
-    bg == 'medium' ? 'Serie 400' :
-    bg == 'large'  ? 'Serie 500' : (bg ?: '—')
+  {% set fondoLabel =
+    fondo == '300' ? 'Serie 300' :
+    fondo == '400' ? 'Serie 400' :
+    fondo == '500' ? 'Serie 500' : (fondo ?: '—')
   %}
   {% set placementLabel =
     placement == 'interior' ? 'Interior' :
@@ -237,7 +270,7 @@
   %}
 
   {# =========================
-     Cálculo puertas + addons
+     Cálculo puertas + addons (✅ soporta screen)
      ========================= #}
   {% set doorCounts = {} %}
   {% set totalDoors = 0 %}
@@ -245,31 +278,43 @@
   {% set usbCount = 0 %}
 
   {% for col in columns %}
-    {% for h in (col.top.blocks ?? []) %}
-      {% set totalDoors = totalDoors + 1 %}
-      {% set key = 'H' ~ h %}
-      {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
-      {% set sel = addons[totalDoors ~ ''] ?? null %}
-      {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
-      {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+    {% for blk in (col.top.blocks ?? []) %}
+      {% set bType = blk.type ?? 'door' %}
+      {% set h = blk.h ?? blk %}
+
+      {% if bType != 'screen' %}
+        {% set totalDoors = totalDoors + 1 %}
+        {% set key = 'H' ~ h %}
+        {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
+
+        {% set sel = addons[totalDoors ~ ''] ?? null %}
+        {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
+        {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+      {% endif %}
     {% endfor %}
-    {% for h in (col.bottom.blocks ?? []) %}
-      {% set totalDoors = totalDoors + 1 %}
-      {% set key = 'H' ~ h %}
-      {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
-      {% set sel = addons[totalDoors ~ ''] ?? null %}
-      {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
-      {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+
+    {% for blk in (col.bottom.blocks ?? []) %}
+      {% set bType = blk.type ?? 'door' %}
+      {% set h = blk.h ?? blk %}
+
+      {% if bType != 'screen' %}
+        {% set totalDoors = totalDoors + 1 %}
+        {% set key = 'H' ~ h %}
+        {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
+
+        {% set sel = addons[totalDoors ~ ''] ?? null %}
+        {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
+        {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+      {% endif %}
     {% endfor %}
   {% endfor %}
 
   {# =========================
-     Cabecera presupuesto
+     Cabecera
      ========================= #}
   <div class="head">
     <div class="row" style="margin-top:0;">
       <div class="col col-50">
-        {# <img src="{{ absolute_url(asset('images/logo-kuik.png')) }}" style="height:38px; display:block; margin-bottom:6px;"> #}
         <p class="brand">Kuik</p>
         <p class="muted" style="margin:2px 0 0;">
           Documento técnico (sin precios)<br>
@@ -287,7 +332,7 @@
   </div>
 
   {# =========================
-     Cliente + Proyecto (2 por fila ✅)
+     Cliente + Proyecto
      ========================= #}
   <div class="card">
     <h3>Datos del cliente</h3>
@@ -328,7 +373,7 @@
   </div>
 
   {# =========================
-     Vista previa (justo debajo)
+     Vista previa (✅ screen igual + imagen centrada)
      ========================= #}
   <div class="card">
     <h3>Vista previa (columnas)</h3>
@@ -346,40 +391,69 @@
           <div class="col-shell">
             <div class="col-topbar">Columna {{ loop.index }}</div>
 
-            <div class="col-card" style="border-color: {{ bodyColor }};">
+           <div class="col-card" style="border-color: {{ bodyColor }}; background: {{ bodyColor }};">
+
               <div class="col-body">
 
+                {# TOP #}
                 <div class="col-half">
-                  {% for h in (col.top.blocks ?? []) %}
-                    {% set doorIndex = doorIndex + 1 %}
-                    {% set sel = addons[doorIndex ~ ''] ?? null %}
+                  {% for blk in (col.top.blocks ?? []) %}
+                    {% set bType = blk.type ?? 'door' %}
+                    {% set h = blk.h ?? blk %}
 
-                    <div class="door {% if loop.last %}last{% endif %}"
-                         style="height: {{ h * 2 }}px; background: {{ doorColor }};">
-                      <div class="num">{{ doorIndex }}</div>
-                      <div class="badges">
-                        {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
-                        {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                    {% if bType == 'screen' %}
+                      <div class="door screen {% if loop.last %}last{% endif %}"
+                           style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                        <img
+                          class="screen-img"
+                          src="{{ absolute_url(asset('assets/pantalla.png')) }}"
+                          alt="Pantalla"
+                        >
                       </div>
-                    </div>
+                    {% else %}
+                      {% set doorIndex = doorIndex + 1 %}
+                      {% set sel = addons[doorIndex ~ ''] ?? null %}
+
+                      <div class="door {% if loop.last %}last{% endif %}"
+                           style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                        <div class="badges">
+                          {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
+                          {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                        </div>
+                      </div>
+                    {% endif %}
                   {% endfor %}
                 </div>
 
                 <div class="half-sep"></div>
 
+                {# BOTTOM #}
                 <div class="col-half">
-                  {% for h in (col.bottom.blocks ?? []) %}
-                    {% set doorIndex = doorIndex + 1 %}
-                    {% set sel = addons[doorIndex ~ ''] ?? null %}
+                  {% for blk in (col.bottom.blocks ?? []) %}
+                    {% set bType = blk.type ?? 'door' %}
+                    {% set h = blk.h ?? blk %}
 
-                    <div class="door {% if loop.last %}last{% endif %}"
-                         style="height: {{ h * 2 }}px; background: {{ doorColor }};">
-                      <div class="num">{{ doorIndex }}</div>
-                      <div class="badges">
-                        {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
-                        {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                    {% if bType == 'screen' %}
+                      <div class="door screen {% if loop.last %}last{% endif %}"
+                           style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                        <img
+                          class="screen-img"
+                          src="{{ absolute_url(asset('assets/pantalla.png')) }}"
+                          alt="Pantalla"
+                        >
                       </div>
-                    </div>
+                    {% else %}
+                      {% set doorIndex = doorIndex + 1 %}
+                      {% set sel = addons[doorIndex ~ ''] ?? null %}
+
+                      <div class="door {% if loop.last %}last{% endif %}"
+                           style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                        <div class="badges">
+                          {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
+                          {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
+                        </div>
+                      </div>
+                    {% endif %}
                   {% endfor %}
                 </div>
 
@@ -401,7 +475,7 @@
         <table>
           <tbody>
             <tr><th>Tipo</th><td><span class="pill">{{ p.type ?? '—' }}</span></td></tr>
-            <tr><th>Medida de fondo</th><td>{{ bgLabel }}</td></tr>
+            <tr><th>Medida de fondo</th><td>{{ fondoLabel }}</td></tr>
             <tr><th>Interior / Exterior</th><td>{{ placementLabel }}</td></tr>
             <tr><th>Material</th><td>{{ material ?: '—' }}</td></tr>
             <tr><th>Color puerta</th><td>{{ doorColor }}</td></tr>

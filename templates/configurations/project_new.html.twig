@@ -5,31 +5,49 @@
 {% block stylesheets %}
   {{ parent() }}
   <style>
-    body{
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:#f6f9fc;
-      color:#0b1220;
+    :root{
+      --bg:#f6f9fc;
+      --ink:#0b1220;
+      --muted:#6b7280;
+      --line: rgba(15,23,42,.12);
+      --card:#fff;
+      --shadow: 0 10px 25px rgba(2,20,60,.10);
+      --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8;
     }
 
-    .config-form{
+    .wrap{
       max-width: 980px;
-      margin: 28px auto 60px;
-      padding: 10px 10px 30px;
-      font-size: 16px;
+      margin: 26px auto 70px;
+      padding: 0 14px;
+    }
+
+    .page-title{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-.02em;
+      margin:0;
+    }
+
+    .page-sub{
+      color:var(--muted);
+      margin-top:6px;
+      font-size:16px;
     }
 
     .card{
-      background:#fff;
-      border:1px solid rgba(15,23,42,.12);
-      border-radius:18px;
-      padding:18px;
-      box-shadow: 0 6px 14px rgba(2,20,60,.06);
+      margin-top:18px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:24px;
+      box-shadow: var(--shadow);
     }
 
     .grid{
       display:grid;
       grid-template-columns: repeat(2, 1fr);
-      gap:12px;
+      gap:16px;
     }
 
     .field label{
@@ -41,36 +59,38 @@
 
     .field input{
       width:100%;
-      padding:12px 14px;
+      padding:14px 16px;
       border-radius:14px;
       border:1px solid rgba(15,23,42,.14);
       background:#fff;
       outline:none;
       transition:.15s;
+      font-size:15px;
     }
 
     .field input:focus{
-      border-color:#1187e6;
-      box-shadow:0 0 0 4px rgba(17,135,230,.15);
+      border-color:var(--blue);
+      box-shadow:0 0 0 4px rgba(11,118,216,.15);
     }
 
     .primary-btn{
-      padding:14px 24px;
+      padding:14px 26px;
       border-radius:999px;
       border:0;
       background:linear-gradient(135deg,#0b76d8,#1187e6);
       color:#fff;
-      font-weight:800;
+      font-weight:900;
       cursor:pointer;
       box-shadow:0 10px 20px rgba(17,135,230,.25);
       transition:.15s;
       white-space:nowrap;
+      font-size:15px;
     }
     .primary-btn:hover{ transform:translateY(-1px); }
 
     .warn{
       color:#b91c1c;
-      font-weight:700;
+      font-weight:800;
       font-size:14px;
     }
 
@@ -81,54 +101,70 @@
 {% endblock %}
 
 {% block content %}
-  {# Enviamos por GET a tu siguiente paso.
-     Cambia 'configuration_type_columns' por tu ruta real (la de tu pantalla de opciones).
-  #}
-  <form method="post" action="{{ path('configuration_project_create') }}"  id="projectForm" class="config-form" novalidate>
-    {# Si ya vienes con un config_id (por ejemplo edición) puedes mantenerlo #}
-    <input type="hidden" name="config_id" value="{{ config_id ?? '' }}">
+<div class="wrap">
 
-    <h3 style="margin:16px 0 8px;">Crear proyecto</h3>
+  <div>
+    <div class="page-title">Crear proyecto</div>
+    <div class="page-sub">Introduce los datos del cliente y del proyecto</div>
+  </div>
+
+  <form method="post"
+        action="{{ path('configuration_project_create') }}"
+        id="projectForm"
+        novalidate>
+
+    <input type="hidden" name="config_id" value="{{ config_id ?? '' }}">
 
     <div class="card">
       <div class="grid">
+
         <div class="field">
           <label for="project_name">Nombre del proyecto *</label>
-          <input id="project_name" name="project_name" type="text" placeholder="Ej. Proyecto Madrid 01" required>
+          <input id="project_name" name="project_name" type="text"
+                 placeholder="Ej. Proyecto Madrid 01" required>
         </div>
 
         <div class="field">
           <label for="client_name">Nombre del cliente *</label>
-          <input id="client_name" name="client_name" type="text" placeholder="Ej. Juan Pérez" required>
+          <input id="client_name" name="client_name" type="text"
+                 placeholder="Ej. Juan Pérez" required>
         </div>
 
         <div class="field">
           <label for="phone">Teléfono</label>
-          <input id="phone" name="phone" type="tel" placeholder="Ej. 600 123 456">
+          <input id="phone" name="phone" type="tel"
+                 placeholder="Ej. 600 123 456">
         </div>
 
         <div class="field">
           <label for="email">Correo</label>
-          <input id="email" name="email" type="email" placeholder="Ej. cliente@correo.com">
+          <input id="email" name="email" type="email"
+                 placeholder="Ej. cliente@correo.com">
         </div>
 
         <div class="field">
           <label for="city">Ciudad</label>
-          <input id="city" name="city" type="text" placeholder="Ej. Madrid">
+          <input id="city" name="city" type="text"
+                 placeholder="Ej. Madrid">
         </div>
 
         <div class="field">
           <label for="address">Dirección</label>
-          <input id="address" name="address" type="text" placeholder="Ej. Calle Mayor 10">
+          <input id="address" name="address" type="text"
+                 placeholder="Ej. Calle Mayor 10">
         </div>
+
       </div>
 
-      <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
-        <button type="submit" class="primary-btn">Crear y continuar</button>
+      <div style="margin-top:22px; display:flex; gap:12px; align-items:center;">
+        <button type="submit" class="primary-btn">
+          Crear y continuar
+        </button>
         <div id="projectError" class="warn"></div>
       </div>
     </div>
   </form>
+</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -151,18 +187,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (missing.length) {
       e.preventDefault();
       err.textContent = 'Rellena los campos obligatorios (*) para continuar.';
-      // foco al primero
       document.getElementById(missing[0]).focus();
       return;
     }
 
-    // Validación simple de email si está informado
     const email = document.getElementById('email').value.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.preventDefault();
       err.textContent = 'El correo no tiene un formato válido.';
       document.getElementById('email').focus();
-      return;
     }
   });
 });

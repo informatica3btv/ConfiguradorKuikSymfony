@@ -74,23 +74,17 @@
   <input type="hidden" name="type" id="type" value="">
 
   <div style="margin:16px 0;">
-    <h3 style="margin-bottom: 8px;">Selecciona tipo de columna</h3>
+    <h3 style="margin-bottom: 8px; font-size="24px">Selecciona tipo de configuracion</h3>
 
     <div class="option-row" data-group="type" style="grid-template-columns:repeat(3,1fr);">
-      <button type="button" class="option-card" data-value="taquilla">
-        <div class="option-title">Taquillas</div>
-        <div class="option-sub">Columnas estándar</div>
-      </button>
 
-      <button type="button" class="option-card" data-value="frigo">
-        <div class="option-title">Frigorífico</div>
-        <div class="option-sub">Para frío</div>
-      </button>
+      {% for type in types %}
 
-      <button type="button" class="option-card" data-value="perifericos">
-        <div class="option-title">Periféricos</div>
-        <div class="option-sub">Columna técnica</div>
-      </button>
+        <button type="button" class="option-card" data-value="{{type.value}}">
+          <div class="option-title">{{type.name}}</div>
+        </button>
+
+      {% endfor %}
     </div>
   </div>
 

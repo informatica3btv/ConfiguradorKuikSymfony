@@ -1,430 +1,549 @@
+{# templates/home.html.twig (o donde lo tengas) #}
 {% extends 'layout.html.twig' %}
 
 {% block page_title %}Configurador{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
-<style>
-:root{
-  /* ✅ +40% altura (antes 2px) */
-  --hscale: 4.16px;
+  <style>
+    :root{
+      /* ✅ no tocamos tu escala (la usa el JS) */
+      --hscale: 4.16px;
 
-  --kuik-blue-900:#003b73;
-  --kuik-blue-700:#005fae;
-  --kuik-blue-600:#0b76d8;
-  --kuik-blue-500:#1187e6;
+      --kuik-blue-900:#003b73;
+      --kuik-blue-700:#005fae;
+      --kuik-blue-600:#0b76d8;
+      --kuik-blue-500:#1187e6;
 
-  --bg:#f6f9fc;
-  --ink:#0b1220;
-  --muted:#6b7280;
-  --line: rgba(15, 23, 42, .12);
+      --bg:#f6f9fc;
+      --ink:#0b1220;
+      --muted:#6b7280;
+      --line: rgba(15, 23, 42, .12);
 
-  --success:#2ecc71;
-  --danger:#e74c3c;
+      --success:#2ecc71;
+      --danger:#e74c3c;
 
-  --shadow: 0 10px 25px rgba(2,20,60,.10);
-  --shadow-sm: 0 6px 14px rgba(2,20,60,.10);
+      --shadow: 0 10px 25px rgba(2,20,60,.10);
+      --shadow-sm: 0 6px 14px rgba(2,20,60,.10);
 
-  --col-border: #000;
-}
+      --col-border:#000;
+    }
 
-*, *::before, *::after{ box-sizing:border-box; }
+    *, *::before, *::after{ box-sizing:border-box; }
 
-body{
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-}
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
 
-h1{ font-size:34px; font-weight:800; letter-spacing:-0.02em; }
-h2{ margin-top:28px; }
-h3{ font-size:16px; font-weight:800; }
+    .page-wrap{
+      max-width: 1100px;
+      margin: 26px auto 60px;
+      padding: 0 14px;
+    }
 
-/* OPCIONES */
-.option-row{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-}
-.option-row[data-group="placement"]{ grid-template-columns:repeat(2,1fr); }
+    .page-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
 
-.option-card{
-  padding:14px;
-  border-radius:16px;
-  border:1px solid var(--line);
-  background:#fff;
-  cursor:pointer;
-  transition:.15s;
-}
-.option-card:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
-.option-card.selected{
-  border-color:var(--kuik-blue-500);
-  box-shadow:0 0 0 4px rgba(17,135,230,.15);
-}
-.option-title{ font-weight:800; }
-.option-sub{ font-size:13px; color:var(--muted); }
+    .page-title{
+      margin:0;
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-0.02em;
+    }
+    .page-sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:15px;
+    }
 
-/* SELECTS */
-select{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:1px solid var(--line);
-  background:#fff;
-}
-select:focus{
-  outline:none;
-  box-shadow:0 0 0 4px rgba(17,135,230,.15);
-}
+    .section-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-top:14px;
+      box-shadow: 0 1px 0 rgba(15,23,42,.04);
+    }
 
-/* BOTONES */
-.primary-btn{
-  padding:12px 20px;
-  border-radius:999px;
-  border:0;
-  background:linear-gradient(135deg,var(--kuik-blue-600),var(--kuik-blue-500));
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-  box-shadow:0 10px 20px rgba(17,135,230,.25);
-  transition:.15s;
-}
-.primary-btn:hover{ transform:translateY(-1px); }
+    .section-title{
+      margin:0 0 10px;
+      font-size:16px;
+      font-weight:900;
+    }
 
-.secondary-btn{
-  padding:11px 16px;
-  border-radius:999px;
-  border:1px solid rgba(17,135,230,.25);
-  background:#fff;
-  font-weight:800;
-  color:var(--kuik-blue-700);
-  cursor:pointer;
-}
+    .section-help{
+      margin: -4px 0 12px;
+      color:var(--muted);
+      font-size:13px;
+    }
 
-/* BUILDER */
-.builder-wrap{
-  margin:18px 0;
-  padding:14px;
-  border:1px solid var(--line);
-  border-radius:20px;
-  background:#fff;
-  box-shadow:var(--shadow);
-}
-.builder-toolbar{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-bottom:12px;
-}
-.builder-toolbar label{ font-weight:800; }
+    .option-row{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+    .option-row[data-group="placement"]{ grid-template-columns:repeat(2,1fr); }
+    .option-row[data-group="material"]{ grid-template-columns:repeat(2,1fr); }
 
-.columns-grid{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-}
+    .option-card{
+      padding:16px;
+      border-radius:16px;
+      border:1px solid #000;
+      background:#fff;
+      cursor:pointer;
+      transition:.15s;
+      text-align:left;
+      box-shadow:  1px 0 rgba(15,23,42,.3);
+    }
+    .option-card:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+    .option-card.selected{
+      border-color:var(--kuik-blue-500);
+      box-shadow:0 0 0 6px rgba(17,135,230,.15);
+    }
+    .option-title{ font-weight:900; font-size:15px; }
+    .option-sub{ font-size:13px; color:var(--muted); margin-top:3px; }
 
-/* SHELL ✅ +30% ancho (160 * 1.3 = 208) */
-.col-shell{
-  width:190px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
+    @media (max-width: 780px){
+      .option-row{ grid-template-columns:1fr; }
+      .option-row[data-group="placement"]{ grid-template-columns:1fr; }
+      .option-row[data-group="material"]{ grid-template-columns:1fr; }
+    }
 
-.col-toolbar-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:6px 8px;
-  border-radius:8px;
-  background:linear-gradient(135deg,var(--kuik-blue-900),var(--kuik-blue-700));
-  color:#fff;
-  font-weight:900;
-  box-shadow:var(--shadow-sm);
-}
+    select{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid #636363;
+      background:#fff;
+      font-size:14px;
+    }
+    select:focus{
+      outline:none;
+      box-shadow:0 0 0 4px rgba(17,135,230,.15);
+    }
 
-.col-actions{ display:flex; gap:6px; }
-.icon-btn{
-  width:26px;
-  height:26px;
-  border-radius:50%;
-  border:0;
-  cursor:pointer;
-  font-weight:900;
-  line-height:26px;
-}
-.icon-plus{ background:var(--success); }
-.icon-del{ background:var(--danger); color:#fff; }
+    .primary-btn{
+      padding:12px 18px;
+      border-radius:12px;
+      border:1px solid rgba(11,118,216,.15);
+      background: #0b76d8;
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      transition:.15s;
+      box-shadow: 0 10px 20px rgba(17,135,230,.18);
+    }
+    .primary-btn:hover{ filter: brightness(.98); transform: translateY(-1px); }
 
-/* COLUMNA ✅ +30% ancho */
-.col-card{
-  width:190px;
-  border-style:solid;
-  border-color:var(--col-border);
-  border-left-width:4px;
-  border-right-width:4px;
-  border-top-width:8px;
-  border-bottom-width:8px;
-  border-radius:8px;
-  overflow:hidden;
-  background:#f7f7f7;
-}
+    .secondary-btn{
+      padding:11px 16px;
+      border-radius:12px;
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      font-weight:900;
+      color:#0b1220;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+    }
+    .secondary-btn:hover{ background: rgba(2,6,23,.03); }
 
-.col-body{
-  height:calc(180 * var(--hscale));
-  background:#eaeaea;
-  display:flex;
-  flex-direction:column;
-  padding:0;
-  gap:0;
-}
+    .builder-wrap{
+      margin:0;
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+    }
 
-.col-half{
-  height:calc(90 * var(--hscale));
-  display:flex;
-  flex-direction:column;
-  padding:0;
-  gap:0;
-  overflow:hidden;
-}
+    .builder-toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#f8fafc;
+    }
+    .builder-toolbar label{ font-weight:900; font-size:13px; color:#111827; }
+    .builder-toolbar span{ color:var(--muted); }
 
-.half-separator{
-  border-top:2px dashed rgba(0,0,0,.3);
-  height:0;
-  margin:0;
-}
+    .columns-grid{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      padding:6px 2px 2px;
+    }
 
-/* BLOQUES */
-.block{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:900;
-  color:#0b0b0b;
-  background:#3a9efc;
+    /* ====== TU DIBUJO ====== */
+    .col-shell{
+      width:190px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
 
-  border-left:2px solid #2c3e50;
-  border-right:2px solid #2c3e50;
-  border-top:2px solid #2c3e50;
+    .col-toolbar-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:12px;
+      background: linear-gradient(135deg, var(--kuik-blue-900), var(--kuik-blue-700));
+      color:#fff;
+      font-weight:900;
+      box-shadow: 0 6px 14px rgba(2,20,60,.10);
+    }
 
-  margin:0;
-  border-radius:0;
-  box-shadow:none;
-  cursor:grab;
-  position:relative;
-}
+    .col-actions{ display:flex; gap:8px; }
+    .icon-btn{
+      width:28px;
+      height:28px;
+      border-radius:999px;
+      border:0;
+      cursor:pointer;
+      font-weight:900;
+      line-height:28px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 12px rgba(0,0,0,.10);
+    }
+    .icon-plus{ background:var(--success); color:#fff; }
+    .icon-del{ background:var(--danger); color:#fff; }
 
-.col-half .block:last-child{ border-bottom:2px solid #2c3e50; }
+    .col-card{
+      width:190px;
+      border-style:solid;
+      border-color:var(--col-border);
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:12px;
+      overflow:hidden;
+      background:#f7f7f7;
+      box-shadow: 0 10px 20px rgba(2,20,60,.08);
+    }
 
-.block.dragging{ opacity:.55; cursor:grabbing; }
+    .col-body{
+      height:calc(180 * var(--hscale));
+      background:#eaeaea;
+      display:flex;
+      flex-direction:column;
+      padding:0;
+      gap:0;
+    }
 
-/* BLOQUE PANTALLA */
-.block.screen{ padding:6px; }
-.block.screen img{
-  width:125%;
-  height:125%;
-  object-fit:contain;
-  pointer-events:none;
-  user-select:none;
-}
+    .col-half{
+      height:calc(90 * var(--hscale));
+      display:flex;
+      flex-direction:column;
+      padding:0;
+      gap:0;
+      overflow:hidden;
+    }
 
-/* BOTON ELIMINAR */
-.block .delete-block{
-  position:absolute;
-  top:2px;
-  right:6px;
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  border:0;
-  background:rgba(0,0,0,.75);
-  color:#fff;
-  font-weight:900;
-  line-height:22px;
-  cursor:pointer;
-  opacity:0;
-  transform:scale(.9);
-  transition:.12s;
-  pointer-events:none;
-}
-.block:hover .delete-block{
-  opacity:1;
-  transform:scale(1);
-  pointer-events:auto;
-}
-.block .delete-block:hover{ background:rgba(231,76,60,.95); }
+    .half-separator{
+      border-top:2px dashed rgba(0,0,0,.25);
+      height:0;
+      margin:0;
+    }
 
-/* DND */
-.col-half.drag-over{
-  outline:2px dashed rgba(0,0,0,.35);
-  outline-offset:-2px;
-}
-.drop-indicator{
-  height:6px;
-  background:rgba(0,0,0,.35);
-  margin:0;
-  border-radius:0;
-}
+    .block{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      color:#0b0b0b;
+      background:#3a9efc;
 
-/* FOOT */
-.col-foot{
-  text-align:center;
-  font-size:12px;
-  padding:6px;
-  background:#fff;
-  border:2px solid #000;
-  border-radius:8px;
-}
+      border-left:2px solid #2c3e50;
+      border-right:2px solid #2c3e50;
+      border-top:2px solid #2c3e50;
 
-.warn{ color:#c0392b; font-weight:800; }
+      margin:0;
+      border-radius:0;
+      box-shadow:none;
+      cursor:grab;
+      position:relative;
+    }
+    .col-half .block:last-child{ border-bottom:2px solid #2c3e50; }
 
-/* LAYOUT */
-.config-form{
-  max-width:980px;
-  margin:28px auto 60px;
-  padding:10px 10px 30px;
-  font-size:16px;
-}
-.config-form h3{ font-size:18px; }
-.option-card{ padding:18px; border-radius:18px; }
-.option-title{ font-size:16px; }
-.option-sub{ font-size:14px; }
-select{ padding:14px; border-radius:16px; font-size:15px; }
-.primary-btn{ padding:14px 24px; font-size:15px; }
-.secondary-btn{ padding:13px 18px; font-size:14px; }
-.builder-wrap{ padding:18px; border-radius:22px; }
-</style>
+    .block.dragging{ opacity:.55; cursor:grabbing; }
+
+    .block.screen{ padding:6px; }
+    .block.screen img{
+      width:125%;
+      height:125%;
+      object-fit:contain;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .block .delete-block{
+      position:absolute;
+      top:2px;
+      right:6px;
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      border:0;
+      background:rgba(0,0,0,.75);
+      color:#fff;
+      font-weight:900;
+      line-height:22px;
+      cursor:pointer;
+      opacity:0;
+      transform:scale(.9);
+      transition:.12s;
+      pointer-events:none;
+    }
+    .block:hover .delete-block{
+      opacity:1;
+      transform:scale(1);
+      pointer-events:auto;
+    }
+    .block .delete-block:hover{ background:rgba(231,76,60,.95); }
+
+    .col-half.drag-over{
+      outline:2px dashed rgba(0,0,0,.30);
+      outline-offset:-2px;
+    }
+    .drop-indicator{
+      height:6px;
+      background:rgba(0,0,0,.25);
+      margin:0;
+      border-radius:0;
+    }
+
+    .col-foot{
+      text-align:center;
+      font-size:12px;
+      padding:8px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:12px;
+      color:#111827;
+    }
+
+    .warn{ color:#c0392b; font-weight:900; }
+
+    .config-form{
+      max-width: 1100px;
+      margin: 0;
+      padding: 0;
+      font-size:16px;
+    }
+
+    .grid-two{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 860px){
+      .grid-two{ grid-template-columns: 1fr; }
+    }
+
+    .field label{
+      display:block;
+      font-weight:900;
+      margin-bottom:8px;
+      font-size:14px;
+    }
+
+    .form-actions{
+      margin-top: 16px;
+      display:flex;
+      gap: 12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
-<h1>{{type}}</h1>
-
-<form method="post" action="/api/create-configuration" id="configForm" class="config-form">
-  <input type="hidden" name="background_size" id="background_size" value="">
-  <input type="hidden" name="placement" id="placement" value="">
-  <input type="hidden" name="material" id="material" value="">
-  <input type="hidden" name="configuration_id" id="configuration_id" value="{{ configuration.id }}">
-  <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
-  <input type="hidden" name="type" id="type" value="{{ type|default('') }}">
-
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Medida de fondo</h3>
-    <div class="option-row" data-group="background_size">
-      <button type="button" class="option-card" data-value="small"><div class="option-title">Serie 300</div></button>
-      <button type="button" class="option-card" data-value="medium"><div class="option-title">Serie 400</div></button>
-      <button type="button" class="option-card" data-value="large"><div class="option-title">Serie 500</div></button>
+<div class="page-wrap">
+  <div class="page-head">
+    <div>
+      <div class="page-sub">Configura el fondo, ubicación, material, colores y distribución de puertas.</div>
     </div>
   </div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Interior / Exterior</h3>
-    <div class="option-row" data-group="placement">
-      <button type="button" class="option-card" data-value="interior">
-        <div class="option-title">Interior</div><div class="option-sub">Uso interior</div>
-      </button>
-      <button type="button" class="option-card" data-value="exterior">
-        <div class="option-title">Exterior</div><div class="option-sub">Resistente a intemperie</div>
-      </button>
+  <form method="post" action="{{ path('api_configurations_create') }}" id="configForm" class="config-form">
+    <input type="hidden" name="placement" id="placement" value="">
+    <input type="hidden" name="configuration_id" id="configuration_id" value="{{ configuration.id }}">
+    <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
+    <input type="hidden" name="type" id="type" value="{{ type|default('') }}">
+
+    {# =========================
+       ATRIBUTOS DINÁMICOS
+       ========================= #}
+    {% for g in attributesGrouped %}
+      {% set t = g.type %}
+      {% if t %}
+
+        {# ✅ clave = value del attributes_type (ej: fondo, material...) #}
+        {% set groupKey = t.value %}
+
+        <div class="section-card" data-attr-key="{{ groupKey }}">
+          <h3 class="section-title">{{ t.name }}</h3>
+          {% if t.description %}
+            <div class="section-help">{{ t.description }}</div>
+          {% endif %}
+
+          {% if t.type == 'button' %}
+            <input type="hidden" name="{{ groupKey }}" id="{{ groupKey }}" value="">
+
+            <div class="option-row" data-group="{{ groupKey }}">
+              {% for a in g.attributes %}
+                <button type="button" class="option-card" data-value="{{ a.value }}">
+                  <div class="option-title">{{ a.name }}</div>
+                  {% if a.description %}
+                    <div class="option-sub">{{ a.description }}</div>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            </div>
+
+          {% elseif t.type == 'selectable' %}
+            <select name="{{ groupKey }}" id="{{ groupKey }}">
+              <option value="" selected disabled>Selecciona {{ t.name|lower }}</option>
+              {% for a in g.attributes %}
+                <option value="{{ a.value }}">{{ a.name }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
+        </div>
+
+      {% endif %}
+    {% endfor %}
+
+    <div class="section-card">
+      <h3 class="section-title">Interior / Exterior</h3>
+      <div class="section-help">Define la ubicación de la instalación.</div>
+
+      <div class="option-row" data-group="placement">
+        <button type="button" class="option-card" data-value="interior">
+          <div class="option-title">Interior</div>
+          <div class="option-sub">Uso interior</div>
+        </button>
+        <button type="button" class="option-card" data-value="exterior">
+          <div class="option-title">Exterior</div>
+          <div class="option-sub">Resistente a intemperie</div>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Material</h3>
-    <div class="option-row" data-group="material">
-      <button type="button" class="option-card" data-value="kuik">
-        <div class="option-title">Kuik</div><div class="option-sub">Material Kuik</div>
-      </button>
-      <button type="button" class="option-card" data-value="kuik2">
-        <div class="option-title">Kuik2</div><div class="option-sub">Material Kuik2</div>
-      </button>
+    <div class="section-card">
+      <h3 class="section-title">Colores</h3>
+      <div class="section-help">Selecciona color de puerta y cuerpo.</div>
+
+      <div class="grid-two">
+        <div class="field">
+          <label for="color-door">Color Puerta</label>
+          <select name="color-door" id="color-door">
+            <option value="" selected disabled>Selecciona un color</option>
+            {% for color in coloresPuerta %}
+              <option value="{{ color.hex }}">{{ color.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="color-body">Color Cuerpo</label>
+          <select name="color-body" id="color-body">
+            <option value="" selected disabled>Selecciona un color</option>
+            {% for color in coloresCuerpo %}
+              <option value="{{ color.hex }}">{{ color.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Color Puerta</h3>
-    <select name="color-door" id="color-door">
-      <option value="" selected disabled>Selecciona un color</option>
-      {% for color in coloresPuerta %}
-        <option value="{{color.hex}}">{{color.name}}</option>
-      {% endfor %}
-    </select>
-  </div>
+    <div class="section-card">
+      <h3 class="section-title">Columnas</h3>
+      <div class="section-help">Cada columna: H180 (2 mitades de H90). Añade puertas o pantalla.</div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Color Cuerpo</h3>
-    <select name="color-body" id="color-body">
-      <option value="" selected disabled>Selecciona un color</option>
-      {% for color in coloresCuerpo %}
-        <option value="{{color.hex}}">{{color.name}}</option>
-      {% endfor %}
-    </select>
-  </div>
+      <div class="builder-wrap">
+        <div class="builder-toolbar">
+          <button type="button" id="addColumnBtn" class="secondary-btn">+ Añadir columna</button>
 
-  <div class="builder-wrap">
-    <h3 style="margin: 0 0 10px;">Columnas</h3>
+          <label for="itemTypeSelect">Elemento:</label>
+          <select id="itemTypeSelect" style="max-width:180px;">
+            <option value="door" selected>Puerta</option>
+            <option value="screen">Pantalla (H30)</option>
+          </select>
 
-    <div class="builder-toolbar">
-      <button type="button" id="addColumnBtn" class="secondary-btn">+ Añadir columna</button>
+          <label for="hSizeSelect">Tamaño a añadir:</label>
+          <select id="hSizeSelect" style="max-width:180px;">
+            {% for h in [10,20,30,40,50,60,70,80,90] %}
+              <option value="{{ h }}">H{{ h }}</option>
+            {% endfor %}
+          </select>
 
-      <label for="itemTypeSelect">Elemento:</label>
-      <select id="itemTypeSelect" style="max-width:180px;">
-        <option value="door" selected>Puerta</option>
-        <option value="screen">Pantalla (H30)</option>
+          <span style="font-size:12px; opacity:.75;">(Cada columna: H180 = 2 mitades de H90)</span>
+          <span id="builderMsg" class="warn"></span>
+        </div>
+
+        <div class="columns-grid" id="columnsGrid"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3 class="section-title">Hardware</h3>
+      <select name="hardware" id="hardware">
+        <option value="" selected disabled>Selecciona un hardware</option>
+        <option value="kuikandcollect">Intelio Kuik&Collect</option>
+        <option value="residencial">Intelio Residencial</option>
+        <option value="custodia">Custodia</option>
+        <option value="custodiaconpagofisico">Custodia con pago físico</option>
       </select>
-
-      <label for="hSizeSelect">Tamaño a añadir:</label>
-      <select id="hSizeSelect" style="max-width:180px;">
-        {% for h in [10,20,30,40,50,60,70,80,90] %}
-          <option value="{{ h }}">H{{ h }}</option>
-        {% endfor %}
-      </select>
-
-      <span style="font-size:12px; opacity:.75;">(Cada columna: H180 = 2 mitades de H90)</span>
-      <span id="builderMsg" class="warn"></span>
     </div>
 
-    <div class="columns-grid" id="columnsGrid"></div>
-  </div>
+    <div class="section-card">
+      <h3 class="section-title">Puertas periféricos</h3>
+      <select name="periferico" id="periferico">
+        <option value="" selected disabled>Selecciona el periférico</option>
+        <option value="collect">Electrónica KUIK COLLECT</option>
+        <option value="consigna">Electrónica KUIK CONSIGNA SIN PAGO</option>
+        <option value="consignasinpagoycontrol">Electrónica KUIK CONSIGNA SIN PAGO + CONTROL ACCESO</option>
+      </select>
+    </div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Hardware</h3>
-    <select name="hardware" id="hardware">
-      <option value="" selected disabled>Selecciona un hardware</option>
-      <option value="kuikandcollect">Intelio Kuik&Collect</option>
-      <option value="residencial">Intelio Residencial</option>
-      <option value="custodia">Custodia</option>
-      <option value="custodiaconpagofisico">Custodia con pago físico</option>
-    </select>
-  </div>
+    <div class="section-card">
+      <h3 class="section-title">Licencia de Software</h3>
+      <select name="softwareLicense" id="softwareLicense">
+        <option value="" selected disabled>Selecciona una licencia de software</option>
+        <option value="licencia1">Licencia de Software Intelio Click&Collect – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
+        <option value="licencia2">Licencia de Software Intelio Residencial – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
+        <option value="licencia3">Licencia de Software Custodia BASIC – Control de hasta 15 puertas; Plataforma de gestión con motor de reservas y pago en la nube; Plataforma de control en remoto; Maquetación de página web</option>
+      </select>
+    </div>
 
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Puertas periféricos</h3>
-    <select name="periferico" id="periferico">
-      <option value="" selected disabled>Selecciona el periférico</option>
-      <option value="collect">Electrónica KUIK COLLECT</option>
-      <option value="consigna">Electrónica KUIK CONSIGNA SIN PAGO</option>
-      <option value="consignasinpagoycontrol">Electrónica KUIK CONSIGNA SIN PAGO + CONTROL ACCESO</option>
-    </select>
-  </div>
-
-  <div style="margin: 16px 0;">
-    <h3 style="margin-bottom: 8px;">Licencia de Software</h3>
-    <select name="softwareLicense" id="softwareLicense">
-      <option value="" selected disabled>Selecciona una licencia de software</option>
-      <option value="licencia1">Licencia de Software Intelio Click&Collect – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
-      <option value="licencia2">Licencia de Software Intelio Residencial – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
-      <option value="licencia3">Licencia de Software Custodia BASIC – Control de hasta 15 puertas; Plataforma de gestión con motor de reservas y pago en la nube; Plataforma de control en remoto; Maquetación de página web</option>
-    </select>
-  </div>
-
-  <div style="margin-top: 18px; display: flex; gap: 10px; align-items: center;">
-    <button type="submit" class="primary-btn">Siguiente</button>
-    <div id="formError" class="warn"></div>
-  </div>
-</form>
+    <div class="form-actions">
+      <button type="submit" class="primary-btn">Siguiente</button>
+      <div id="formError" class="warn"></div>
+    </div>
+  </form>
+</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -443,7 +562,9 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       document.querySelectorAll('.option-row[data-group="' + group + '"] .option-card')
         .forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      document.getElementById(group).value = value;
+
+      const input = document.getElementById(group);
+      if (input) input.value = value;
     }
 
     document.querySelectorAll('.option-row .option-card').forEach(btn => {
@@ -456,7 +577,7 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
     });
 
     // -------- Column builder (2 mitades H90) --------
-    const hScale = 4.16; // ✅ debe coincidir con --hscale (2.8px)
+    const hScale = 4.16;
     const state = { columns: [], selectedColor: '' };
 
     const columnsGrid = document.getElementById('columnsGrid');
@@ -475,7 +596,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       return Math.random().toString(16).slice(2) + Date.now().toString(16);
     }
 
-    // ✅ Compatibilidad: si antes guardabas números, eso era una puerta
     function normalizeBlock(b){
       if (typeof b === 'number') return { type:'door', h: b };
       if (b && typeof b === 'object' && b.type && b.h) return b;
@@ -486,7 +606,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       return parseInt(nb.h, 10) || 0;
     }
 
-    // ✅ UX: si es pantalla, fijo H30 y desactivo selector
     function syncSizeControl(){
       const isScreen = (itemTypeSelect?.value === 'screen');
       if (hSizeSelect){
@@ -523,8 +642,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
 
         plus.addEventListener('click', () => {
           const type = itemTypeSelect?.value || 'door';
-
-          // ✅ Pantalla SIEMPRE H30
           const h = (type === 'screen') ? 30 : parseInt(hSizeSelect.value, 10);
 
           const newBlock = { type, h };
@@ -625,7 +742,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
           b.style.height = (h * hScale) + 'px';
           b.draggable = true;
 
-          // ✅ Fondo del mismo color que las puertas (incluida la pantalla)
           if (state.selectedColor) b.style.background = state.selectedColor;
 
           if (nb.type === 'screen') {
@@ -723,7 +839,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
           });
         }
 
-        // TOP
         const topHalf = document.createElement('div');
         topHalf.className = 'col-half';
         col.top.blocks.forEach((blk, i) => topHalf.appendChild(makeBlock(blk, 'top', i)));
@@ -732,7 +847,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
         const sep = document.createElement('div');
         sep.className = 'half-separator';
 
-        // BOTTOM
         const bottomHalf = document.createElement('div');
         bottomHalf.className = 'col-half';
         col.bottom.blocks.forEach((blk, i) => bottomHalf.appendChild(makeBlock(blk, 'bottom', i)));
@@ -770,7 +884,6 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       setColumnsBorderColor(colorBodySelect.value || '#000');
     });
 
-    // Añadir columna
     addColumnBtn.addEventListener('click', () => {
       state.columns.push({
         id: uid(),
@@ -796,10 +909,29 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       sel.value = value;
     }
 
+    function loadDynamicAttributes(pre){
+      document.querySelectorAll('[data-attr-key]').forEach(sec => {
+        const key = sec.getAttribute('data-attr-key');
+        if (!key) return;
+
+        const val = pre[key];
+        if (!val) return;
+
+        const row = sec.querySelector(`.option-row[data-group="${key}"]`);
+        if (row){
+          selectOption(key, val);
+          return;
+        }
+
+        const sel = document.getElementById(key);
+        if (sel && sel.tagName === 'SELECT'){
+          sel.value = val;
+        }
+      });
+    }
+
     if (pre && Object.keys(pre).length) {
-      selectOption('background_size', pre.background_size);
       selectOption('placement', pre.placement);
-      selectOption('material', pre.material);
 
       setSelectValue(colorDoorSelect, pre.colorDoor);
       state.selectedColor = pre.colorDoor || '';
@@ -823,6 +955,8 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
         });
       }
 
+      loadDynamicAttributes(pre);
+
       render();
     } else {
       render();
@@ -830,18 +964,16 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
 
     // Submit
     document.getElementById('configForm').addEventListener('submit', function(e) {
-      const bg = document.getElementById('background_size').value;
       const pl = document.getElementById('placement').value;
-      const material = document.getElementById('material').value;
       const colorDoor = document.getElementById('color-door').value;
       const colorBody = document.getElementById('color-body').value;
 
       const error = document.getElementById('formError');
       error.textContent = '';
 
-      if (!bg || !pl || !material || !colorDoor || !colorBody) {
+      if (!pl || !colorDoor || !colorBody) {
         e.preventDefault();
-        error.textContent = 'Selecciona medida, interior/exterior, material, color puerta y color cuerpo.';
+        error.textContent = 'Selecciona interior/exterior, color puerta y color cuerpo.';
         return;
       }
 
@@ -880,16 +1012,36 @@ select{ padding:14px; border-radius:16px; font-size:15px; }
       };
 
       ensureHidden.call(this, 'project_id', document.getElementById('project_id').value);
+      ensureHidden.call(this, 'configuration_id', document.getElementById('configuration_id').value);
       ensureHidden.call(this, 'colorDoor', colorDoor);
       ensureHidden.call(this, 'colorBody', colorBody);
 
       const type = document.getElementById('type')?.value || '';
 
+      const dynamicAttrs = {};
+      document.querySelectorAll('[data-attr-key]').forEach(sec => {
+        const key = sec.getAttribute('data-attr-key');
+        if (!key) return;
+
+        const el = document.getElementById(key);
+        let val = '';
+
+        if (el) {
+          val = (el.value || '').trim();
+        }
+
+        if (!val) {
+          const selectedBtn = sec.querySelector(`.option-row[data-group="${key}"] .option-card.selected`);
+          if (selectedBtn) val = (selectedBtn.getAttribute('data-value') || '').trim();
+        }
+
+        if (val) dynamicAttrs[key] = val;
+      });
+
       ensureHidden.call(this, 'payload', JSON.stringify({
         type: type,
-        background_size: bg,
+        ...dynamicAttrs,
         placement: pl,
-        material: material,
         colorDoor: colorDoor,
         colorBody: colorBody,
         columns: columnsPayload

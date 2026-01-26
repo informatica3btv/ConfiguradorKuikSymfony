@@ -42,6 +42,16 @@ class Project
     /** @ORM\Column(type="string", length=255, nullable=true) */
     private $address;
 
+    /**
+     * @ORM\Column(name="created_at", type="datetime")
+     */
+    private \DateTimeInterface $createdAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
+
     public function getId(): ?int { return $this->id; }
 
     public function getUser(): ?User
@@ -55,6 +65,16 @@ class Project
         return $this;
     }
 
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
 
     public function getProjectName(): ?string { return $this->projectName; }
     public function setProjectName(string $v): self { $this->projectName = $v; return $this; }

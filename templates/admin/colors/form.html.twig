@@ -1,27 +1,109 @@
 {% extends 'layout.html.twig' %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc; --ink:#0b1220; --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08); --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+    }
+
+    .admin-wrap{ max-width:980px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .admin-form{ display:grid; gap:12px; margin-top:10px; }
+    .admin-form label{ font-weight:900; }
+    .admin-form input, .admin-form select{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      outline:none;
+    }
+    .admin-form input:focus, .admin-form select:focus{
+      box-shadow: 0 0 0 4px rgba(11,118,216,.12);
+      border-color: rgba(11,118,216,.35);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top:10px;
+    }
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    .preview-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.10);
+      background:#fbfcfe;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
-<div class="config-form">
-  <h1>{{ title }}</h1>
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">{{ title }}</div>
+    <div class="admin-sub">Añade o edita un color del sistema</div>
+  </div>
 
-  {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
-    {{ form_row(form.name) }}
-    {{ form_row(form.hex) }}
-    {{ form_row(form.ral) }}
-    {{ form_row(form.type) }}
+  <div class="admin-card">
+    {{ form_start(form, {'attr': {'class': 'admin-form'}}) }}
 
-    <div>
-      <label style="font-weight:800;">Vista previa</label>
-      <div id="hexPreview" style="margin-top:6px; width:52px; height:38px; border-radius:12px; border:1px solid rgba(0,0,0,.2);"></div>
-      <div style="font-size:12px; opacity:.7; margin-top:6px;">Se actualiza al escribir el HEX</div>
-    </div>
+      {{ form_row(form.name) }}
+      {{ form_row(form.hex) }}
+      {{ form_row(form.ral) }}
+      {{ form_row(form.type) }}
 
-    <div class="admin-form-actions">
-      <button class="primary-btn" type="submit">Guardar</button>
-      <a class="secondary-btn" href="{{ path('admin_colors_index', {type: form.type.vars.data ?: 'door'}) }}">Cancelar</a>
-    </div>
-  {{ form_end(form) }}
+      <div class="preview-row">
+        <div>
+          <div style="font-weight:900;">Vista previa</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:4px;">Se actualiza al escribir el HEX</div>
+        </div>
+        <div id="hexPreview" style="width:64px; height:44px; border-radius:14px; border:1px solid rgba(0,0,0,.12);"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Guardar</button>
+        <a class="btn" href="{{ path('admin_colors_index', {type: form.type.vars.data ?: 'door'}) }}">Cancelar</a>
+      </div>
+
+    {{ form_end(form) }}
+  </div>
 </div>
 {% endblock %}
 

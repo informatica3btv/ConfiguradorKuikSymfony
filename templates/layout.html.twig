@@ -9,22 +9,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <main style="padding: 24px 16px;">
-    <div style="
-      max-width: 1100px;
-      margin: 0 auto;
-      box-sizing: border-box;
-    ">
-    {# FLASH MESSAGES #}
-{% for label, messages in app.flashes %}
-  {% for message in messages %}
-    <div class="flash flash-{{ label }}">{{ message }}</div>
-  {% endfor %}
-{% endfor %}
+  <main class="app-main">
+    <div class="app-container">
+      {% for label, messages in app.flashes %}
+        {% for message in messages %}
+          <div class="flash flash-{{ label }}">{{ message }}</div>
+        {% endfor %}
+      {% endfor %}
 
       {% block content %}{% endblock %}
     </div>
   </main>
+
 
   {% include 'partials/footer.html.twig' %}
 {% endblock %}

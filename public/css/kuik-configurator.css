@@ -306,12 +306,6 @@ body{
   gap:6px;
 }
 
-.admin-card::before{
-  content:"⚙️";
-  font-size:28px;
-  margin-bottom:6px;
-}
-
 /* =========================
    BOTÓN SECUNDARIO (para admin)
    ========================= */
@@ -513,3 +507,17 @@ body{
   pointer-events:none;
   user-select:none;
 }
+
+.app-main{
+  padding: 24px;           /* mismo padding en ambos lados */
+}
+
+.app-container{
+  max-width: 1500px;
+  margin-inline: auto;     /* equivalente moderno a margin: 0 auto */
+  width: 100%;
+}
+
+
+
+

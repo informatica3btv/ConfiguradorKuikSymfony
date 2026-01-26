@@ -6,6 +6,7 @@ use App\Entity\Configuration;
 use App\Entity\Project;
 use App\Entity\User;
 use App\Repository\ConfigurationRepository;
+use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -87,7 +88,7 @@ class ConfigurationController extends AbstractController
      */
     public function type(
         Request $request,
-        ConfigurationRepository $repo,
+        ConfigurationRepository $repo,ConfigurationTypeRepository $configurationTypeRepo,
         EntityManagerInterface $em
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -107,6 +108,8 @@ class ConfigurationController extends AbstractController
         }
 
         $configId = $request->query->getInt('config_id');
+
+        $types = $configurationTypeRepo->findAll();
 
         if ($configId > 0) {
             // ✅ EDITAR: cargar existente
@@ -134,6 +137,7 @@ class ConfigurationController extends AbstractController
             'project' => $project,
             'configuration' => $configuration,
             'payload' => $payload,
+            'types' => $types
         ]);
     }
 
@@ -144,6 +148,7 @@ class ConfigurationController extends AbstractController
         Request $request,
         ConfigurationRepository $repo,
         ColorRepository $colorRepo,
+        ConfigurationTypeRepository $configurationTypeRepo,
         EntityManagerInterface $em
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -208,6 +213,46 @@ class ConfigurationController extends AbstractController
         $coloresPuerta = $colorRepo->findBy(['type' => 'door']);
         $coloresCuerpo = $colorRepo->findBy(['type' => 'body']);
 
+        $availableAttributes = [];
+        $attributesGrouped = [];
+
+        if ($type !== '') {
+
+           
+            // trae todos los ConfigurationType de esa familia (por si tienes varios)
+            $configTypes = $configurationTypeRepo->findBy(['value' => $type], ['id' => 'ASC']);
+            
+            // Si solo vas a tener 1 por family, también podrías hacer findOneBy(...)
+            // $configType = $configurationTypeRepo->findOneBy(['family' => $type]);
+
+            if (!empty($configTypes)) {
+                // junta attributes de todos los types
+                $tmp = [];
+
+                foreach ($configTypes as $ct) {
+                    foreach ($ct->getAttributes() as $attr) {
+                        $tmp[$attr->getId()] = $attr; // evita duplicados por id
+                    }
+                }
+
+                $availableAttributes = array_values($tmp);
+
+                // ✅ opcional: agrupar por AttributesType (para pintar secciones en twig)
+                foreach ($availableAttributes as $attr) {
+                    $t = $attr->getAttributesType(); // ManyToOne
+                    $groupId = $t ? $t->getId() : 0;
+
+                    if (!isset($attributesGrouped[$groupId])) {
+                        $attributesGrouped[$groupId] = [
+                            'type' => $t,          // entidad AttributesType
+                            'attributes' => [],
+                        ];
+                    }
+
+                    $attributesGrouped[$groupId]['attributes'][] = $attr;
+                }
+            }
+        }
         return $this->render('home.html.twig', [
             'project' => $project,
             'configuration' => $configuration,
@@ -217,6 +262,8 @@ class ConfigurationController extends AbstractController
             'type' => $type,
             'coloresCuerpo' => $coloresCuerpo,
             'coloresPuerta' => $coloresPuerta,
+            'availableAttributes' => $availableAttributes,
+            'attributesGrouped' => $attributesGrouped
         ]);
     }
 
@@ -580,5 +627,48 @@ class ConfigurationController extends AbstractController
                     ->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename),
             ]
         );
+    }
+
+
+     /**
+     * @Route("/configuracion/copiar/{id}", name="configuration_copy", methods={"GET"})
+     */
+    public function copyConfiguration(
+        int $id,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $original = $repo->find($id);
+        if (!$original) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
+        $project = $original->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        // ✅ Crear nueva config clonada
+        $copy = new Configuration();
+        $copy->setProject($project);
+
+        // Copia del payload tal cual
+        $copy->setPayload($original->getPayload());
+
+        // Si tienes status, normalmente al copiar conviene ponerla "abierta"
+        if (method_exists($copy, 'setStatus')) {
+            $copy->setStatus(0);
+        }
+
+        $em->persist($copy);
+        $em->flush();
+
+        // ✅ Ir al configurador con TODO precargado (por el payload del nuevo config_id)
+        return $this->redirectToRoute('configuration_columns', [
+            'project_id' => $project->getId(),
+            'config_id'  => $copy->getId(),
+        ]);
     }
 }
