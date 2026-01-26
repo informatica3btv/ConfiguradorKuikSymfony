@@ -356,13 +356,15 @@
       Volver a proyectos
     </a>
 
-    <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
-      <!-- plus -->
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      Nueva configuración
-    </a>
+    {% if project.status == 0%}
+      <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
+        <!-- plus -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Nueva configuración
+      </a>
+    {% endif %}
   </div>
 
   {% if items is empty %}
@@ -409,14 +411,16 @@
           </div>
 
           <div class="actions">
-            <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
-              <!-- copy -->
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              Copiar
-            </a>
+            {% if project.status == 0%}
+              <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
+                <!-- copy -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Copiar
+              </a>
+            {% endif %}
 
             <a class="btn icon" href="{{ path('configuration_summary', { id: c.id }) }}">
               <!-- file -->
@@ -426,17 +430,17 @@
               </svg>
               Resumen
             </a>
+            {% if c.status == 0 and project.status == 0 %}
+              <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
+                <!-- edit -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                Editar
+              </a>
+            {% endif %}
 
-            <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
-              <!-- edit -->
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
-              </svg>
-              Editar
-            </a>
-
-            {# ✅ mantener botón PDF #}
             <a class="btn icon" href="{{ path('configuration_pdf', { id: c.id }) }}">
               <!-- pdf/doc -->
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -445,6 +449,7 @@
               </svg>
               PDF
             </a>
+
           </div>
         </div>
 

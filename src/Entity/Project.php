@@ -42,6 +42,11 @@ class Project
     /** @ORM\Column(type="string", length=255, nullable=true) */
     private $address;
 
+     /**
+     * @ORM\Column(type="smallint")
+     */
+    private int $status = 0;
+    
     /**
      * @ORM\Column(name="created_at", type="datetime")
      */
@@ -93,4 +98,15 @@ class Project
 
     public function getAddress(): ?string { return $this->address; }
     public function setAddress(?string $v): self { $this->address = $v; return $this; }
+
+    public function getStatus(): int
+    {
+        return $this->status;
+    }
+
+    public function setStatus(int $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
 }
