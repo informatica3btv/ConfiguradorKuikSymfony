@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
+use App\Repository\ProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -670,5 +671,44 @@ class ConfigurationController extends AbstractController
             'project_id' => $project->getId(),
             'config_id'  => $copy->getId(),
         ]);
+    }
+
+    /**
+     * @Route("/configuracion/aceptar-configuration/{id}", name="configuration_accept", methods={"GET"})
+     */
+    public function aceptConfiguration(
+        int $id,
+        ConfigurationRepository $repo,
+        ProjectRepository $repoProject,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $original = $repo->find($id);
+        if (!$original) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
+        $project = $original->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $configuration = $repo->find($id);
+        $configuration->setStatus(Configuration::STATUS_ACCEPTED);
+
+        $project = $repoProject -> find(($configuration->getProject()->getId()));
+
+        $project->setStatus(1);
+    
+        $em->persist($configuration);
+        $em->persist($project);
+        $em->flush();
+
+        $this->addFlash('success', 'Configuración aceptada. Proyecto finalizado.');
+        
+        return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+    
+
     }
 }
