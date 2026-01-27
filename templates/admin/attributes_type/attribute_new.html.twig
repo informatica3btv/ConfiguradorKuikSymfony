@@ -1,0 +1,110 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Administración · Nuevo atributo{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc; --ink:#0b1220; --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08); --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+    }
+    .admin-wrap{ max-width:900px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+
+    .form-row{ margin-bottom:12px; }
+    label{ display:block; font-weight:900; margin-bottom:6px; font-size:14px; }
+    input, textarea{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.18);
+      background:#fff;
+      font-size:14px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">Nuevo atributo</div>
+  </div>
+
+  <div class="admin-card">
+    <div class="toolbar">
+      <div style="font-weight:900; font-size:22px;">Crear atributo</div>
+      <a class="btn" href="{{ path('admin_attributes_types_attributes_index', {id: type.id}) }}">← Volver</a>
+    </div>
+
+    <form method="post">
+      <div class="form-row">
+        <label for="name">Nombre</label>
+        <input id="name" name="name" value="" required>
+      </div>
+
+      <div class="form-row">
+        <label for="value">Value</label>
+        <input id="value" name="value" value="" required>
+      </div>
+
+      <div class="form-row">
+        <label for="description">Descripción (opcional)</label>
+        <textarea id="description" name="description" rows="4"></textarea>
+      </div>
+      <div class="field">
+        <label>Asignar a configuration_type</label>
+
+        <select name="configurationTypes[]" multiple>
+            {% for ct in configTypes %}
+            {% set selected = (attr.configurationTypes is defined and ct in attr.configurationTypes) %}
+            <option value="{{ ct.id }}" {% if selected %}selected{% endif %}>
+                {{ ct.name }} ({{ ct.family }}) · {{ ct.value }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <div style="margin-top:6px; font-size:13px; color: var(--muted);">
+            Mantén Ctrl (Windows) para seleccionar varios.
+        </div>
+       </div>
+
+      <button class="btn primary" type="submit">Guardar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

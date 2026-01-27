@@ -1,0 +1,290 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Administración · Editar atributo{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc; --ink:#0b1220; --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08); --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8; --danger:#ef4444;
+    }
+
+    .admin-wrap{ max-width:900px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px; background:var(--card); border:1px solid var(--line);
+      border-radius:16px; padding:16px; box-shadow: var(--shadow);
+    }
+
+    .toolbar{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12); background:#fff; border-radius:14px;
+      padding:10px 14px; font-weight:900; cursor:pointer; display:inline-flex; gap:10px;
+      align-items:center; text-decoration:none; color:#0b1220;
+    }
+    .btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+    .btn:active{ transform: translateY(1px); }
+
+    .form-grid{ margin-top:14px; display:grid; gap:12px; }
+
+    .field label{ display:block; font-weight:900; margin-bottom:8px; font-size:14px; }
+    .field input, .field textarea{
+      width:100%; padding:12px 14px; border-radius:14px; border:1px solid rgba(15,23,42,.18);
+      background:#fff; font-size:14px;
+    }
+    .field textarea{ min-height:110px; resize:vertical; }
+
+    .flash-error{
+      margin-top:12px; padding:12px 14px; border-radius:14px;
+      border:1px solid rgba(239,68,68,.25); background: rgba(239,68,68,.10); color:#991b1b;
+      font-weight:700;
+    }
+
+    /* ====== picker bonito para config types ====== */
+    .picker{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .picker-toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .search{
+      flex:1 1 220px;
+      min-width:220px;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+    }
+    .search:focus{ box-shadow:0 0 0 4px rgba(11,118,216,.12); border-color: rgba(11,118,216,.45); }
+
+    .btn-mini{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:12px;
+      padding:9px 12px;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .btn-mini:hover{ background: rgba(2,6,23,.03); }
+
+    .ct-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width: 720px){
+      .ct-grid{ grid-template-columns: 1fr; }
+    }
+
+    .ct-item{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      cursor:pointer;
+      user-select:none;
+      box-shadow: var(--shadow-sm);
+      background:#fff;
+    }
+    .ct-item:hover{ border-color: rgba(11,118,216,.25); }
+
+    .ct-check{
+      margin-top:3px;
+      width:18px; height:18px;
+      accent-color: var(--blue);
+      flex:0 0 auto;
+    }
+
+    .ct-title{ font-weight:900; }
+    .ct-meta{ color:var(--muted); font-size:13px; margin-top:2px; }
+
+    .chips{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(11,118,216,.20);
+      background: rgba(11,118,216,.08);
+      font-weight:900;
+      font-size:13px;
+    }
+    .chip small{ opacity:.7; font-weight:900; }
+
+    .hint{ font-size:13px; color:var(--muted); margin-top:6px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">Editar atributo</div>
+    <div class="admin-sub">
+      Tipo: <b>{{ type.name }}</b> <span style="opacity:.6;">·</span> {{ type.value }}
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="toolbar">
+      <div style="font-weight:900; font-size:22px;">
+        {{ attr.name }}
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="{{ path('admin_attributes_types_attributes_index', {id: type.id}) }}">← Volver</a>
+        <button form="attrEditForm" class="btn primary" type="submit">Guardar</button>
+      </div>
+    </div>
+
+    {% for msg in app.flashes('error') %}
+      <div class="flash-error">{{ msg }}</div>
+    {% endfor %}
+
+    <form id="attrEditForm" method="post" style="margin-top:14px;">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input name="name" value="{{ attr.name }}" required>
+        </div>
+
+        <div class="field">
+          <label>Value</label>
+          <input name="value" value="{{ attr.value }}" required>
+        </div>
+
+        <div class="field">
+          <label>Descripción</label>
+          <textarea name="description">{{ attr.description }}</textarea>
+        </div>
+
+        {# ✅ selector bonito #}
+        <div class="field">
+          <label>Asignar a las configuraciones</label>
+
+          <div class="picker" id="ctPicker">
+            <div class="picker-toolbar">
+              <input class="search" type="text" id="ctSearch" placeholder="Buscar (nombre / value / familia)…">
+              <button type="button" class="btn-mini" id="ctSelectAll">Seleccionar todo</button>
+              <button type="button" class="btn-mini" id="ctClear">Limpiar</button>
+            </div>
+
+            <div class="ct-grid" id="ctGrid">
+              {% for ct in configTypes %}
+                {% set checked = (attr.configurationTypes is defined and attr.configurationTypes.contains(ct)) %}
+                <label class="ct-item" data-search="{{ (ct.name ~ ' ' ~ ct.value ~ ' ' ~ ct.family)|lower }}">
+                  <input
+                    class="ct-check"
+                    type="checkbox"
+                    name="configurationTypes[]"
+                    value="{{ ct.id }}"
+                    {% if checked %}checked{% endif %}
+                  >
+                  <div>
+                    <div class="ct-title">{{ ct.name }}</div>
+                    <div class="ct-meta">{{ ct.family }} · {{ ct.value }}</div>
+                  </div>
+                </label>
+              {% endfor %}
+            </div>
+
+            <div class="chips" id="ctChips"></div>
+
+            <div class="hint">
+              Marca los tipos a los que aplicará este atributo (sin Ctrl).
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const wrap = document.getElementById('ctPicker');
+    if(!wrap) return;
+
+    const search = document.getElementById('ctSearch');
+    const grid = document.getElementById('ctGrid');
+    const chips = document.getElementById('ctChips');
+    const btnAll = document.getElementById('ctSelectAll');
+    const btnClear = document.getElementById('ctClear');
+
+    const items = Array.from(grid.querySelectorAll('.ct-item'));
+
+    function renderChips(){
+      chips.innerHTML = '';
+      const checkedItems = items
+        .map(i => i.querySelector('input[type="checkbox"]'))
+        .filter(c => c && c.checked)
+        .map(c => c.closest('.ct-item'));
+
+      checkedItems.forEach(i => {
+        const title = i.querySelector('.ct-title')?.textContent?.trim() || '';
+        const meta = i.querySelector('.ct-meta')?.textContent?.trim() || '';
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `${title} <small>${meta}</small>`;
+        chips.appendChild(chip);
+      });
+    }
+
+    function applyFilter(q){
+      const qq = (q || '').toLowerCase().trim();
+      items.forEach(i => {
+        const hay = i.getAttribute('data-search') || '';
+        i.style.display = (!qq || hay.includes(qq)) ? '' : 'none';
+      });
+    }
+
+    search?.addEventListener('input', e => applyFilter(e.target.value));
+
+    btnAll?.addEventListener('click', () => {
+      items.forEach(i => {
+        const c = i.querySelector('input[type="checkbox"]');
+        if(c) c.checked = true;
+      });
+      renderChips();
+    });
+
+    btnClear?.addEventListener('click', () => {
+      items.forEach(i => {
+        const c = i.querySelector('input[type="checkbox"]');
+        if(c) c.checked = false;
+      });
+      renderChips();
+    });
+
+    items.forEach(i => {
+      const c = i.querySelector('input[type="checkbox"]');
+      c?.addEventListener('change', renderChips);
+    });
+
+    renderChips();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+<h2>
+  {% if mode == 'new' %}Nuevo atributo{% else %}Editar atributo{% endif %}
+  para: {{ type.name }}
+</h2>
+
+<a href="{{ path('admin_attributes_types_attributes_index', {id: type.id}) }}">← Volver</a>
+
+{{ form_start(form) }}
+  {{ form_widget(form) }}
+  <button type="submit">Guardar</button>
+{{ form_end(form) }}

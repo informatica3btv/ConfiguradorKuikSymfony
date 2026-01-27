@@ -1,0 +1,8 @@
+{% for t in types %}
+  <div>
+    <b>{{ t.name }}</b> ({{ t.value }}) - {{ t.type }}
+    <a href="{{ path('admin_attributes_types_attributes_index', {id: t.id}) }}">Atributos</a>
+    <a href="{{ path('admin_attributes_types_edit', {id: t.id}) }}">Editar</a>
+  </div>
+  
+{% endfor %}
