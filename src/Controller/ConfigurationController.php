@@ -143,6 +143,34 @@ class ConfigurationController extends AbstractController
     }
 
     /**
+     * @Route("/configuration/home/instalacion", name="configuration_home_instalacion", methods={"GET"})
+     */
+    public function homeInstalacion(Request $request, EntityManagerInterface $em): Response
+    {
+        $configId  = $request->query->get('config_id');
+        $projectId = $request->query->get('project_id');
+
+        $configuration = $configId ? $em->getRepository(Configuration::class)->find($configId) : null;
+        $project       = $projectId ? $em->getRepository(Project::class)->find($projectId) : null;
+
+        if (!$configuration || !$project) {
+            throw $this->createNotFoundException('Configuration o Project no encontrados.');
+        }
+
+        $options = [
+            ['value' => 'empotrado',     'name' => 'Empotrado'],
+            ['value' => 'zocalo',         'name' => 'Zócalo'],
+            ['value' => 'soporte_suelo', 'name' => 'Soporte a suelo'],
+        ];
+
+        return $this->render('configurations/home_instalacion.html.twig', [
+            'configuration' => $configuration,
+            'project'       => $project,
+            'options'         => $options, 
+        ]);
+    }
+
+    /**
      * @Route("/configuracion", name="configuration_columns", methods={"GET"})
      */
     public function configurador(
@@ -157,10 +185,13 @@ class ConfigurationController extends AbstractController
         $configId  = $request->query->getInt('config_id');
         $projectId = $request->query->getInt('project_id');
 
-        // type solo lo usamos como "hint" cuando vienes desde la pantalla type
-        $typeFromQuery = (string) $request->query->get('type', '');
+        // Vienen por query cuando navegas desde las pantallas previas
+        $typeFromQuery        = (string) $request->query->get('type', '');
+        $instalacionFromQuery = (string) $request->query->get('instalacion', '');
 
-        // 1) Si viene config_id => EDITAR ESA CONFIG sí o sí
+        /*
+        * 1) EDITAR configuración existente
+        */
         if ($configId > 0) {
             $configuration = $repo->find($configId);
             if (!$configuration) {
@@ -172,12 +203,13 @@ class ConfigurationController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
 
-            // Si además viene project_id, opcionalmente comprueba que coincide
             if ($projectId > 0 && $project->getId() !== $projectId) {
                 throw $this->createAccessDeniedException();
             }
         }
-        // 2) Si NO viene config_id => crear nueva para ese proyecto
+        /*
+        * 2) CREAR nueva configuración
+        */
         else {
             if ($projectId <= 0) {
                 throw $this->createNotFoundException('Missing project_id');
@@ -200,52 +232,80 @@ class ConfigurationController extends AbstractController
             $configId = $configuration->getId();
         }
 
+        /*
+        * Payload actual
+        */
         $payload = $configuration->getPayload()
             ? (json_decode($configuration->getPayload(), true) ?: [])
             : [];
 
-        // ✅ FIX: el type en editar SIEMPRE sale del payload
-        // ✅ en nueva, si viene por query y aún no hay payload.type, úsalo
+        /*
+        * TYPE: siempre manda el payload en editar,
+        * en nueva se acepta el que venga por query
+        */
         $type = $payload['type'] ?? '';
         if ($type === '' && $typeFromQuery !== '') {
             $type = $typeFromQuery;
         }
 
+        /*
+        * Guardar type + instalacion en payload si vienen por query
+        */
+        $changed = false;
+
+        if ($type !== '' && (($payload['type'] ?? '') !== $type)) {
+            $payload['type'] = $type;
+            $changed = true;
+        }
+
+        if ($instalacionFromQuery !== '' && (($payload['instalacion'] ?? '') !== $instalacionFromQuery)) {
+            $payload['instalacion'] = $instalacionFromQuery;
+            $changed = true;
+        }
+
+        if ($changed) {
+            $configuration->setPayload(json_encode($payload));
+            $em->flush();
+        }
+
+        /*
+        * Colores
+        */
         $coloresPuerta = $colorRepo->findBy(['type' => 'door']);
         $coloresCuerpo = $colorRepo->findBy(['type' => 'body']);
 
+        /*
+        * Atributos según type
+        */
         $availableAttributes = [];
-        $attributesGrouped = [];
+        $attributesGrouped   = [];
 
         if ($type !== '') {
 
-           
-            // trae todos los ConfigurationType de esa familia (por si tienes varios)
-            $configTypes = $configurationTypeRepo->findBy(['value' => $type], ['id' => 'ASC']);
-            
-            // Si solo vas a tener 1 por family, también podrías hacer findOneBy(...)
-            // $configType = $configurationTypeRepo->findOneBy(['family' => $type]);
+            $configTypes = $configurationTypeRepo->findBy(
+                ['value' => $type],
+                ['id' => 'ASC']
+            );
 
             if (!empty($configTypes)) {
-                // junta attributes de todos los types
+
                 $tmp = [];
 
                 foreach ($configTypes as $ct) {
                     foreach ($ct->getAttributes() as $attr) {
-                        $tmp[$attr->getId()] = $attr; // evita duplicados por id
+                        $tmp[$attr->getId()] = $attr;
                     }
                 }
 
                 $availableAttributes = array_values($tmp);
 
-                // ✅ opcional: agrupar por AttributesType (para pintar secciones en twig)
                 foreach ($availableAttributes as $attr) {
-                    $t = $attr->getAttributesType(); // ManyToOne
+                    $t = $attr->getAttributesType();
                     $groupId = $t ? $t->getId() : 0;
 
                     if (!isset($attributesGrouped[$groupId])) {
                         $attributesGrouped[$groupId] = [
-                            'type' => $t,          // entidad AttributesType
+                            'type' => $t,
                             'attributes' => [],
                         ];
                     }
@@ -254,17 +314,22 @@ class ConfigurationController extends AbstractController
                 }
             }
         }
+
+        /*
+        * Render
+        */
         return $this->render('home.html.twig', [
-            'project' => $project,
-            'configuration' => $configuration,
-            'payload' => $payload,
-            'project_id' => $project->getId(),
-            'config_id' => $configuration->getId(),
-            'type' => $type,
-            'coloresCuerpo' => $coloresCuerpo,
-            'coloresPuerta' => $coloresPuerta,
+            'project'             => $project,
+            'configuration'       => $configuration,
+            'payload'             => $payload,
+            'project_id'          => $project->getId(),
+            'config_id'           => $configuration->getId(),
+            'type'                => $type,
+            'instalacion'         => $payload['instalacion'] ?? '',
+            'coloresCuerpo'       => $coloresCuerpo,
+            'coloresPuerta'       => $coloresPuerta,
             'availableAttributes' => $availableAttributes,
-            'attributesGrouped' => $attributesGrouped
+            'attributesGrouped'   => $attributesGrouped,
         ]);
     }
 

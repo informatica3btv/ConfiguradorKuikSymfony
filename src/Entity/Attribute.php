@@ -5,10 +5,9 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use App\Repository\AttributeRepository;
 
 /**
- * @ORM\Entity(repositoryClass=AttributeRepository::class)
+ * @ORM\Entity
  * @ORM\Table(name="attribute")
  */
 class Attribute

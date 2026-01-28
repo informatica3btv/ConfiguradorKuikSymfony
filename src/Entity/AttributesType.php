@@ -6,10 +6,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Validator\Constraints as Assert;
-use App\Repository\AttributesTypeRepository;
-
 /**
- * @ORM\Entity(repositoryClass=AttributesTypeRepository::class)
+ * @ORM\Entity
  * @ORM\Table(name="attributes_type")
  */
 class AttributesType
@@ -84,4 +82,25 @@ class AttributesType
     {
         return $this->attributes;
     }
+
+    public function addAttribute(Attribute $attribute): self
+    {
+        if (!$this->attributes->contains($attribute)) {
+            $this->attributes->add($attribute);
+            $attribute->setAttributesType($this);
+        }
+        return $this;
+    }
+
+    public function removeAttribute(Attribute $attribute): self
+    {
+        if ($this->attributes->removeElement($attribute)) {
+            if ($attribute->getAttributesType() === $this) {
+                // si quieres “desenganchar”:
+                // $attribute->setAttributesType(null);  // OJO: tu JoinColumn es nullable=false
+            }
+        }
+        return $this;
+    }
+
 }

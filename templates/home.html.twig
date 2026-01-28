@@ -183,11 +183,13 @@
     .builder-toolbar label{ font-weight:900; font-size:13px; color:#111827; }
     .builder-toolbar span{ color:var(--muted); }
 
+    /* ✅ columnas */
     .columns-grid{
       display:flex;
       gap:12px;
       flex-wrap:wrap;
       padding:6px 2px 2px;
+      align-items:flex-start; /* ✅ importante para drag */
     }
 
     /* ====== TU DIBUJO ====== */
@@ -196,6 +198,15 @@
       display:flex;
       flex-direction:column;
       gap:8px;
+
+      /* ✅ drag columnas */
+      cursor:grab;
+    }
+    .col-shell.dragging-col{ opacity:.6; cursor:grabbing; }
+    .col-shell.col-drop-left,
+    .col-shell.col-drop-right{
+      outline:2px dashed rgba(0,0,0,.35);
+      outline-offset:6px;
     }
 
     .col-toolbar-top{
@@ -343,7 +354,7 @@
       color:#111827;
     }
 
-    .warn{ color:#c0392b; font-weight:900; }
+    .warn{ color: #e74c3c !important; font-weight:900; }
 
     .config-form{
       max-width: 1100px;
@@ -391,6 +402,7 @@
     <input type="hidden" name="configuration_id" id="configuration_id" value="{{ configuration.id }}">
     <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
     <input type="hidden" name="type" id="type" value="{{ type|default('') }}">
+    <input type="hidden" name="instalacion" id="instalacion" value="{{ instalacion|default('') }}">
 
     {# =========================
        ATRIBUTOS DINÁMICOS
@@ -399,7 +411,6 @@
       {% set t = g.type %}
       {% if t %}
 
-        {# ✅ clave = value del attributes_type (ej: fondo, material...) #}
         {% set groupKey = t.value %}
 
         <div class="section-card" data-attr-key="{{ groupKey }}">
@@ -461,7 +472,7 @@
           <select name="color-door" id="color-door">
             <option value="" selected disabled>Selecciona un color</option>
             {% for color in coloresPuerta %}
-              <option value="{{ color.hex }}">{{ color.name }}</option>
+              <option value="{{ color.hex }}" data-ral="{{ color.ral }}">{{ color.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -471,7 +482,7 @@
           <select name="color-body" id="color-body">
             <option value="" selected disabled>Selecciona un color</option>
             {% for color in coloresCuerpo %}
-              <option value="{{ color.hex }}">{{ color.name }}</option>
+              <option value="{{ color.hex }}" data-ral="{{ color.ral }}">{{ color.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -588,6 +599,11 @@
     const colorDoorSelect = document.getElementById('color-door');
     const colorBodySelect = document.getElementById('color-body');
 
+    // ✅ Helper: recuperar RAL del option seleccionado
+    function getSelectedRal(selectEl) {
+      return selectEl?.selectedOptions?.[0]?.dataset?.ral || '';
+    }
+
     function setColumnsBorderColor(hex){
       document.documentElement.style.setProperty('--col-border', hex || '#000');
     }
@@ -606,6 +622,17 @@
       return parseInt(nb.h, 10) || 0;
     }
 
+    function isScreenBlock(b){
+      return normalizeBlock(b).type === 'screen';
+    }
+
+    // ✅ Comprobar si existe pantalla
+    function hasAnyScreen(){
+      return state.columns.some(c =>
+        c.top.blocks.some(isScreenBlock) || c.bottom.blocks.some(isScreenBlock)
+      );
+    }
+
     function syncSizeControl(){
       const isScreen = (itemTypeSelect?.value === 'screen');
       if (hSizeSelect){
@@ -616,6 +643,13 @@
     itemTypeSelect?.addEventListener('change', syncSizeControl);
     syncSizeControl();
 
+    // ✅ limpiar hints drop columnas
+    function clearColDropHints(){
+      document.querySelectorAll('.col-shell').forEach(s => {
+        s.classList.remove('col-drop-left','col-drop-right');
+      });
+    }
+
     function render() {
       columnsGrid.innerHTML = '';
       builderMsg.textContent = '';
@@ -624,6 +658,67 @@
 
         const shell = document.createElement('div');
         shell.className = 'col-shell';
+        shell.dataset.colId = col.id;
+
+        // =============================
+        // ✅ DRAG & DROP DE COLUMNAS
+        // =============================
+        shell.draggable = true;
+
+        shell.addEventListener('dragstart', (e) => {
+          shell.classList.add('dragging-col');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', col.id);
+        });
+
+        shell.addEventListener('dragend', () => {
+          shell.classList.remove('dragging-col');
+          clearColDropHints();
+        });
+
+        shell.addEventListener('dragover', (e) => {
+          e.preventDefault();
+
+          const draggedId = e.dataTransfer.getData('text/plain');
+          if (!draggedId || draggedId === col.id) return;
+
+          const rect = shell.getBoundingClientRect();
+          const isLeft = e.clientX < rect.left + rect.width / 2;
+
+          shell.classList.toggle('col-drop-left', isLeft);
+          shell.classList.toggle('col-drop-right', !isLeft);
+        });
+
+        shell.addEventListener('dragleave', (e) => {
+          if (!shell.contains(e.relatedTarget)) {
+            shell.classList.remove('col-drop-left','col-drop-right');
+          }
+        });
+
+        shell.addEventListener('drop', (e) => {
+          e.preventDefault();
+
+          const draggedId = e.dataTransfer.getData('text/plain');
+          if (!draggedId || draggedId === col.id) return;
+
+          const fromIndex = state.columns.findIndex(c => c.id === draggedId);
+          const toIndex = state.columns.findIndex(c => c.id === col.id);
+          if (fromIndex === -1 || toIndex === -1) return;
+
+          const rect = shell.getBoundingClientRect();
+          const insertAfter = e.clientX >= rect.left + rect.width / 2;
+
+          const [moved] = state.columns.splice(fromIndex, 1);
+
+          let target = toIndex;
+          if (fromIndex < toIndex) target = toIndex - 1;
+
+          const finalIndex = insertAfter ? target + 1 : target;
+          state.columns.splice(finalIndex, 0, moved);
+
+          shell.classList.remove('col-drop-left','col-drop-right');
+          render();
+        });
 
         const topBar = document.createElement('div');
         topBar.className = 'col-toolbar-top';
@@ -640,15 +735,41 @@
         plus.textContent = '+';
         plus.title = 'Añadir bloque';
 
+        // ✅ evita drag columna al pulsar
+        plus.addEventListener('mousedown', (e) => e.stopPropagation());
+
         plus.addEventListener('click', () => {
           const type = itemTypeSelect?.value || 'door';
           const h = (type === 'screen') ? 30 : parseInt(hSizeSelect.value, 10);
 
+          // ✅ Regla 1: solo una pantalla en todo el configurador
+          if (type === 'screen' && hasAnyScreen()) {
+            builderMsg.textContent = 'Solo se puede añadir 1 pantalla en toda la configuración.';
+            return;
+          }
+
           const newBlock = { type, h };
 
+          // ✅ Regla 2: la pantalla solo puede ir en la mitad superior
+          if (type === 'screen') {
+            if (col.top.sum + h <= 90) {
+              col.top.blocks.push(newBlock);
+              col.top.sum += h;
+              builderMsg.textContent = '';
+              render();
+              return;
+            }
+
+            const topLeft = 90 - col.top.sum;
+            builderMsg.textContent = `La pantalla solo puede ir arriba y no cabe. Libres arriba: H${topLeft}.`;
+            return;
+          }
+
+          // Puertas (se comportan igual que antes: arriba si cabe, si no abajo)
           if (col.top.sum + h <= 90) {
             col.top.blocks.push(newBlock);
             col.top.sum += h;
+            builderMsg.textContent = '';
             render();
             return;
           }
@@ -656,6 +777,7 @@
           if (col.bottom.sum + h <= 90) {
             col.bottom.blocks.push(newBlock);
             col.bottom.sum += h;
+            builderMsg.textContent = '';
             render();
             return;
           }
@@ -670,6 +792,9 @@
         del.className = 'icon-btn icon-del';
         del.textContent = '×';
         del.title = 'Eliminar columna';
+
+        del.addEventListener('mousedown', (e) => e.stopPropagation());
+
         del.addEventListener('click', () => {
           state.columns = state.columns.filter(c => c.id !== col.id);
           render();
@@ -741,6 +866,9 @@
           b.className = 'block' + (nb.type === 'screen' ? ' screen' : '');
           b.style.height = (h * hScale) + 'px';
           b.draggable = true;
+
+          // ✅ evita drag columna al intentar arrastrar bloque
+          b.addEventListener('mousedown', (e) => e.stopPropagation());
 
           if (state.selectedColor) b.style.background = state.selectedColor;
 
@@ -968,6 +1096,10 @@
       const colorDoor = document.getElementById('color-door').value;
       const colorBody = document.getElementById('color-body').value;
 
+      // ✅ RAL desde el option seleccionado
+      const colorDoorRal = getSelectedRal(colorDoorSelect);
+      const colorBodyRal = getSelectedRal(colorBodySelect);
+
       const error = document.getElementById('formError');
       error.textContent = '';
 
@@ -1013,10 +1145,16 @@
 
       ensureHidden.call(this, 'project_id', document.getElementById('project_id').value);
       ensureHidden.call(this, 'configuration_id', document.getElementById('configuration_id').value);
+
+      // ✅ También como inputs sueltos (por si tu backend los usa así)
       ensureHidden.call(this, 'colorDoor', colorDoor);
+      ensureHidden.call(this, 'colorDoorRal', colorDoorRal);
       ensureHidden.call(this, 'colorBody', colorBody);
+      ensureHidden.call(this, 'colorBodyRal', colorBodyRal);
 
       const type = document.getElementById('type')?.value || '';
+      const instalacion = document.getElementById('instalacion')?.value || '';
+
 
       const dynamicAttrs = {};
       document.querySelectorAll('[data-attr-key]').forEach(sec => {
@@ -1038,12 +1176,19 @@
         if (val) dynamicAttrs[key] = val;
       });
 
+      // ✅ payload final con HEX + RAL
       ensureHidden.call(this, 'payload', JSON.stringify({
         type: type,
+        instalacion: instalacion,
         ...dynamicAttrs,
         placement: pl,
+
         colorDoor: colorDoor,
+        colorDoorRal: colorDoorRal,
+
         colorBody: colorBody,
+        colorBodyRal: colorBodyRal,
+
         columns: columnsPayload
       }));
     });

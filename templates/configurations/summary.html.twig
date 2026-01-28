@@ -4,7 +4,9 @@
 {% set columns = p.columns ?? [] %}
 {% set type = p.type %}
 {% set doorColor = p.colorDoor ?? '#3a9efc' %}
+{% set doorColorRal = p.colorDoorRal %}
 {% set bodyColor = p.colorBody ?? '#000' %}
+{% set bodyColorRal = p.colorBodyRal %}
 {% set bg = p.background_size ?? '' %}
 {% set placement = p.placement ?? '' %}
 {% set material = p.material ?? '' %}
@@ -326,7 +328,11 @@
   
     <div class="btn-row">
           <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
-          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+          {% if project.status == 0 %}
+            
+            <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+            
+          {% endif %}
           {% if configuration.status == 0 %}
             <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
           {% endif %}
@@ -435,8 +441,8 @@
           <div class="kv"><div class="k">Fondo</div><div class="v">{{ bgLabel }}</div></div>
           <div class="kv"><div class="k">Ubicación</div><div class="v">{{ placementLabel }}</div></div>
           <div class="kv"><div class="k">Material</div><div class="v">{{ material }}</div></div>
-          <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColor }}</div></div>
-          <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColor }}</div></div>
+          <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
+          <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
           <div class="kv"><div class="k">Columnas</div><div class="v">{{ columns|length }}</div></div>
         </div>
 
@@ -616,13 +622,13 @@
           const dataUrl = canvas.toDataURL('image/png');
 
           const prompt =
-`Genera un render realista del armario/taquillas basado en el esquema adjunto.
-- Color puertas: {{ doorColor|e('js') }}
-- Color cuerpo/bordes: {{ bodyColor|e('js') }}
-- Fondo: {{ bgLabel|e('js') }}
-- Ubicación: {{ placementLabel|e('js') }}
-- Material: {{ material|e('js') }}
-Respeta el número de puertas y proporciones del esquema.`;
+            `Genera un render realista del armario/taquillas basado en el esquema adjunto.
+            - Color puertas: {{ doorColor|e('js') }}
+            - Color cuerpo/bordes: {{ bodyColor|e('js') }}
+            - Fondo: {{ bgLabel|e('js') }}
+            - Ubicación: {{ placementLabel|e('js') }}
+            - Material: {{ material|e('js') }}
+            Respeta el número de puertas y proporciones del esquema.`;
 
           const form = new FormData();
           form.append('prompt', prompt);

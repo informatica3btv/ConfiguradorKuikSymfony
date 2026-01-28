@@ -251,7 +251,9 @@
   {% set columns = p.columns ?? [] %}
   {% set addons = p.addons ?? {} %}
   {% set doorColor = p.colorDoor ?? '#3a9efc' %}
+  {% set doorColorRal = p.colorDoorRal %}
   {% set bodyColor = p.colorBody ?? '#000' %}
+  {% set bodyColorRal = p.colorBodyRal %}
 
   {# ✅ claves nuevas (dynamic attrs por value del type)
      Ej: fondo => "300", material => "inox", etc #}
@@ -377,9 +379,9 @@
      ========================= #}
   <div class="card">
     <h3>Vista previa (columnas)</h3>
-    <div class="muted preview-note">
+    {#<div class="muted preview-note">
       Puertas numeradas · color puerta aplicado · borde cuerpo aplicado · ENCH/USB marcados
-    </div>
+    </div>#}
 
     {% if columns is empty %}
       <div style="color:#c0392b; font-weight:900;">No hay columnas en esta configuración.</div>
@@ -389,7 +391,7 @@
 
         {% for col in columns %}
           <div class="col-shell">
-            <div class="col-topbar">Columna {{ loop.index }}</div>
+            {#<div class="col-topbar">Columna {{ loop.index }}</div>#}
 
            <div class="col-card" style="border-color: {{ bodyColor }}; background: {{ bodyColor }};">
 
@@ -478,8 +480,8 @@
             <tr><th>Medida de fondo</th><td>{{ fondoLabel }}</td></tr>
             <tr><th>Interior / Exterior</th><td>{{ placementLabel }}</td></tr>
             <tr><th>Material</th><td>{{ material ?: '—' }}</td></tr>
-            <tr><th>Color puerta</th><td>{{ doorColor }}</td></tr>
-            <tr><th>Color cuerpo</th><td>{{ bodyColor }}</td></tr>
+            <tr><th>Color puerta</th><td>{{ doorColorRal }}</td></tr>
+            <tr><th>Color cuerpo</th><td>{{ bodyColorRal }}</td></tr>
             <tr><th>Nº columnas</th><td>{{ columns|length }}</td></tr>
           </tbody>
         </table>

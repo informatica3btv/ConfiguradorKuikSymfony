@@ -157,6 +157,23 @@
         <div class="admin-pill">Ver</div>
       </a>
 
+      {% for t in types %}
+        <a href="{{ path('admin_attributes_types_edit', {id: t.id}) }}" class="admin-action-card">
+          <div class="admin-action-left">
+            <div class="admin-ico">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="#0b1220" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="admin-action-title">{{ t.name }}</div>
+            </div>
+          </div>
+          <div class="admin-pill">Editar</div>
+        </a>
+      {% endfor %}
+
+
     </div>
   </div>
 

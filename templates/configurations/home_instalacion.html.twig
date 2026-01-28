@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Tipo de columnas{% endblock %}
+{% block page_title %}Instalación (Home){% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -44,10 +44,6 @@
       font-weight:800;
       font-size:16px;
     }
-    .option-sub{
-      font-size:14px;
-      color:#6b7280;
-    }
     .primary-btn{
       padding:14px 24px;
       border-radius:999px;
@@ -60,80 +56,69 @@
       transition:.15s;
     }
     .primary-btn:hover{ transform:translateY(-1px); }
-
     .warn{ color:#c0392b; font-weight:800; }
   </style>
 {% endblock %}
 
 {% block content %}
 <form method="get"
-      action=""
-      id="typeForm"
-      class="config-form"
-      data-home-url="{{ path('configuration_home_instalacion') }}"
-      data-professional-url="{{ path('configuration_columns') }}">
+      action="{{ path('configuration_columns') }}"
+      id="instalacionForm"
+      class="config-form">
 
   <input type="hidden" name="config_id" value="{{ configuration.id }}">
   <input type="hidden" name="project_id" value="{{ project.id }}">
-  <input type="hidden" name="type" id="type" value="">
+
+
+  {# 👇 IMPORTANTE: mantener el tipo seleccionado en la pantalla anterior #}
+  <input type="hidden" name="type" value="home">
+
+  {# 👇 lo que eliges aquí #}
+  <input type="hidden" name="instalacion" id="instalacion" value="">
 
   <div style="margin:16px 0;">
-    <h3 style="margin-bottom: 8px; font-size=24px">Selecciona tipo de configuracion</h3>
+    <h3 style="margin-bottom: 8px; font-size:24px;">Selecciona tipo de instalación</h3>
 
-    <div class="option-row" data-group="type" style="grid-template-columns:repeat(3,1fr);">
-
-      {% for type in types %}
-
-        <button type="button" class="option-card" data-value="{{type.value}}">
-          <div class="option-title">{{type.name}}</div>
+    <div class="option-row" data-group="instalacion">
+      {% for opt in options %}
+        <button type="button" class="option-card" data-value="{{ opt.value }}">
+          <div class="option-title">{{ opt.name }}</div>
         </button>
-
       {% endfor %}
     </div>
   </div>
 
   <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
     <button type="submit" class="primary-btn">Siguiente</button>
-    <div id="typeError" class="warn"></div>
+    <div id="instalacionError" class="warn"></div>
   </div>
 </form>
 {% endblock %}
 
 {% block javascripts %}
-{{ parent() }}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const hidden = document.getElementById('type');
-  const err = document.getElementById('typeError');
-  const form = document.getElementById('typeForm');
+    {{ parent() }}
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const hidden = document.getElementById('instalacion');
+    const err = document.getElementById('instalacionError');
 
-  document.querySelectorAll('.option-row[data-group="type"] .option-card').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.option-row[data-group="type"] .option-card')
-        .forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.option-row[data-group="instalacion"] .option-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+        document.querySelectorAll('.option-row[data-group="instalacion"] .option-card')
+            .forEach(b => b.classList.remove('selected'));
 
-      btn.classList.add('selected');
-      hidden.value = btn.getAttribute('data-value');
-      err.textContent = '';
+        btn.classList.add('selected');
+        hidden.value = btn.getAttribute('data-value');
+        err.textContent = '';
+        });
     });
-  });
 
-  form.addEventListener('submit', (e) => {
-    if (!hidden.value) {
-      e.preventDefault();
-      err.textContent = 'Selecciona un tipo de columna para continuar.';
-      return;
-    }
-
-    if (hidden.value === 'home') {
-      form.action = form.dataset.homeUrl;
-    }
-
-    if (hidden.value === 'professional') {
-      form.action = form.dataset.professionalUrl;
-    }
-  });
-});
-</script>
-
+    document.getElementById('instalacionForm').addEventListener('submit', (e) => {
+        if (!hidden.value) {
+        e.preventDefault();
+        err.textContent = 'Selecciona un tipo de instalación para continuar.';
+        }
+    });
+    });
+    </script>
 {% endblock %}

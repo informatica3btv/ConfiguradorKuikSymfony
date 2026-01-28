@@ -1,48 +1,353 @@
 {% extends 'layout.html.twig' %}
 {% block page_title %}Recuperar proyecto{% endblock %}
 
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --hscale: 4.16;
+
+      --bg:#f6f9fc;
+      --ink:#0b1220;
+      --muted:#6b7280;
+      --line: rgba(15,23,42,.12);
+      --shadow: 0 10px 25px rgba(2,20,60,.10);
+      --shadow-sm: 0 6px 14px rgba(2,20,60,.10);
+
+      --kuik-blue-900:#003b73;
+      --kuik-blue-600:#0b76d8;
+      --kuik-blue-500:#1187e6;
+    }
+
+    .page-wrap{
+      max-width: 1200px;
+      margin: 22px auto 50px;
+      padding: 0 14px;
+    }
+
+    .page-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .page-title{
+      margin:0;
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:-0.02em;
+    }
+
+    .page-sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:15px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .id-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(11,118,216,.10);
+      border:1px solid rgba(11,118,216,.18);
+      font-weight:900;
+      color:#0b76d8;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 1px 0 rgba(15,23,42,.04);
+    }
+
+    .card h3{
+      margin:0 0 12px;
+      font-size:16px;
+      font-weight:900;
+      letter-spacing:-0.01em;
+    }
+
+    .section-sep{
+      height:1px;
+      background: rgba(15,23,42,.10);
+      margin:14px 0;
+    }
+
+    /* ===== BUSCADOR ===== */
+    .search-row{
+      max-width:720px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin: 12px 0 10px;
+      flex-wrap:wrap;
+    }
+    .search-row input{
+      flex:1;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.14);
+    }
+
+    .warn{
+      max-width:720px;
+      margin-top:6px;
+      color:#7c2d12;
+      background:#fff7ed;
+      border:1px solid rgba(124,45,18,.18);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:700;
+    }
+
+    /* ===== INFO GRID ===== */
+    .kvs{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    .kv{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:14px;
+      padding:10px 12px;
+      background:#fbfcfe;
+    }
+    .kv .k{ font-size:12px; color:var(--muted); font-weight:900; }
+    .kv .v{ font-size:14px; font-weight:900; margin-top:4px; color:var(--ink); }
+
+    /* ===== PREVIEW (igual que Resumen) ===== */
+    .preview-wrap{
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:16px;
+      background:#fbfcfe;
+      padding:12px;
+    }
+
+    .cols{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:10px;
+    }
+
+    .col-shell{ width:180px; display:flex; flex-direction:column; gap:6px; }
+    .col-topbar{
+      padding:7px 10px;
+      border-radius:12px;
+      background: linear-gradient(135deg, var(--kuik-blue-900), #005fae);
+      color:#fff;
+      font-weight:900;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .col-card{
+      width:180px;
+      border-style:solid;
+      border-color: var(--col-border, #000);
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:12px;
+      overflow:hidden;
+      background:#f7f7f7;
+      box-shadow: var(--shadow);
+    }
+
+    .col-body{
+      height:calc(180px * var(--hscale));
+      background:#eaeaea;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .col-half{
+      height:calc(90px * var(--hscale));
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .half-sep{ border-top:2px dashed rgba(0,0,0,.28); }
+
+    .door{
+      width:100%;
+      border:1px solid rgba(44,62,80,.9);
+      background: var(--door-color, #3a9efc);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .door.screen{ padding:6px; background:var(--door-color, #3a9efc); }
+    .door.screen img{
+      width:125%;
+      height:125%;
+      object-fit:contain;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .door .num{
+      position:absolute;
+      left:6px;
+      top:4px;
+      font-weight:900;
+      font-size:12px;
+      background: rgba(0,0,0,.65);
+      color:#fff;
+      border-radius:999px;
+      padding:2px 7px;
+      line-height:1.2;
+    }
+
+    .door .badges{
+      position:absolute;
+      right:6px;
+      top:4px;
+      display:flex;
+      gap:4px;
+    }
+    .badge-mini{
+      font-size:11px;
+      font-weight:900;
+      background: rgba(255,255,255,.92);
+      border:1px solid rgba(0,0,0,.18);
+      border-radius:999px;
+      padding:1px 7px;
+    }
+
+    /* ===== TABLES ===== */
+    .addons-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:10px;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .addons-table th,
+    .addons-table td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      font-size:14px;
+      text-align:left;
+    }
+    .addons-table th{
+      background:#fbfcfe;
+      font-weight:900;
+      color:#334155;
+      font-size:12px;
+    }
+    .addons-table tr:last-child td{ border-bottom:0; }
+
+    /* ===== BUTTONS ===== */
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      text-decoration:none;
+      color:#0b1220;
+      transition:.15s;
+    }
+    .btn:hover{ background: rgba(2,6,23,.03); }
+    .btn.primary{
+      background:#0b76d8;
+      border-color:#0b76d8;
+      color:#fff;
+      box-shadow: 0 10px 18px rgba(11,118,216,.18);
+    }
+    .btn.primary:hover{ filter:brightness(.98); transform: translateY(-1px); }
+
+    .muted{ color:var(--muted); font-size:15px; }
+  </style>
+{% endblock %}
+
 {% block content %}
-<div class="config-form" style="max-width:980px;">
-  <h1>Recuperar proyecto</h1>
-
-  <p style="opacity:.75">
-    Escribe el ID del proyecto.
-  </p>
-
-  <div style="max-width:720px; display:flex; gap:10px; align-items:center; margin: 12px 0 10px; flex-wrap:wrap;">
-    <input id="codeInput" type="number" min="1" placeholder="Ej: 123" required
-           style="flex:1; padding:14px; border-radius:14px; border:1px solid rgba(15,23,42,.14);">
-
-    <button id="btnSearch" class="primary-btn" type="button">Buscar</button>
-    <button id="btnClear" class="secondary-btn" type="button">Limpiar</button>
+<div class="page-wrap">
+  <div class="page-head">
+    <div>
+      <h2 class="page-title">Recuperar proyecto</h2>
+      <div class="page-sub">Escribe el ID de la configuración/proyecto para cargar su resumen.</div>
+    </div>
   </div>
 
-  <div id="msg" class="warn" style="max-width:720px; margin-top:6px;"></div>
+  <div class="search-row">
+    <input id="codeInput" type="number" min="1" placeholder="Ej: 123" required>
+    <button id="btnSearch" class="btn primary" type="button">Buscar</button>
+    <button id="btnClear" class="btn" type="button">Limpiar</button>
+  </div>
 
-  {# ===== Resultado AJAX ===== #}
-  <div id="result" style="display:none; margin-top:18px;">
-    <div style="display:grid; grid-template-columns: 1.2fr .8fr; gap:14px;">
-      {# PREVIEW #}
-      <div style="background:#fff; border:1px solid rgba(15,23,42,.12); border-radius:16px; padding:14px;">
-        <h3 style="margin:0 0 10px;">Vista previa</h3>
+  <div id="msg" class="warn" style="display:none;"></div>
 
-        <div id="previewCols"
-             style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+  {# ===== Resultado AJAX (mismo layout que Resumen) ===== #}
+  <div id="result" style="display:none;">
+    <div class="page-sub" style="margin: 6px 0 14px;">
+      <span class="id-pill">ID configuración: <span id="confId">—</span></span>
+      <span class="id-pill" id="projPill" style="display:none;">Proyecto: <span id="projName">—</span></span>
+    </div>
+
+    <div class="grid">
+      {# IZQUIERDA #}
+      <div class="card">
+        <h3>Vista previa</h3>
+
+        <div class="preview-wrap">
+          <div id="previewCols" class="cols" style="--door-color:#3a9efc; --col-border:#000;"></div>
         </div>
+
+        <img id="resultadoIA"
+             style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
       </div>
 
-      {# INFO + TABLA #}
-      <div style="background:#fff; border:1px solid rgba(15,23,42,.12); border-radius:16px; padding:14px;">
-        <h3 style="margin:0 0 10px;">Datos</h3>
+      {# DERECHA #}
+      <div class="card">
+        <h3>Configuración</h3>
 
-        <div id="infoBox"
-             style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        </div>
+        <div id="infoBox" class="kvs"></div>
 
-        <hr style="border:0; border-top:1px solid rgba(15,23,42,.10); margin:12px 0;">
-
-        <h3 style="margin:0 0 10px;">Puertas por tamaño</h3>
+        <div class="section-sep"></div>
+        <h3>Puertas por tamaño</h3>
         <div id="doorsTable"></div>
+
+        <div class="section-sep"></div>
+        <h3>Complementos</h3>
+        <div id="addonsTotals" class="kvs" style="margin-top:10px;"></div>
+
+        <h3 style="margin-top:14px;">Detalle (solo puertas con complementos)</h3>
+        <div id="addonsDetail"></div>
       </div>
     </div>
   </div>
@@ -62,19 +367,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewCols = document.getElementById('previewCols');
   const infoBox = document.getElementById('infoBox');
   const doorsTable = document.getElementById('doorsTable');
+  const addonsTotals = document.getElementById('addonsTotals');
+  const addonsDetail = document.getElementById('addonsDetail');
 
-  const H_SCALE = 2;
+  const confId = document.getElementById('confId');
+  const projPill = document.getElementById('projPill');
+  const projName = document.getElementById('projName');
+
+  const SCALE = 4.16;
 
   function safeParse(jsonStr){
     try { return JSON.parse(jsonStr); } catch(e) { return null; }
   }
 
+  function showMsg(text){
+    msg.style.display = text ? 'block' : 'none';
+    msg.textContent = text || '';
+  }
+
   function clearUI(){
-    msg.textContent = '';
+    showMsg('');
     result.style.display = 'none';
+
+    confId.textContent = '—';
+    projPill.style.display = 'none';
+    projName.textContent = '—';
+
     previewCols.innerHTML = '';
     infoBox.innerHTML = '';
     doorsTable.innerHTML = '';
+    addonsTotals.innerHTML = '';
+    addonsDetail.innerHTML = '';
   }
 
   function labelBg(bg){
@@ -92,89 +415,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function kv(title, value){
     const div = document.createElement('div');
-    div.style.cssText = "border:1px solid rgba(15,23,42,.10); border-radius:14px; padding:10px; background:#fbfcfe;";
+    div.className = 'kv';
     div.innerHTML = `
-      <div style="font-size:12px; color:#6b7280; font-weight:900;">${title}</div>
-      <div style="font-size:14px; font-weight:900; margin-top:4px;">${value ?? '—'}</div>
+      <div class="k">${title}</div>
+      <div class="v">${value ?? '—'}</div>
     `;
     return div;
   }
 
-  // ✅ helper para pintar badges ENCH/USB
-  function makeBadges(sel){
-    const wrap = document.createElement('div');
-    wrap.style.cssText = "position:absolute; right:6px; top:5px; display:flex; gap:4px;";
-
-    const make = (txt) => {
-      const b = document.createElement('span');
-      b.textContent = txt;
-      b.style.cssText = "font-size:9px; font-weight:900; background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.25); border-radius:999px; padding:1px 6px; line-height:1.2;";
-      return b;
-    };
-
-    if (sel && sel.socket) wrap.appendChild(make('ENCH'));
-    if (sel && sel.usb) wrap.appendChild(make('USB'));
-
-    return wrap;
+  function isScreenBlock(blk){
+    if (!blk) return false;
+    if (typeof blk === 'object' && (blk.type === 'screen')) return true;
+    return false;
   }
 
-  // ✅ buildColumn ahora recibe addons y un contador global por referencia (obj)
+  function blockHeight(blk){
+    if (typeof blk === 'number') return blk;
+    if (typeof blk === 'object' && blk.h != null) return blk.h;
+    return 0;
+  }
+
+  function blockType(blk){
+    if (typeof blk === 'object' && blk.type) return blk.type;
+    return 'door';
+  }
+
+  function getAddonForDoor(addons, doorIndex){
+    if (!addons) return null;
+    return addons[String(doorIndex)] || addons[doorIndex] || null;
+  }
+
+  function makeBadge(txt){
+    const b = document.createElement('span');
+    b.className = 'badge-mini';
+    b.textContent = txt;
+    return b;
+  }
+
   function buildColumn(col, doorHex, bodyHex, addons, counterRef){
     const shell = document.createElement('div');
-    shell.style.cssText = "width:140px; display:flex; flex-direction:column; gap:6px;";
+    shell.className = 'col-shell';
 
     const card = document.createElement('div');
-    card.style.cssText = `
-      width:140px;
-      border-style:solid;
-      border-color:${bodyHex || '#000'};
-      border-left-width:4px;
-      border-right-width:4px;
-      border-top-width:8px;
-      border-bottom-width:8px;
-      border-radius:8px;
-      overflow:hidden;
-      background:#f7f7f7;
-    `;
+    card.className = 'col-card';
+    card.style.setProperty('--col-border', bodyHex || '#000');
 
     const body = document.createElement('div');
-    body.style.cssText = `height:${180 * H_SCALE}px; background:#eaeaea; display:flex; flex-direction:column;`;
+    body.className = 'col-body';
 
     function half(blocks){
       const halfEl = document.createElement('div');
-      halfEl.style.cssText = `height:${90 * H_SCALE}px; display:flex; flex-direction:column; overflow:hidden;`;
+      halfEl.className = 'col-half';
 
-      const arr = (blocks || []);
-      arr.forEach((h, idx) => {
-        counterRef.value += 1;
-        const doorIndex = counterRef.value;
-
-        const sel = addons ? (addons[String(doorIndex)] || addons[doorIndex] || null) : null;
+      (blocks || []).forEach((blk) => {
+        const h = blockHeight(blk);
+        const t = blockType(blk);
 
         const d = document.createElement('div');
-        d.style.cssText = `
-          height:${h * H_SCALE}px;
-          border-left:1px solid rgba(44,62,80,.9);
-          border-right:1px solid rgba(44,62,80,.9);
-          border-top:1px solid rgba(44,62,80,.9);
-          background:${doorHex || '#3a9efc'};
-          position:relative;
-        `;
+        d.className = 'door' + (t === 'screen' ? ' screen' : '');
+        d.style.height = (h * SCALE) + 'px';
+        d.style.setProperty('--door-color', doorHex || '#3a9efc');
 
-        // cerrar borde inferior si es la última de la mitad
-        if (idx === arr.length - 1) {
-          d.style.borderBottom = '1px solid rgba(44,62,80,.9)';
+        if (t === 'screen'){
+          const img = document.createElement('img');
+          img.src = "{{ asset('assets/pantalla.png') }}";
+          img.alt = "Pantalla";
+          d.appendChild(img);
+        } else {
+          counterRef.value += 1;
+          const doorIndex = counterRef.value;
+
+          const sel = getAddonForDoor(addons, doorIndex);
+          const socket = !!(sel && sel.socket);
+          const usb = !!(sel && sel.usb);
+
+          if (socket || usb){
+            const badges = document.createElement('div');
+            badges.className = 'badges';
+            if (socket) badges.appendChild(makeBadge('ENCH'));
+            if (usb) badges.appendChild(makeBadge('USB'));
+            d.appendChild(badges);
+          }
         }
-
-        // número
-        const num = document.createElement('div');
-        num.textContent = doorIndex;
-        num.style.cssText = "position:absolute; left:5px; top:4px; font-weight:900; font-size:9px; background:rgba(0,0,0,.65); color:#fff; border-radius:999px; padding:1px 6px; line-height:1.2;";
-        d.appendChild(num);
-
-        // badges
-        const badges = makeBadges(sel);
-        if (badges.childNodes.length) d.appendChild(badges);
 
         halfEl.appendChild(d);
       });
@@ -183,11 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const sep = document.createElement('div');
-    sep.style.cssText = "border-top:2px dashed rgba(0,0,0,.35); height:0;";
+    sep.className = 'half-sep';
 
-    body.appendChild(half(col.top?.blocks || []));
+    body.appendChild(half(col?.top?.blocks || []));
     body.appendChild(sep);
-    body.appendChild(half(col.bottom?.blocks || []));
+    body.appendChild(half(col?.bottom?.blocks || []));
 
     card.appendChild(body);
     shell.appendChild(card);
@@ -203,7 +525,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const all = []
         .concat(col?.top?.blocks || [])
         .concat(col?.bottom?.blocks || []);
-      all.forEach(h => {
+
+      all.forEach(blk => {
+        const t = blockType(blk);
+        if (t === 'screen') return;
+
+        const h = blockHeight(blk);
         totalDoors++;
         counts[h] = (counts[h] || 0) + 1;
       });
@@ -223,26 +550,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!sizes.length){
       const div = document.createElement('div');
       div.className = 'muted';
-      div.textContent = 'No hay puertas para contabilizar.';
+      div.textContent = 'No hay puertas (solo pantallas o vacío).';
       return div;
     }
 
     const table = document.createElement('table');
-    table.style.cssText = "width:100%; border-collapse:collapse; font-size:14px;";
+    table.className = 'addons-table';
     table.innerHTML = `
       <thead>
-        <tr style="text-align:left;">
-          <th style="padding:8px; border-bottom:1px solid rgba(15,23,42,.12);">Tamaño</th>
-          <th style="padding:8px; border-bottom:1px solid rgba(15,23,42,.12);">Cantidad</th>
+        <tr>
+          <th>Tamaño</th>
+          <th>Cantidad</th>
         </tr>
       </thead>
       <tbody></tbody>
-      <tfoot>
-        <tr>
-          <td style="padding:8px; border-top:1px solid rgba(15,23,42,.12); font-weight:900;">Total puertas</td>
-          <td style="padding:8px; border-top:1px solid rgba(15,23,42,.12); font-weight:900;">${totalDoors}</td>
-        </tr>
-      </tfoot>
     `;
 
     const tbody = table.querySelector('tbody');
@@ -250,9 +571,75 @@ document.addEventListener('DOMContentLoaded', () => {
     sizes.forEach(h => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="padding:8px; border-bottom:1px solid rgba(15,23,42,.08);">H${h}</td>
-        <td style="padding:8px; border-bottom:1px solid rgba(15,23,42,.08);">${counts[h]}</td>
+        <td><b>H${h}</b></td>
+        <td>${counts[h]}</td>
       `;
+      tbody.appendChild(tr);
+    });
+
+    const trTotal = document.createElement('tr');
+    trTotal.innerHTML = `
+      <td><b>Total puertas</b></td>
+      <td><b>${totalDoors}</b></td>
+    `;
+    tbody.appendChild(trTotal);
+
+    return table;
+  }
+
+  function computeAddons(addons){
+    let totalSocket = 0, totalUsb = 0, totalBoth = 0;
+    const detail = [];
+
+    if (!addons || typeof addons !== 'object') return { totalSocket, totalUsb, totalBoth, detail };
+
+    Object.keys(addons).forEach(k => {
+      const sel = addons[k];
+      const socket = !!(sel && sel.socket);
+      const usb = !!(sel && sel.usb);
+
+      if (socket) totalSocket++;
+      if (usb) totalUsb++;
+      if (socket && usb) totalBoth++;
+
+      if (socket || usb){
+        detail.push({
+          door: k,
+          label: (socket && usb) ? 'Enchufe + USB' : (socket ? 'Enchufe' : 'USB')
+        });
+      }
+    });
+
+    // ordenar por nº de puerta si son numéricos
+    detail.sort((a,b) => (parseInt(a.door,10) || 0) - (parseInt(b.door,10) || 0));
+
+    return { totalSocket, totalUsb, totalBoth, detail };
+  }
+
+  function renderAddonsDetail(detail){
+    if (!detail.length){
+      const div = document.createElement('div');
+      div.className = 'muted';
+      div.textContent = 'No hay puertas con complementos.';
+      return div;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'addons-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Puerta</th>
+          <th>Complemento</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+
+    detail.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${row.door}</b></td><td>${row.label}</td>`;
       tbody.appendChild(tr);
     });
 
@@ -272,7 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const id = (input.value || '').trim();
     if (!id || !/^\d+$/.test(id) || parseInt(id,10) <= 0){
-      msg.textContent = 'Introduce un ID válido.';
+      showMsg('Introduce un ID válido.');
       return;
     }
 
@@ -283,51 +670,82 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = (data.items && data.items.length) ? data.items[0] : null;
 
       if (!item){
-        msg.textContent = `No existe ninguna configuración con ID ${id}.`;
+        showMsg(`No existe ninguna configuración con ID ${id}.`);
         return;
       }
 
       const payload = safeParse(item.payload || '');
       if (!payload){
-        msg.textContent = 'El payload de esta configuración no es JSON válido.';
+        showMsg('El payload de esta configuración no es JSON válido.');
         return;
       }
 
       const columns = payload.columns || [];
       const addons = payload.addons || {};
+
       const doorColor = payload.colorDoor || '#3a9efc';
       const bodyColor = payload.colorBody || '#000';
 
-      // INFO
+      const doorColorRal = payload.colorDoorRal || payload.colorDoorRAL || null;
+      const bodyColorRal = payload.colorBodyRal || payload.colorBodyRAL || null;
+
+      // Header pills
+      confId.textContent = item.id ?? id;
+
+      if (item.projectName){
+        projPill.style.display = 'inline-flex';
+        projName.textContent = item.projectName;
+      }
+
+      // INFO (sin cliente)
       infoBox.innerHTML = '';
       infoBox.appendChild(kv('ID', item.id));
       infoBox.appendChild(kv('Proyecto', item.projectName || '—'));
       infoBox.appendChild(kv('Tipo', payload.type || '—'));
-      infoBox.appendChild(kv('Medida fondo', labelBg(payload.background_size)));
-      infoBox.appendChild(kv('Interior/Exterior', labelPlacement(payload.placement)));
+      infoBox.appendChild(kv('Fondo', labelBg(payload.background_size)));
+      infoBox.appendChild(kv('Ubicación', labelPlacement(payload.placement)));
       infoBox.appendChild(kv('Material', payload.material || '—'));
-      infoBox.appendChild(kv('Color puerta', doorColor));
-      infoBox.appendChild(kv('Color cuerpo', bodyColor));
+      infoBox.appendChild(kv('Color puerta', doorColorRal || doorColor));
+      infoBox.appendChild(kv('Color cuerpo', bodyColorRal || bodyColor));
       infoBox.appendChild(kv('Columnas', Array.isArray(columns) ? columns.length : 0));
 
-      // PREVIEW (✅ con numeración + accesorios)
+      // PREVIEW
       previewCols.innerHTML = '';
+      previewCols.style.setProperty('--door-color', doorColor);
+      previewCols.style.setProperty('--col-border', bodyColor);
+
       if (!columns.length){
-        previewCols.innerHTML = `<div class="warn">No hay columnas en esta configuración.</div>`;
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.textContent = 'No hay columnas en esta configuración.';
+        previewCols.appendChild(div);
       } else {
-        const counterRef = { value: 0 }; // contador global puertas
-        columns.forEach(col => {
+        const counterRef = { value: 0, colIndex: 0 };
+        columns.forEach((col) => {
+          counterRef.colIndex += 1;
           previewCols.appendChild(buildColumn(col, doorColor, bodyColor, addons, counterRef));
         });
       }
 
-      // TABLA
+      // TABLA PUERTAS
       doorsTable.innerHTML = '';
       doorsTable.appendChild(renderCountsTable(columns));
 
+      // COMPLEMENTOS
+      const a = computeAddons(addons);
+
+      addonsTotals.innerHTML = '';
+      addonsTotals.appendChild(kv('Total enchufes', a.totalSocket));
+      addonsTotals.appendChild(kv('Total USB', a.totalUsb));
+      addonsTotals.appendChild(kv('Puertas con ambos', a.totalBoth));
+
+      addonsDetail.innerHTML = '';
+      addonsDetail.appendChild(renderAddonsDetail(a.detail));
+
       result.style.display = 'block';
     }catch(e){
-      msg.textContent = 'No se pudo recuperar el proyecto (error de red o servidor).';
+      console.error(e);
+      showMsg('No se pudo recuperar el proyecto (error de red o servidor).');
     }finally{
       btnSearch.disabled = false;
     }
