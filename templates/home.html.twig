@@ -386,6 +386,70 @@
       align-items:center;
       flex-wrap:wrap;
     }
+
+    /* =========================
+       AGRUPACIÓN DE COLUMNAS
+       ========================= */
+    .groups-grid{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      margin-top:10px;
+    }
+
+    .group-shell{
+      border:1px dashed rgba(15,23,42,.22);
+      border-radius:16px;
+      background:rgba(255,255,255,.6);
+      padding:12px;
+    }
+
+    .group-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .group-title{
+      font-weight:900;
+      color:#0b1220;
+    }
+
+    .group-sub{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .group-cols{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+
+
+    .group-shell.active{
+      border:2px solid rgba(17,135,230,.6);
+      box-shadow: 0 0 0 6px rgba(17,135,230,.12);
+      background: rgba(17,135,230,.04);
+    }
+    .group-head{ cursor:pointer; user-select:none; }
+    .group-pick{ display:inline-flex; align-items:center; gap:8px; }
+    .group-badge{
+      font-size:12px;
+      font-weight:900;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.12);
+    }
+    .group-badge.active{
+      background: rgba(17,135,230,.12);
+      border-color: rgba(17,135,230,.45);
+    }
+
   </style>
 {% endblock %}
 
@@ -410,7 +474,6 @@
     {% for g in attributesGrouped %}
       {% set t = g.type %}
       {% if t %}
-
         {% set groupKey = t.value %}
 
         <div class="section-card" data-attr-key="{{ groupKey }}">
@@ -442,7 +505,6 @@
             </select>
           {% endif %}
         </div>
-
       {% endif %}
     {% endfor %}
 
@@ -491,7 +553,7 @@
 
     <div class="section-card">
       <h3 class="section-title">Columnas</h3>
-      <div class="section-help">Cada columna: H180 (2 mitades de H90). Añade puertas o pantalla.</div>
+      <div> Añade puertas o pantalla.</div>
 
       <div class="builder-wrap">
         <div class="builder-toolbar">
@@ -510,11 +572,11 @@
             {% endfor %}
           </select>
 
-          <span style="font-size:12px; opacity:.75;">(Cada columna: H180 = 2 mitades de H90)</span>
           <span id="builderMsg" class="warn"></span>
         </div>
 
-        <div class="columns-grid" id="columnsGrid"></div>
+        {# ✅ antes era columns-grid, ahora agrupamos #}
+        <div class="groups-grid" id="columnsGrid"></div>
       </div>
     </div>
 
@@ -564,105 +626,358 @@
     window.PRELOADED_CONFIG = {{ (payload ?? {})|json_encode|raw }};
   </script>
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-  (function() {
+ <script>
+document.addEventListener('DOMContentLoaded', () => {
+(function() {
 
-    // -------- Selección de cards --------
-    function setSelected(group, value, btn) {
-      document.querySelectorAll('.option-row[data-group="' + group + '"] .option-card')
-        .forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
+  // -------- Selección de cards --------
+  function setSelected(group, value, btn) {
+    document.querySelectorAll('.option-row[data-group="' + group + '"] .option-card')
+      .forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
 
-      const input = document.getElementById(group);
-      if (input) input.value = value;
-    }
+    const input = document.getElementById(group);
+    if (input) input.value = value;
+  }
 
-    document.querySelectorAll('.option-row .option-card').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const row = btn.closest('.option-row');
-        const group = row.getAttribute('data-group');
-        const value = btn.getAttribute('data-value');
-        setSelected(group, value, btn);
-      });
+  document.querySelectorAll('.option-row .option-card').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const row = btn.closest('.option-row');
+      const group = row.getAttribute('data-group');
+      const value = btn.getAttribute('data-value');
+      setSelected(group, value, btn);
+    });
+  });
+
+  // -------- Column builder --------
+  const hScale = 4.16;
+
+  // ✅ state con grupos + grupo activo
+  const state = {
+    columns: [],         // lista plana (compatibilidad / validaciones)
+    groups: [],          // grupos variables
+    selectedColor: '',
+    activeGroupId: null  // ✅ grupo seleccionado
+  };
+
+  const columnsGrid = document.getElementById('columnsGrid');
+  const addColumnBtn = document.getElementById('addColumnBtn');
+  const itemTypeSelect = document.getElementById('itemTypeSelect');
+  const hSizeSelect = document.getElementById('hSizeSelect');
+  const builderMsg = document.getElementById('builderMsg');
+  const colorDoorSelect = document.getElementById('color-door');
+  const colorBodySelect = document.getElementById('color-body');
+
+  function getSelectedRal(selectEl) {
+    return selectEl?.selectedOptions?.[0]?.dataset?.ral || '';
+  }
+
+  function setColumnsBorderColor(hex){
+    document.documentElement.style.setProperty('--col-border', hex || '#000');
+  }
+
+  function uid() {
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  // =========================
+  // LAYOUT por type/instalacion
+  // =========================
+  const configType = (document.getElementById('type')?.value || '').trim();
+  const instalacionCfg = (document.getElementById('instalacion')?.value || '').trim();
+
+  const layout = {
+    mode: 'professional',
+    topCap: 90,
+    bottomCap: 90,
+    singleCap: 180
+  };
+
+  function addToolbarSelect({ id, label, values, defaultValue, onChange }) {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.gap = '8px';
+
+    const lab = document.createElement('label');
+    lab.setAttribute('for', id);
+    lab.textContent = label;
+
+    const sel = document.createElement('select');
+    sel.id = id;
+    sel.style.maxWidth = '180px';
+
+    values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = String(v);
+      opt.textContent = String(v);
+      sel.appendChild(opt);
     });
 
-    // -------- Column builder (2 mitades H90) --------
-    const hScale = 4.16;
-    const state = { columns: [], selectedColor: '' };
+    sel.value = String(defaultValue);
+    sel.addEventListener('change', () => onChange(parseInt(sel.value, 10)));
 
-    const columnsGrid = document.getElementById('columnsGrid');
-    const addColumnBtn = document.getElementById('addColumnBtn');
-    const itemTypeSelect = document.getElementById('itemTypeSelect');
-    const hSizeSelect = document.getElementById('hSizeSelect');
-    const builderMsg = document.getElementById('builderMsg');
-    const colorDoorSelect = document.getElementById('color-door');
-    const colorBodySelect = document.getElementById('color-body');
+    wrap.appendChild(lab);
+    wrap.appendChild(sel);
 
-    // ✅ Helper: recuperar RAL del option seleccionado
-    function getSelectedRal(selectEl) {
-      return selectEl?.selectedOptions?.[0]?.dataset?.ral || '';
+    const toolbar = document.querySelector('.builder-toolbar');
+    if (toolbar) {
+      const msg = document.getElementById('builderMsg');
+      if (msg) toolbar.insertBefore(wrap, msg);
+      else toolbar.appendChild(wrap);
     }
 
-    function setColumnsBorderColor(hex){
-      document.documentElement.style.setProperty('--col-border', hex || '#000');
-    }
+    return sel;
+  }
 
-    function uid() {
-      return Math.random().toString(16).slice(2) + Date.now().toString(16);
-    }
+  // Si vienes editando, intenta leer caps guardados
+  const preCaps = window.PRELOADED_CONFIG || {};
 
-    function normalizeBlock(b){
-      if (typeof b === 'number') return { type:'door', h: b };
-      if (b && typeof b === 'object' && b.type && b.h) return b;
-      return { type:'door', h: 10 };
-    }
-    function blockHeight(b){
-      const nb = normalizeBlock(b);
-      return parseInt(nb.h, 10) || 0;
-    }
+  if (configType === 'home') {
+    if (instalacionCfg === 'zocalo') {
+      layout.mode = 'home_zocalo';
+      layout.bottomCap = 70; // fijo H70
 
-    function isScreenBlock(b){
-      return normalizeBlock(b).type === 'screen';
-    }
+      const preTop = parseInt(preCaps.topCap || '40', 10);
+      layout.topCap = [40,50,60,70].includes(preTop) ? preTop : 40;
 
-    // ✅ Comprobar si existe pantalla
-    function hasAnyScreen(){
-      return state.columns.some(c =>
-        c.top.blocks.some(isScreenBlock) || c.bottom.blocks.some(isScreenBlock)
-      );
-    }
-
-    function syncSizeControl(){
-      const isScreen = (itemTypeSelect?.value === 'screen');
-      if (hSizeSelect){
-        hSizeSelect.disabled = isScreen;
-        if (isScreen) hSizeSelect.value = '30';
-      }
-    }
-    itemTypeSelect?.addEventListener('change', syncSizeControl);
-    syncSizeControl();
-
-    // ✅ limpiar hints drop columnas
-    function clearColDropHints(){
-      document.querySelectorAll('.col-shell').forEach(s => {
-        s.classList.remove('col-drop-left','col-drop-right');
+      addToolbarSelect({
+        id: 'topCapSelect',
+        label: 'Altura superior:',
+        values: [40,50,60,70],
+        defaultValue: layout.topCap,
+        onChange: (v) => {
+          layout.topCap = v;
+          // recalcula sums
+          state.columns.forEach(c => {
+            c.top.sum = c.top.blocks.reduce((a,b)=>a+blockHeight(b),0);
+            c.bottom.sum = c.bottom.blocks.reduce((a,b)=>a+blockHeight(b),0);
+          });
+          render();
+        }
       });
     }
 
-    function render() {
-      columnsGrid.innerHTML = '';
-      builderMsg.textContent = '';
+    if (instalacionCfg === 'empotrado' || instalacionCfg === 'soporte_suelo') {
+      layout.mode = 'home_empotrado';
 
-      state.columns.forEach((col, idx) => {
+      const preSingle = parseInt(preCaps.singleCap || '40', 10);
+      layout.singleCap = [40,50,60,70,80].includes(preSingle) ? preSingle : 40;
+
+      addToolbarSelect({
+        id: 'singleCapSelect',
+        label: 'Altura módulo:',
+        values: [40,50,60,70,80],
+        defaultValue: layout.singleCap,
+        onChange: (v) => {
+          layout.singleCap = v;
+          state.columns.forEach(c => {
+            c.single.sum = c.single.blocks.reduce((a,b)=>a+blockHeight(b),0);
+          });
+          render();
+        }
+      });
+    }
+  }
+
+  // =========================
+  // BLOQUES helpers
+  // =========================
+  function normalizeBlock(b){
+    if (typeof b === 'number') return { type:'door', h: b };
+    if (b && typeof b === 'object' && b.type && b.h) return b;
+    return { type:'door', h: 10 };
+  }
+  function blockHeight(b){
+    const nb = normalizeBlock(b);
+    return parseInt(nb.h, 10) || 0;
+  }
+  function isScreenBlock(b){
+    return normalizeBlock(b).type === 'screen';
+  }
+  function hasAnyScreen(){
+    return state.columns.some(c => {
+      if (c.single) return c.single.blocks.some(isScreenBlock);
+      return c.top.blocks.some(isScreenBlock) || c.bottom.blocks.some(isScreenBlock);
+    });
+  }
+
+  function syncSizeControl(){
+    const isScreen = (itemTypeSelect?.value === 'screen');
+    if (hSizeSelect){
+      hSizeSelect.disabled = isScreen;
+      if (isScreen) hSizeSelect.value = '30';
+    }
+  }
+  itemTypeSelect?.addEventListener('change', syncSizeControl);
+  syncSizeControl();
+
+  // =========================
+  // AGRUPACIÓN VARIABLE + ACTIVO
+  // =========================
+  function getGroupMax() {
+    if (layout.mode === 'professional') return 2;
+    if (layout.mode === 'home_zocalo') return 3;
+    if (layout.mode === 'home_empotrado') return 5;
+    return 1;
+  }
+
+  function newGroup() {
+    return { id: uid(), columns: [] };
+  }
+
+  function rebuildFlatColumnsFromGroups() {
+    state.columns = state.groups.flatMap(g => g.columns);
+  }
+
+  function ensureAtLeastOneGroup() {
+    if (state.groups.length === 0) state.groups.push(newGroup());
+  }
+
+  function ensureActiveGroup() {
+    ensureAtLeastOneGroup();
+    if (!state.activeGroupId) state.activeGroupId = state.groups[0].id;
+
+    const exists = state.groups.some(g => g.id === state.activeGroupId);
+    if (!exists) state.activeGroupId = state.groups[0].id;
+  }
+
+  function setActiveGroup(id) {
+    state.activeGroupId = id;
+  }
+
+  // ✅ ahora añade columna al grupo activo (y si está lleno crea nuevo y lo activa)
+  function addColumnToGroups(newCol) {
+    ensureActiveGroup();
+    const max = getGroupMax();
+
+    let g = state.groups.find(x => x.id === state.activeGroupId);
+    if (!g) g = state.groups[0];
+
+    if (g.columns.length >= max) {
+      const ng = newGroup();
+      state.groups.push(ng);
+      state.activeGroupId = ng.id;
+      g = ng;
+    }
+
+    g.columns.push(newCol);
+    rebuildFlatColumnsFromGroups();
+  }
+
+  // ✅ botón + Añadir grupo (lo crea y lo activa)
+  (function injectAddGroupButton(){
+    const toolbar = document.querySelector('.builder-toolbar');
+    if (!toolbar) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'secondary-btn';
+    btn.textContent = '+ Añadir grupo';
+    btn.style.marginLeft = '6px';
+
+    btn.addEventListener('click', () => {
+      const g = newGroup();
+      state.groups.push(g);
+      state.activeGroupId = g.id;
+      rebuildFlatColumnsFromGroups();
+      render();
+    });
+
+    // lo metemos después de añadir columna
+    toolbar.insertBefore(btn, toolbar.children[1] || null);
+  })();
+
+  // ✅ limpiar hints drop columnas
+  function clearColDropHints(){
+    document.querySelectorAll('.col-shell').forEach(s => {
+      s.classList.remove('col-drop-left','col-drop-right');
+    });
+  }
+
+  // =========================
+  // RENDER
+  // =========================
+  function render() {
+    columnsGrid.innerHTML = '';
+    builderMsg.textContent = '';
+
+    ensureActiveGroup();
+    rebuildFlatColumnsFromGroups();
+
+    state.groups.forEach((group, gIndex) => {
+      const groupCols = group.columns;
+
+      const groupShell = document.createElement('div');
+      groupShell.className = 'group-shell';
+      groupShell.dataset.groupId = group.id;
+
+      if (group.id === state.activeGroupId) groupShell.classList.add('active');
+
+      const head = document.createElement('div');
+      head.className = 'group-head';
+
+      // click en cabecera = activar grupo
+      head.addEventListener('click', () => {
+        setActiveGroup(group.id);
+        render();
+      });
+
+      const gTitle = document.createElement('div');
+      gTitle.className = 'group-title';
+
+      const pick = document.createElement('div');
+      pick.className = 'group-pick';
+
+      const t = document.createElement('span');
+      t.textContent = `Grupo ${gIndex + 1}`;
+
+      const badge = document.createElement('span');
+      badge.className = 'group-badge' + (group.id === state.activeGroupId ? ' active' : '');
+      badge.textContent = (group.id === state.activeGroupId) ? 'Activo' : 'Seleccionar';
+
+      pick.appendChild(t);
+      pick.appendChild(badge);
+      gTitle.appendChild(pick);
+
+      const gSub = document.createElement('div');
+      gSub.className = 'group-sub';
+      gSub.textContent = `${groupCols.length} columna(s) · máx ${getGroupMax()}`;
+
+      // botón borrar grupo (solo si vacío)
+      const delGroup = document.createElement('button');
+      delGroup.type = 'button';
+      delGroup.className = 'icon-btn icon-del';
+      delGroup.textContent = '×';
+      delGroup.title = 'Eliminar grupo (si vacío)';
+      delGroup.addEventListener('click', (e) => {
+        e.stopPropagation(); // no activar al borrar
+        if (group.columns.length > 0) return;
+        state.groups = state.groups.filter(g => g.id !== group.id);
+        ensureActiveGroup();
+        rebuildFlatColumnsFromGroups();
+        render();
+      });
+
+      head.appendChild(gTitle);
+      head.appendChild(gSub);
+      head.appendChild(delGroup);
+
+      const groupRow = document.createElement('div');
+      groupRow.className = 'group-cols';
+
+      groupShell.appendChild(head);
+      groupShell.appendChild(groupRow);
+
+      groupCols.forEach((col) => {
+        const globalList = state.groups.flatMap(g => g.columns);
+        const globalIdx = globalList.findIndex(c => c.id === col.id);
 
         const shell = document.createElement('div');
         shell.className = 'col-shell';
         shell.dataset.colId = col.id;
 
-        // =============================
-        // ✅ DRAG & DROP DE COLUMNAS
-        // =============================
+        // DRAG & DROP de columnas (reorden global manteniendo tamaño de grupos)
         shell.draggable = true;
 
         shell.addEventListener('dragstart', (e) => {
@@ -701,20 +1016,34 @@
           const draggedId = e.dataTransfer.getData('text/plain');
           if (!draggedId || draggedId === col.id) return;
 
-          const fromIndex = state.columns.findIndex(c => c.id === draggedId);
-          const toIndex = state.columns.findIndex(c => c.id === col.id);
+          const flat = state.groups.flatMap(g => g.columns);
+          const fromIndex = flat.findIndex(c => c.id === draggedId);
+          const toIndex   = flat.findIndex(c => c.id === col.id);
           if (fromIndex === -1 || toIndex === -1) return;
 
           const rect = shell.getBoundingClientRect();
           const insertAfter = e.clientX >= rect.left + rect.width / 2;
 
-          const [moved] = state.columns.splice(fromIndex, 1);
+          const [moved] = flat.splice(fromIndex, 1);
 
           let target = toIndex;
           if (fromIndex < toIndex) target = toIndex - 1;
 
           const finalIndex = insertAfter ? target + 1 : target;
-          state.columns.splice(finalIndex, 0, moved);
+          flat.splice(finalIndex, 0, moved);
+
+          const sizes = state.groups.map(g => g.columns.length);
+          const newGroups = state.groups.map(g => ({ id: g.id, columns: [] }));
+
+          let cursor = 0;
+          for (let i = 0; i < sizes.length; i++) {
+            newGroups[i].columns = flat.slice(cursor, cursor + sizes[i]);
+            cursor += sizes[i];
+          }
+
+          state.groups = newGroups.filter(g => g.columns.length > 0);
+          ensureActiveGroup();
+          rebuildFlatColumnsFromGroups();
 
           shell.classList.remove('col-drop-left','col-drop-right');
           render();
@@ -724,7 +1053,7 @@
         topBar.className = 'col-toolbar-top';
 
         const title = document.createElement('div');
-        title.textContent = `Columna ${idx + 1}`;
+        title.textContent = `Columna ${globalIdx + 1}`;
 
         const actions = document.createElement('div');
         actions.className = 'col-actions';
@@ -734,39 +1063,46 @@
         plus.className = 'icon-btn icon-plus';
         plus.textContent = '+';
         plus.title = 'Añadir bloque';
-
-        // ✅ evita drag columna al pulsar
         plus.addEventListener('mousedown', (e) => e.stopPropagation());
 
         plus.addEventListener('click', () => {
-          const type = itemTypeSelect?.value || 'door';
-          const h = (type === 'screen') ? 30 : parseInt(hSizeSelect.value, 10);
+          const itemType = itemTypeSelect?.value || 'door';
+          const h = (itemType === 'screen') ? 30 : parseInt(hSizeSelect.value, 10);
 
-          // ✅ Regla 1: solo una pantalla en todo el configurador
-          if (type === 'screen' && hasAnyScreen()) {
+          if (itemType === 'screen' && hasAnyScreen()) {
             builderMsg.textContent = 'Solo se puede añadir 1 pantalla en toda la configuración.';
             return;
           }
 
-          const newBlock = { type, h };
+          const newBlock = { type: itemType, h };
 
-          // ✅ Regla 2: la pantalla solo puede ir en la mitad superior
-          if (type === 'screen') {
-            if (col.top.sum + h <= 90) {
+          if (layout.mode === 'home_empotrado') {
+            if (col.single.sum + h <= layout.singleCap) {
+              col.single.blocks.push(newBlock);
+              col.single.sum += h;
+              builderMsg.textContent = '';
+              render();
+              return;
+            }
+            const left = layout.singleCap - col.single.sum;
+            builderMsg.textContent = `No cabe ${h} en Columna ${globalIdx + 1}. Libre: ${left}.`;
+            return;
+          }
+
+          if (itemType === 'screen') {
+            if (col.top.sum + h <= layout.topCap) {
               col.top.blocks.push(newBlock);
               col.top.sum += h;
               builderMsg.textContent = '';
               render();
               return;
             }
-
-            const topLeft = 90 - col.top.sum;
-            builderMsg.textContent = `La pantalla solo puede ir arriba y no cabe. Libres arriba: H${topLeft}.`;
+            const topLeft = layout.topCap - col.top.sum;
+            builderMsg.textContent = `La pantalla solo puede ir arriba y no cabe. Libres arriba: ${topLeft}.`;
             return;
           }
 
-          // Puertas (se comportan igual que antes: arriba si cabe, si no abajo)
-          if (col.top.sum + h <= 90) {
+          if (col.top.sum + h <= layout.topCap) {
             col.top.blocks.push(newBlock);
             col.top.sum += h;
             builderMsg.textContent = '';
@@ -774,7 +1110,7 @@
             return;
           }
 
-          if (col.bottom.sum + h <= 90) {
+          if (col.bottom.sum + h <= layout.bottomCap) {
             col.bottom.blocks.push(newBlock);
             col.bottom.sum += h;
             builderMsg.textContent = '';
@@ -782,9 +1118,9 @@
             return;
           }
 
-          const topLeft = 90 - col.top.sum;
-          const botLeft = 90 - col.bottom.sum;
-          builderMsg.textContent = `No cabe H${h} en Columna ${idx + 1}. Libres: arriba H${topLeft}, abajo H${botLeft}.`;
+          const topLeft = layout.topCap - col.top.sum;
+          const botLeft = layout.bottomCap - col.bottom.sum;
+          builderMsg.textContent = `No cabe ${h} en Columna ${globalIdx + 1}. Libres: arriba ${topLeft}, abajo ${botLeft}.`;
         });
 
         const del = document.createElement('button');
@@ -794,9 +1130,14 @@
         del.title = 'Eliminar columna';
 
         del.addEventListener('mousedown', (e) => e.stopPropagation());
-
         del.addEventListener('click', () => {
-          state.columns = state.columns.filter(c => c.id !== col.id);
+          // elimina de su grupo
+          state.groups.forEach(g => {
+            g.columns = g.columns.filter(c => c.id !== col.id);
+          });
+          state.groups = state.groups.filter(g => g.columns.length > 0);
+          ensureActiveGroup();
+          rebuildFlatColumnsFromGroups();
           render();
         });
 
@@ -811,6 +1152,13 @@
 
         const body = document.createElement('div');
         body.className = 'col-body';
+
+        if (layout.mode === 'home_zocalo') {
+          body.style.height = ((layout.topCap + layout.bottomCap) * hScale) + 'px';
+        }
+        if (layout.mode === 'home_empotrado') {
+          body.style.height = (layout.singleCap * hScale) + 'px';
+        }
 
         let dragInfo = null;
         let dropIndicator = null;
@@ -829,8 +1177,8 @@
           }
         }
 
-        function getInsertIndex(halfEl, y) {
-          const blocks = Array.from(halfEl.querySelectorAll('.block:not(.dragging)'));
+        function getInsertIndex(zoneEl, y) {
+          const blocks = Array.from(zoneEl.querySelectorAll('.block:not(.dragging)'));
           for (let i = 0; i < blocks.length; i++) {
             const r = blocks[i].getBoundingClientRect();
             const mid = r.top + r.height / 2;
@@ -839,26 +1187,22 @@
           return blocks.length;
         }
 
-        function placeIndicator(halfEl, index) {
+        function placeIndicator(zoneEl, index) {
           const ind = ensureIndicator();
-          const blocks = Array.from(halfEl.querySelectorAll('.block:not(.dragging)'));
-          if (index >= blocks.length) halfEl.appendChild(ind);
-          else halfEl.insertBefore(ind, blocks[index]);
+          const blocks = Array.from(zoneEl.querySelectorAll('.block:not(.dragging)'));
+          if (index >= blocks.length) zoneEl.appendChild(ind);
+          else zoneEl.insertBefore(ind, blocks[index]);
         }
 
-        function moveWithinHalf(halfName, from, to) {
-          const arr = (halfName === 'top') ? col.top.blocks : col.bottom.blocks;
+        function moveWithin(arr, from, to) {
           if (from === to) return;
-
           const [moved] = arr.splice(from, 1);
-
           if (to < 0) to = 0;
           if (to > arr.length) to = arr.length;
-
           arr.splice(to, 0, moved);
         }
 
-        function makeBlock(block, halfName, fromIndex) {
+        function makeBlock(block, zoneName, fromIndex) {
           const nb = normalizeBlock(block);
           const h = blockHeight(nb);
 
@@ -867,7 +1211,6 @@
           b.style.height = (h * hScale) + 'px';
           b.draggable = true;
 
-          // ✅ evita drag columna al intentar arrastrar bloque
           b.addEventListener('mousedown', (e) => e.stopPropagation());
 
           if (state.selectedColor) b.style.background = state.selectedColor;
@@ -894,19 +1237,23 @@
             e.stopPropagation();
             e.preventDefault();
 
-            const targetHalf = (halfName === 'top') ? col.top : col.bottom;
-
-            if (typeof fromIndex === 'number' && fromIndex >= 0) {
-              const removed = targetHalf.blocks.splice(fromIndex, 1)[0];
-              targetHalf.sum -= blockHeight(removed);
+            if (layout.mode === 'home_empotrado') {
+              const removed = col.single.blocks.splice(fromIndex, 1)[0];
+              col.single.sum -= blockHeight(removed);
               render();
+              return;
             }
+
+            const target = (zoneName === 'top') ? col.top : col.bottom;
+            const removed = target.blocks.splice(fromIndex, 1)[0];
+            target.sum -= blockHeight(removed);
+            render();
           });
 
           b.appendChild(delBtn);
 
           b.addEventListener('dragstart', (e) => {
-            dragInfo = { colId: col.id, half: halfName, fromIndex };
+            dragInfo = { colId: col.id, zone: zoneName, fromIndex };
             b.classList.add('dragging');
             e.dataTransfer.setData('text/plain', JSON.stringify(dragInfo));
             e.dataTransfer.effectAllowed = 'move';
@@ -921,279 +1268,389 @@
           return b;
         }
 
-        function wireHalfDnD(halfEl, halfName) {
-          halfEl.addEventListener('dragover', (e) => {
+        function wireZoneDnD(zoneEl, zoneName, blocksArr) {
+          zoneEl.addEventListener('dragover', (e) => {
             e.preventDefault();
 
             const data = dragInfo || (() => {
               try { return JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return null; }
             })();
 
-            if (!data || data.colId !== col.id || data.half !== halfName) {
+            if (!data || data.colId !== col.id || data.zone !== zoneName) {
               cleanupIndicator();
               return;
             }
 
-            const idx = getInsertIndex(halfEl, e.clientY);
-            placeIndicator(halfEl, idx);
+            const idx = getInsertIndex(zoneEl, e.clientY);
+            placeIndicator(zoneEl, idx);
             e.dataTransfer.dropEffect = 'move';
-            halfEl.classList.add('drag-over');
+            zoneEl.classList.add('drag-over');
           });
 
-          halfEl.addEventListener('dragleave', (e) => {
-            if (!halfEl.contains(e.relatedTarget)) {
-              halfEl.classList.remove('drag-over');
+          zoneEl.addEventListener('dragleave', (e) => {
+            if (!zoneEl.contains(e.relatedTarget)) {
+              zoneEl.classList.remove('drag-over');
               cleanupIndicator();
             }
           });
 
-          halfEl.addEventListener('drop', (e) => {
+          zoneEl.addEventListener('drop', (e) => {
             e.preventDefault();
-            halfEl.classList.remove('drag-over');
+            zoneEl.classList.remove('drag-over');
 
             const data = dragInfo || (() => {
               try { return JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return null; }
             })();
 
-            if (!data || data.colId !== col.id || data.half !== halfName) {
+            if (!data || data.colId !== col.id || data.zone !== zoneName) {
               cleanupIndicator();
               return;
             }
 
-            const toIndex = getInsertIndex(halfEl, e.clientY);
-            moveWithinHalf(halfName, data.fromIndex, toIndex);
+            const toIndex = getInsertIndex(zoneEl, e.clientY);
+            moveWithin(blocksArr, data.fromIndex, toIndex);
             cleanupIndicator();
             render();
           });
         }
 
-        const topHalf = document.createElement('div');
-        topHalf.className = 'col-half';
-        col.top.blocks.forEach((blk, i) => topHalf.appendChild(makeBlock(blk, 'top', i)));
-        wireHalfDnD(topHalf, 'top');
+        // ----- Construcción visual según layout -----
+        if (layout.mode === 'home_empotrado') {
+          const singleZone = document.createElement('div');
+          singleZone.className = 'col-half';
+          singleZone.style.height = (layout.singleCap * hScale) + 'px';
 
-        const sep = document.createElement('div');
-        sep.className = 'half-separator';
+          col.single.blocks.forEach((blk, i) => singleZone.appendChild(makeBlock(blk, 'single', i)));
+          wireZoneDnD(singleZone, 'single', col.single.blocks);
 
-        const bottomHalf = document.createElement('div');
-        bottomHalf.className = 'col-half';
-        col.bottom.blocks.forEach((blk, i) => bottomHalf.appendChild(makeBlock(blk, 'bottom', i)));
-        wireHalfDnD(bottomHalf, 'bottom');
+          body.appendChild(singleZone);
+        } else {
+          const topHalf = document.createElement('div');
+          topHalf.className = 'col-half';
 
-        body.appendChild(topHalf);
-        body.appendChild(sep);
-        body.appendChild(bottomHalf);
+          const sep = document.createElement('div');
+          sep.className = 'half-separator';
+
+          const bottomHalf = document.createElement('div');
+          bottomHalf.className = 'col-half';
+
+          if (layout.mode === 'home_zocalo') {
+            topHalf.style.height = (layout.topCap * hScale) + 'px';
+            bottomHalf.style.height = (layout.bottomCap * hScale) + 'px';
+          }
+
+          col.top.blocks.forEach((blk, i) => topHalf.appendChild(makeBlock(blk, 'top', i)));
+          wireZoneDnD(topHalf, 'top', col.top.blocks);
+
+          col.bottom.blocks.forEach((blk, i) => bottomHalf.appendChild(makeBlock(blk, 'bottom', i)));
+          wireZoneDnD(bottomHalf, 'bottom', col.bottom.blocks);
+
+          body.appendChild(topHalf);
+          body.appendChild(sep);
+          body.appendChild(bottomHalf);
+        }
 
         card.appendChild(body);
 
         const foot = document.createElement('div');
         foot.className = 'col-foot';
-        const total = col.top.sum + col.bottom.sum;
-        foot.innerHTML = `Usado H${total}/180 · Arriba H${col.top.sum}/90 · Abajo H${col.bottom.sum}/90`;
+
+        if (layout.mode === 'home_empotrado') {
+          foot.innerHTML = `Usado H${col.single.sum}/H${layout.singleCap}`;
+        } else {
+          const total = col.top.sum + col.bottom.sum;
+          foot.innerHTML = `Usado H${total}/H${layout.topCap + layout.bottomCap} · Arriba H${col.top.sum}/H${layout.topCap} · Abajo H${col.bottom.sum}/H${layout.bottomCap}`;
+        }
 
         shell.appendChild(topBar);
         shell.appendChild(card);
         shell.appendChild(foot);
 
-        columnsGrid.appendChild(shell);
+        groupRow.appendChild(shell);
       });
-    }
 
-    // ✅ Inicializa color puertas
-    state.selectedColor = colorDoorSelect?.value || '';
-    colorDoorSelect?.addEventListener('change', () => {
-      state.selectedColor = colorDoorSelect.value || '';
-      render();
+      columnsGrid.appendChild(groupShell);
     });
+  }
 
-    // ✅ Inicializa borde columnas
-    setColumnsBorderColor(colorBodySelect?.value || '#000');
-    colorBodySelect?.addEventListener('change', () => {
-      setColumnsBorderColor(colorBodySelect.value || '#000');
-    });
+  // Inicializa color puertas
+  state.selectedColor = colorDoorSelect?.value || '';
+  colorDoorSelect?.addEventListener('change', () => {
+    state.selectedColor = colorDoorSelect.value || '';
+    render();
+  });
 
-    addColumnBtn.addEventListener('click', () => {
-      state.columns.push({
-        id: uid(),
-        top: { blocks: [], sum: 0 },
-        bottom: { blocks: [], sum: 0 }
-      });
-      render();
-    });
+  // Inicializa borde columnas
+  setColumnsBorderColor(colorBodySelect?.value || '#000');
+  colorBodySelect?.addEventListener('change', () => {
+    setColumnsBorderColor(colorBodySelect.value || '#000');
+  });
 
-    // =========================
-    // CARGAR CONFIG (si existe)
-    // =========================
-    const pre = window.PRELOADED_CONFIG || null;
+  // Añadir columna (según layout) -> ✅ ahora va a grupo activo
+  addColumnBtn.addEventListener('click', () => {
+    const newCol = (layout.mode === 'home_empotrado')
+      ? { id: uid(), single: { blocks: [], sum: 0 } }
+      : { id: uid(), top: { blocks: [], sum: 0 }, bottom: { blocks: [], sum: 0 } };
 
-    function selectOption(group, value){
-      if (!value) return;
-      const btn = document.querySelector(`.option-row[data-group="${group}"] .option-card[data-value="${value}"]`);
-      if (btn) btn.click();
-    }
+    addColumnToGroups(newCol);
+    render();
+  });
 
-    function setSelectValue(sel, value){
-      if (!sel || !value) return;
-      sel.value = value;
-    }
+  // =========================
+  // CARGAR CONFIG (si existe)
+  // =========================
+  const pre = window.PRELOADED_CONFIG || null;
 
-    function loadDynamicAttributes(pre){
-      document.querySelectorAll('[data-attr-key]').forEach(sec => {
-        const key = sec.getAttribute('data-attr-key');
-        if (!key) return;
+  function selectOption(group, value){
+    if (!value) return;
+    const btn = document.querySelector(`.option-row[data-group="${group}"] .option-card[data-value="${value}"]`);
+    if (btn) btn.click();
+  }
 
-        const val = pre[key];
-        if (!val) return;
+  function setSelectValue(sel, value){
+    if (!sel || !value) return;
+    sel.value = value;
+  }
 
-        const row = sec.querySelector(`.option-row[data-group="${key}"]`);
-        if (row){
-          selectOption(key, val);
-          return;
-        }
+  function loadDynamicAttributes(pre){
+    document.querySelectorAll('[data-attr-key]').forEach(sec => {
+      const key = sec.getAttribute('data-attr-key');
+      if (!key) return;
 
-        const sel = document.getElementById(key);
-        if (sel && sel.tagName === 'SELECT'){
-          sel.value = val;
-        }
-      });
-    }
+      const val = pre[key];
+      if (!val) return;
 
-    if (pre && Object.keys(pre).length) {
-      selectOption('placement', pre.placement);
-
-      setSelectValue(colorDoorSelect, pre.colorDoor);
-      state.selectedColor = pre.colorDoor || '';
-
-      setSelectValue(colorBodySelect, pre.colorBody);
-      setColumnsBorderColor(pre.colorBody || '#000');
-
-      if (Array.isArray(pre.columns)) {
-        state.columns = pre.columns.map(c => {
-          const topBlocks = (c.top?.blocks || []).map(normalizeBlock);
-          const bottomBlocks = (c.bottom?.blocks || []).map(normalizeBlock);
-
-          const topSum = (c.top?.total ?? topBlocks.reduce((a,b)=>a+blockHeight(b),0));
-          const bottomSum = (c.bottom?.total ?? bottomBlocks.reduce((a,b)=>a+blockHeight(b),0));
-
-          return {
-            id: uid(),
-            top: { blocks: topBlocks, sum: topSum },
-            bottom: { blocks: bottomBlocks, sum: bottomSum }
-          };
-        });
+      const row = sec.querySelector(`.option-row[data-group="${key}"]`);
+      if (row){
+        selectOption(key, val);
+        return;
       }
 
-      loadDynamicAttributes(pre);
+      const sel = document.getElementById(key);
+      if (sel && sel.tagName === 'SELECT'){
+        sel.value = val;
+      }
+    });
+  }
 
-      render();
+  function buildColumnFromPayload(c){
+    if (layout.mode === 'home_empotrado') {
+      const blocks = (c.single?.blocks || []).map(normalizeBlock);
+      const sum = (c.single?.total ?? blocks.reduce((a,b)=>a+blockHeight(b),0));
+      return { id: uid(), single: { blocks, sum } };
     } else {
-      render();
+      const topBlocks = (c.top?.blocks || []).map(normalizeBlock);
+      const bottomBlocks = (c.bottom?.blocks || []).map(normalizeBlock);
+
+      const topSum = (c.top?.total ?? topBlocks.reduce((a,b)=>a+blockHeight(b),0));
+      const bottomSum = (c.bottom?.total ?? bottomBlocks.reduce((a,b)=>a+blockHeight(b),0));
+
+      return {
+        id: uid(),
+        top: { blocks: topBlocks, sum: topSum },
+        bottom: { blocks: bottomBlocks, sum: bottomSum }
+      };
+    }
+  }
+
+  if (pre && Object.keys(pre).length) {
+    selectOption('placement', pre.placement);
+
+    setSelectValue(colorDoorSelect, pre.colorDoor);
+    state.selectedColor = pre.colorDoor || '';
+
+    setSelectValue(colorBodySelect, pre.colorBody);
+    setColumnsBorderColor(pre.colorBody || '#000');
+
+    if (layout.mode === 'home_zocalo' && pre.topCap) layout.topCap = parseInt(pre.topCap, 10) || layout.topCap;
+    if (layout.mode === 'home_empotrado' && pre.singleCap) layout.singleCap = parseInt(pre.singleCap, 10) || layout.singleCap;
+
+    if (Array.isArray(pre.groups) && pre.groups.length) {
+      state.groups = pre.groups.map(groupCols => {
+        const g = newGroup();
+        g.columns = (groupCols || []).map(buildColumnFromPayload);
+        return g;
+      }).filter(g => g.columns.length > 0);
+
+      ensureAtLeastOneGroup();
+      state.activeGroupId = state.groups[0]?.id || null;
+      rebuildFlatColumnsFromGroups();
+    } else if (Array.isArray(pre.columns)) {
+      const g = newGroup();
+      g.columns = pre.columns.map(buildColumnFromPayload);
+      state.groups = [g];
+
+      ensureAtLeastOneGroup();
+      state.activeGroupId = state.groups[0]?.id || null;
+      rebuildFlatColumnsFromGroups();
+    } else {
+      ensureAtLeastOneGroup();
+      state.activeGroupId = state.groups[0]?.id || null;
+      rebuildFlatColumnsFromGroups();
     }
 
-    // Submit
-    document.getElementById('configForm').addEventListener('submit', function(e) {
-      const pl = document.getElementById('placement').value;
-      const colorDoor = document.getElementById('color-door').value;
-      const colorBody = document.getElementById('color-body').value;
+    loadDynamicAttributes(pre);
+    render();
+  } else {
+    ensureAtLeastOneGroup();
+    state.activeGroupId = state.groups[0]?.id || null;
+    rebuildFlatColumnsFromGroups();
+    render();
+  }
 
-      // ✅ RAL desde el option seleccionado
-      const colorDoorRal = getSelectedRal(colorDoorSelect);
-      const colorBodyRal = getSelectedRal(colorBodySelect);
+  // =========================
+  // SUBMIT
+  // =========================
+  document.getElementById('configForm').addEventListener('submit', function(e) {
+    const pl = document.getElementById('placement').value;
+    const colorDoor = document.getElementById('color-door').value;
+    const colorBody = document.getElementById('color-body').value;
 
-      const error = document.getElementById('formError');
-      error.textContent = '';
+    const colorDoorRal = getSelectedRal(colorDoorSelect);
+    const colorBodyRal = getSelectedRal(colorBodySelect);
 
-      if (!pl || !colorDoor || !colorBody) {
-        e.preventDefault();
-        error.textContent = 'Selecciona interior/exterior, color puerta y color cuerpo.';
-        return;
-      }
+    const error = document.getElementById('formError');
+    error.textContent = '';
 
-      if (state.columns.length === 0) {
-        e.preventDefault();
-        error.textContent = 'Añade al menos 1 columna.';
-        return;
-      }
+    if (!pl || !colorDoor || !colorBody) {
+      e.preventDefault();
+      error.textContent = 'Selecciona interior/exterior, color puerta y color cuerpo.';
+      return;
+    }
 
-      const incompleteIndex = state.columns.findIndex(c => c.top.sum !== 90 || c.bottom.sum !== 90);
-      if (incompleteIndex !== -1) {
-        e.preventDefault();
-        const colNum = incompleteIndex + 1;
-        const topLeft = 90 - state.columns[incompleteIndex].top.sum;
-        const botLeft = 90 - state.columns[incompleteIndex].bottom.sum;
+    rebuildFlatColumnsFromGroups();
 
+    if (state.columns.length === 0) {
+      e.preventDefault();
+      error.textContent = 'Añade al menos 1 columna.';
+      return;
+    }
+
+    let incompleteIndex = -1;
+
+    if (layout.mode === 'home_empotrado') {
+      incompleteIndex = state.columns.findIndex(c => c.single.sum !== layout.singleCap);
+    } else {
+      incompleteIndex = state.columns.findIndex(c => c.top.sum !== layout.topCap || c.bottom.sum !== layout.bottomCap);
+    }
+
+    if (incompleteIndex !== -1) {
+      e.preventDefault();
+      const colNum = incompleteIndex + 1;
+
+      if (layout.mode === 'home_empotrado') {
+        const left = layout.singleCap - state.columns[incompleteIndex].single.sum;
+        error.textContent = `La columna ${colNum} no está completa. Falta: H${Math.max(0, left)}.`;
+      } else {
+        const topLeft = layout.topCap - state.columns[incompleteIndex].top.sum;
+        const botLeft = layout.bottomCap - state.columns[incompleteIndex].bottom.sum;
         error.textContent = `La columna ${colNum} no está completa. Falta: arriba H${Math.max(0, topLeft)}, abajo H${Math.max(0, botLeft)}.`;
-        return;
       }
+      return;
+    }
 
-      const columnsPayload = state.columns.map(c => ({
+    let columnsPayload = [];
+    if (layout.mode === 'home_empotrado') {
+      columnsPayload = state.columns.map(c => ({
+        single: { blocks: c.single.blocks, total: c.single.sum },
+        total: c.single.sum
+      }));
+    } else {
+      columnsPayload = state.columns.map(c => ({
         top: { blocks: c.top.blocks, total: c.top.sum },
         bottom: { blocks: c.bottom.blocks, total: c.bottom.sum },
         total: c.top.sum + c.bottom.sum
       }));
+    }
 
-      const ensureHidden = (name, value) => {
-        let el = document.querySelector('input[name="' + name + '"]');
-        if (!el) {
-          el = document.createElement('input');
-          el.type = 'hidden';
-          el.name = name;
-          this.appendChild(el);
+    const groupsPayload = state.groups.map(g => {
+      return g.columns.map(c => {
+        if (layout.mode === 'home_empotrado') {
+          return {
+            single: { blocks: c.single.blocks, total: c.single.sum },
+            total: c.single.sum
+          };
         }
-        el.value = value;
-      };
-
-      ensureHidden.call(this, 'project_id', document.getElementById('project_id').value);
-      ensureHidden.call(this, 'configuration_id', document.getElementById('configuration_id').value);
-
-      // ✅ También como inputs sueltos (por si tu backend los usa así)
-      ensureHidden.call(this, 'colorDoor', colorDoor);
-      ensureHidden.call(this, 'colorDoorRal', colorDoorRal);
-      ensureHidden.call(this, 'colorBody', colorBody);
-      ensureHidden.call(this, 'colorBodyRal', colorBodyRal);
-
-      const type = document.getElementById('type')?.value || '';
-      const instalacion = document.getElementById('instalacion')?.value || '';
-
-
-      const dynamicAttrs = {};
-      document.querySelectorAll('[data-attr-key]').forEach(sec => {
-        const key = sec.getAttribute('data-attr-key');
-        if (!key) return;
-
-        const el = document.getElementById(key);
-        let val = '';
-
-        if (el) {
-          val = (el.value || '').trim();
-        }
-
-        if (!val) {
-          const selectedBtn = sec.querySelector(`.option-row[data-group="${key}"] .option-card.selected`);
-          if (selectedBtn) val = (selectedBtn.getAttribute('data-value') || '').trim();
-        }
-
-        if (val) dynamicAttrs[key] = val;
+        return {
+          top: { blocks: c.top.blocks, total: c.top.sum },
+          bottom: { blocks: c.bottom.blocks, total: c.bottom.sum },
+          total: c.top.sum + c.bottom.sum
+        };
       });
-
-      // ✅ payload final con HEX + RAL
-      ensureHidden.call(this, 'payload', JSON.stringify({
-        type: type,
-        instalacion: instalacion,
-        ...dynamicAttrs,
-        placement: pl,
-
-        colorDoor: colorDoor,
-        colorDoorRal: colorDoorRal,
-
-        colorBody: colorBody,
-        colorBodyRal: colorBodyRal,
-
-        columns: columnsPayload
-      }));
     });
 
-  })();
+    const ensureHidden = (name, value) => {
+      let el = document.querySelector('input[name="' + name + '"]');
+      if (!el) {
+        el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = name;
+        this.appendChild(el);
+      }
+      el.value = value;
+    };
+
+    ensureHidden.call(this, 'project_id', document.getElementById('project_id').value);
+    ensureHidden.call(this, 'configuration_id', document.getElementById('configuration_id').value);
+
+    ensureHidden.call(this, 'colorDoor', colorDoor);
+    ensureHidden.call(this, 'colorDoorRal', colorDoorRal);
+    ensureHidden.call(this, 'colorBody', colorBody);
+    ensureHidden.call(this, 'colorBodyRal', colorBodyRal);
+
+    const type = document.getElementById('type')?.value || '';
+    const instalacion = document.getElementById('instalacion')?.value || '';
+
+    const dynamicAttrs = {};
+    document.querySelectorAll('[data-attr-key]').forEach(sec => {
+      const key = sec.getAttribute('data-attr-key');
+      if (!key) return;
+
+      const el = document.getElementById(key);
+      let val = '';
+
+      if (el) val = (el.value || '').trim();
+
+      if (!val) {
+        const selectedBtn = sec.querySelector(`.option-row[data-group="${key}"] .option-card.selected`);
+        if (selectedBtn) val = (selectedBtn.getAttribute('data-value') || '').trim();
+      }
+
+      if (val) dynamicAttrs[key] = val;
+    });
+
+    const extraLayout = {};
+    if (type === 'home' && instalacion === 'zocalo') {
+      extraLayout.topCap = layout.topCap;
+    }
+
+    if (type === 'home' && (instalacion === 'empotrado' || instalacion === 'soporte_suelo')) {
+      extraLayout.singleCap = layout.singleCap;
+    }
+
+    ensureHidden.call(this, 'payload', JSON.stringify({
+      type: type,
+      instalacion: instalacion,
+
+      groups: groupsPayload,
+      columns: columnsPayload,
+
+      ...extraLayout,
+      ...dynamicAttrs,
+
+      placement: pl,
+
+      colorDoor: colorDoor,
+      colorDoorRal: colorDoorRal,
+
+      colorBody: colorBody,
+      colorBodyRal: colorBodyRal
+    }));
   });
-  </script>
+
+})();
+});
+</script>
+
+
 {% endblock %}
