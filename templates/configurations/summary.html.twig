@@ -1,21 +1,59 @@
 {% extends 'layout.html.twig' %}
 
 {% set p = payload ?? {} %}
-{% set columns = p.columns ?? [] %}
-{% set type = p.type %}
+{% if p is not iterable %}{% set p = {} %}{% endif %}
+
+{# ✅ NUEVO: groups (si existe) #}
+{% set groups = p.groups ?? [] %}
+{% if groups is not iterable %}{% set groups = [] %}{% endif %}
+
+{# ✅ fallback antiguo: columns #}
+{% set columnsFlat = p.columns ?? [] %}
+{% if columnsFlat is not iterable %}{% set columnsFlat = [] %}{% endif %}
+
+{# ✅ si no hay groups, creamos 1 grupo con columns #}
+{% if groups is empty and columnsFlat is not empty %}
+  {% set groups = [columnsFlat] %}
+{% endif %}
+
+{# ✅ lista plana real para contadores/tablas (todas las columnas de todos los grupos) #}
+{% set columnsAll = [] %}
+{% for g in groups %}
+  {% if g is iterable %}
+    {% set columnsAll = columnsAll|merge(g) %}
+  {% endif %}
+{% endfor %}
+
+{% set type = p.type ?? '' %}
+{% set instalacion = p.instalacion ?? '' %}
+
 {% set doorColor = p.colorDoor ?? '#3a9efc' %}
-{% set doorColorRal = p.colorDoorRal %}
+{% set doorColorRal = p.colorDoorRal ?? '' %}
 {% set bodyColor = p.colorBody ?? '#000' %}
-{% set bodyColorRal = p.colorBodyRal %}
-{% set bg = p.background_size ?? '' %}
+{% set bodyColorRal = p.colorBodyRal ?? '' %}
+
+{% set bg = p.fondo ?? '' %}
 {% set placement = p.placement ?? '' %}
 {% set material = p.material ?? '' %}
 {% set addons = p.addons ?? {} %}
 
+{% set isHome = (type == 'home') %}
+{% set isZocalo = (isHome and instalacion == 'zocalo') %}
+{% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
+
+{% set topCap = isZocalo ? (p.topCap|default(90)) : 90 %}
+{% set bottomCap = isZocalo ? 70 : 90 %}
+{% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
+
+{# soporte suelo #}
+{% set selectedType  = p.bracketType ?? '' %}   {# 'patas' | 'brazos' | '' #}
+{% set selectedColor = p.bracketColor ?? '' %}  {# 'blanco' | 'negro' | 'plata' | '' #}
+{% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
+
 {% set bgLabel =
-  bg == 'small'  ? 'Serie 300' :
-  bg == 'medium' ? 'Serie 400' :
-  bg == 'large'  ? 'Serie 500' : '—'
+  bg == '300'  ? 'Serie 300' :
+  bg == '400'  ? 'Serie 400' :
+  bg == '500'  ? 'Serie 500' : '—'
 %}
 
 {% set placementLabel =
@@ -43,9 +81,8 @@
       --kuik-blue-500:#1187e6;
     }
 
-    /* ===== PAGE ===== */
     .page-wrap{
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 22px auto 50px;
       padding: 0 14px;
     }
@@ -76,7 +113,6 @@
       flex-wrap:wrap;
     }
 
-    /* ===== LAYOUT ===== */
     .grid{
       display:grid;
       grid-template-columns: 1.35fr .65fr;
@@ -108,7 +144,6 @@
       margin:14px 0;
     }
 
-    /* ===== INFO GRID ===== */
     .kvs{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -124,23 +159,48 @@
     .kv .k{ font-size:12px; color:var(--muted); font-weight:900; }
     .kv .v{ font-size:14px; font-weight:900; margin-top:4px; color:var(--ink); }
 
-    /* ===== PREVIEW ===== */
     .preview-wrap{
       border:1px solid rgba(15,23,42,.10);
       border-radius:16px;
-      background:#fbfcfe;
       padding:12px;
+      overflow: visible;
     }
 
-    .cols{
+    .preview-stage{
+      position: relative;
+      overflow: visible;
       display:flex;
-      gap:12px;
-      flex-wrap:wrap;
       justify-content:center;
+      align-items:flex-start;
+      padding-bottom: 100px;
+    }
+
+    /* ✅ agrupaciones en preview */
+    .groups-stage{
+      display:flex;
+      flex-direction:column;
+      gap:100px;
+      align-items:center;
+      width:100%;
+    }
+    .group-label{
+      font-weight:900;
+      color:#0b1220;
+      font-size:14px;
+      margin:6px 0 10px;
+      text-align:center;
+    }
+
+    /* ✅ cols en GRID para alinear patas */
+    .cols{
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), 135px);
+      justify-content:center;
+      align-items:flex-start;
       margin-top:10px;
     }
 
-    .col-shell{ width:185px; display:flex; flex-direction:column; gap:6px; }
+    .col-shell{ width:135px; display:flex; flex-direction:column; gap:6px; }
     .col-topbar{
       padding:7px 10px;
       border-radius:12px;
@@ -151,7 +211,7 @@
     }
 
     .col-card{
-      width:185px;
+      width:135px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:4px;
@@ -162,6 +222,9 @@
       overflow:hidden;
       background:#f7f7f7;
       box-shadow: var(--shadow);
+
+      position: relative;
+      z-index: 2;
     }
 
     .col-body{
@@ -212,7 +275,6 @@
       line-height:1.2;
     }
 
-    /* Badges ENCH/USB */
     .door .badges{
       position:absolute;
       right:6px;
@@ -229,7 +291,6 @@
       padding:1px 7px;
     }
 
-    /* ===== TABLES ===== */
     .addons-table{
       width:100%;
       border-collapse:separate;
@@ -255,7 +316,6 @@
     }
     .addons-table tr:last-child td{ border-bottom:0; }
 
-    /* ===== BUTTONS ===== */
     .btn-row{
       display:flex;
       gap:10px;
@@ -289,7 +349,6 @@
 
     .muted{ color:var(--muted); font-size:15px; }
 
-    /* (Opcional) un pill para el ID arriba */
     .id-pill{
       display:inline-flex;
       align-items:center;
@@ -300,6 +359,60 @@
       border:1px solid rgba(11,118,216,.18);
       font-weight:900;
       color:#0b76d8;
+    }
+
+    /* ===== Soporte suelo (Resumen) ===== */
+    .support-wrap{
+      --armW: 65px;
+      --armOverlap: 14px;
+
+      /* ✅ columnas/patas */
+      --colW: 135px;
+
+      position: relative;
+      display: inline-block;
+      padding-left:  calc(var(--armW) - var(--armOverlap));
+      padding-right: calc(var(--armW) - var(--armOverlap));
+    }
+
+    .arm-img{
+      position:absolute;
+      top: 130px;
+      width: var(--armW);
+      height: calc(90px * var(--hscale) + 16px);
+      object-fit: contain;
+      z-index: 1;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .arm-img.left{
+      left: calc(-0.8 * var(--armOverlap));
+      transform: scaleX(-1);
+    }
+
+    .arm-img.right{
+      right: calc(-0.7 * var(--armOverlap));
+    }
+
+    /* ✅ patas por grupo (imagen + grid) */
+    .legs-under{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
+      pointer-events:none;
+      user-select:none;
+      z-index:1;
+      padding: 0 18px;
+      margin-top:-10px;
+    }
+
+    .leg-img{
+      width:135px;
+      height:175px;
+      object-fit:contain;
+      justify-self:center;
     }
   </style>
 {% endblock %}
@@ -325,19 +438,21 @@
         </div>
       </div>
     </div>
-  
+
     <div class="btn-row">
-          <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
-          {% if project.status == 0 %}
-            
-            <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
-            
-          {% endif %}
-          {% if configuration.status == 0 %}
-            <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
-          {% endif %}
-          <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
-        </div>
+      <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
+
+      {% if project.status == 0 %}
+        <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+      {% endif %}
+
+      {% if configuration.status == 0 %}
+        <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
+      {% endif %}
+
+      <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
+    </div>
+
     <div class="grid">
 
       {# IZQUIERDA #}
@@ -345,86 +460,190 @@
         <h3>Vista previa</h3>
 
         <div class="preview-wrap">
-          <div id="previewCols" class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
-            {% set doorIndex = 0 %}
 
-            {% for col in columns %}
-              <div class="col-shell">
-                <div class="col-topbar">Columna {{ loop.index }}</div>
+          {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
+            {% set armSrc =
+              selectedColor == 'blanco' ? asset('assets/brazo_blanco.jpg') :
+              (selectedColor == 'plata' ? asset('assets/brazo_plata.jpg') : asset('assets/brazo_negro.jpg'))
+            %}
+          {% endif %}
 
-                <div class="col-card">
-                  <div class="col-body">
+          <div class="preview-stage" id="previewCapture">
 
-                    <div class="col-half">
-                      {% for blk in col.top.blocks %}
-                        {% set hh = blk.h|default(blk) %}
-                        {% set btype = blk.type|default('door') %}
+            <div class="groups-stage" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
-                        {% if btype != 'screen' %}
-                          {% set doorIndex = doorIndex + 1 %}
+              {% if groups is empty %}
+                <div class="muted">No hay columnas en esta configuración.</div>
+              {% else %}
+                {% set doorIndex = 0 %}
+
+                {% for groupCols in groups %}
+                  {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+
+                  <div class="group-block">
+                    <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
+
+                    {# ✅ --colsN para alinear cols + patas #}
+                    <div class="support-wrap" style="--colsN: {{ groupCols|length }};">
+
+                      {# ✅ brazos por agrupación #}
+                      {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
+                        <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo">
+                        <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho">
+                      {% endif %}
+
+                      <div class="cols" id="previewCols">
+
+                        {% for col in groupCols %}
+                          {% set isEmpotrado = (col.single is defined and col.single is not empty) %}
+
+                          <div class="col-shell">
+                            {#<div class="col-topbar">Columna {{ loop.index }}</div>#}
+
+                            <div class="col-card">
+                              <div class="col-body"
+                                {% if isEmpotrado %}
+                                  style="height: {{ (singleCap * scale) }}px;"
+                                {% elseif type == 'home' and instalacion == 'zocalo' %}
+                                  style="height: {{ ((topCap + bottomCap) * scale) }}px;"
+                                {% endif %}>
+
+                                {% if isEmpotrado %}
+
+                                  <div class="col-half" style="height: {{ singleCap * scale }}px;">
+                                    {% for blk in (col.single.blocks ?? []) %}
+                                      {% set hh = blk.h|default(blk) %}
+                                      {% set btype = blk.type|default('door') %}
+
+                                      {% if btype != 'screen' %}
+                                        {% set doorIndex = doorIndex + 1 %}
+                                      {% endif %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                           style="height: {{ hh * scale }}px;">
+
+                                        {% if btype == 'screen' %}
+                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                        {% else %}
+                                          <div class="num">{{ doorIndex }}</div>
+
+                                          <div class="badges">
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                          </div>
+                                        {% endif %}
+                                      </div>
+                                    {% endfor %}
+                                  </div>
+
+                                {% else %}
+
+                                  <div class="col-half" style="height: {{ topCap * scale }}px;">
+                                    {% for blk in (col.top.blocks ?? []) %}
+                                      {% set hh = blk.h|default(blk) %}
+                                      {% set btype = blk.type|default('door') %}
+
+                                      {% if btype != 'screen' %}
+                                        {% set doorIndex = doorIndex + 1 %}
+                                      {% endif %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                           style="height: {{ hh * scale }}px;">
+
+                                        {% if btype == 'screen' %}
+                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                        {% else %}
+                                          <div class="num">{{ doorIndex }}</div>
+
+                                          <div class="badges">
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                          </div>
+                                        {% endif %}
+                                      </div>
+                                    {% endfor %}
+                                  </div>
+
+                                  <div class="half-sep"></div>
+
+                                  <div class="col-half" style="height: {{ bottomCap * scale }}px;">
+                                    {% for blk in (col.bottom.blocks ?? []) %}
+                                      {% set hh = blk.h|default(blk) %}
+                                      {% set btype = blk.type|default('door') %}
+
+                                      {% if btype != 'screen' %}
+                                        {% set doorIndex = doorIndex + 1 %}
+                                      {% endif %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                           style="height: {{ hh * scale }}px;">
+
+                                        {% if btype == 'screen' %}
+                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                        {% else %}
+                                          <div class="num">{{ doorIndex }}</div>
+
+                                          <div class="badges">
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                          </div>
+                                        {% endif %}
+                                      </div>
+                                    {% endfor %}
+                                  </div>
+
+                                {% endif %}
+                              </div>
+                            </div>
+
+                          </div>
+                        {% endfor %}
+                      </div>
+
+                      {# ✅ PATAS por GRUPO -> mismas reglas que soporte_suelo final #}
+                      {% if isSoporteSuelo and selectedType == 'patas' %}
+                        {% set n = groupCols|length %}
+
+                        {% if n == 1 %}
+                          {% set legPositions = [1] %}
+                        {% elseif n <= 3 %}
+                          {% set legPositions = [1, n] %}
+                        {% elseif n == 4 %}
+                          {% set legPositions = [1, 3, 4] %}
+                        {% else %}
+                          {# n == 5 (o más) #}
+                          {% set legPositions = [1, 3, 5] %}
                         {% endif %}
 
-                        <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
-                             style="height: {{ hh * scale }}px;">
-
-                          {% if btype == 'screen' %}
-                            <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                          {% else %}
-                            <div class="num">{{ doorIndex }}</div>
-
-                            <div class="badges">
-                              {% set key = doorIndex ~ '' %}
-                              {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                              {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                              {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-
-                              {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
-                              {% if usb %}<span class="badge-mini">USB</span>{% endif %}
-                            </div>
-                          {% endif %}
-
+                        <div class="legs-under">
+                          {% for pos in legPositions %}
+                            <img class="leg-img"
+                                 style="grid-column: {{ pos }};"
+                                 src="{{ asset('assets/pie_negro.jpg') }}"
+                                 alt="Pata">
+                          {% endfor %}
                         </div>
-                      {% endfor %}
+                      {% endif %}
+
                     </div>
-
-                    <div class="half-sep"></div>
-
-                    <div class="col-half">
-                      {% for blk in col.bottom.blocks %}
-                        {% set hh = blk.h|default(blk) %}
-                        {% set btype = blk.type|default('door') %}
-
-                        {% if btype != 'screen' %}
-                          {% set doorIndex = doorIndex + 1 %}
-                        {% endif %}
-
-                        <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
-                             style="height: {{ hh * scale }}px;">
-
-                          {% if btype == 'screen' %}
-                            <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                          {% else %}
-                            <div class="num">{{ doorIndex }}</div>
-
-                            <div class="badges">
-                              {% set key = doorIndex ~ '' %}
-                              {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                              {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                              {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-
-                              {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
-                              {% if usb %}<span class="badge-mini">USB</span>{% endif %}
-                            </div>
-                          {% endif %}
-
-                        </div>
-                      {% endfor %}
-                    </div>
-
                   </div>
-                </div>
-              </div>
-            {% endfor %}
+
+                {% endfor %}
+              {% endif %}
+
+            </div>
           </div>
         </div>
 
@@ -443,7 +662,9 @@
           <div class="kv"><div class="k">Material</div><div class="v">{{ material }}</div></div>
           <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
           <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
-          <div class="kv"><div class="k">Columnas</div><div class="v">{{ columns|length }}</div></div>
+
+          {# ✅ ahora cuenta todas las columnas (de todos los grupos) #}
+          <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
         </div>
 
         <div class="section-sep"></div>
@@ -459,36 +680,49 @@
           <div class="kv"><div class="k">Dirección</div><div class="v">{{ project.address ?: '—' }}</div></div>
         </div>
 
-        {# =========================
-           PUERTAS POR TAMAÑO (H10..H90) + COMPLEMENTOS
-           ========================= #}
-
         <div class="section-sep"></div>
         <h3>Puertas por tamaño</h3>
 
         {% set sizeCounts = {} %}
         {% set totalDoors = 0 %}
 
-        {% for col in columns %}
-          {% for blk in (col.top.blocks ?? []) %}
-            {% set btype = blk.type|default('door') %}
-            {% if btype != 'screen' %}
-              {% set hh = blk.h|default(blk) %}
-              {% set key = 'H' ~ hh %}
-              {% set sizeCounts = sizeCounts|merge({ (key): (sizeCounts[key]|default(0) + 1) }) %}
-              {% set totalDoors = totalDoors + 1 %}
-            {% endif %}
-          {% endfor %}
+        {# ✅ IMPORTANTE: recorremos columnsAll (todas las columnas de todos los grupos) #}
+        {% for col in columnsAll %}
+          {% if col.single is defined and col.single is not empty %}
 
-          {% for blk in (col.bottom.blocks ?? []) %}
-            {% set btype = blk.type|default('door') %}
-            {% if btype != 'screen' %}
-              {% set hh = blk.h|default(blk) %}
-              {% set key = 'H' ~ hh %}
-              {% set sizeCounts = sizeCounts|merge({ (key): (sizeCounts[key]|default(0) + 1) }) %}
-              {% set totalDoors = totalDoors + 1 %}
-            {% endif %}
-          {% endfor %}
+            {% for blk in (col.single.blocks ?? []) %}
+              {% set btype = blk.type|default('door') %}
+              {% if btype != 'screen' %}
+                {% set hh = blk.h|default(blk) %}
+                {% set key = 'H' ~ hh %}
+                {% set sizeCounts = sizeCounts|merge({ (key): (sizeCounts[key]|default(0) + 1) }) %}
+                {% set totalDoors = totalDoors + 1 %}
+              {% endif %}
+            {% endfor %}
+
+          {% else %}
+
+            {% for blk in (col.top.blocks ?? []) %}
+              {% set btype = blk.type|default('door') %}
+              {% if btype != 'screen' %}
+                {% set hh = blk.h|default(blk) %}
+                {% set key = 'H' ~ hh %}
+                {% set sizeCounts = sizeCounts|merge({ (key): (sizeCounts[key]|default(0) + 1) }) %}
+                {% set totalDoors = totalDoors + 1 %}
+              {% endif %}
+            {% endfor %}
+
+            {% for blk in (col.bottom.blocks ?? []) %}
+              {% set btype = blk.type|default('door') %}
+              {% if btype != 'screen' %}
+                {% set hh = blk.h|default(blk) %}
+                {% set key = 'H' ~ hh %}
+                {% set sizeCounts = sizeCounts|merge({ (key): (sizeCounts[key]|default(0) + 1) }) %}
+                {% set totalDoors = totalDoors + 1 %}
+              {% endif %}
+            {% endfor %}
+
+          {% endif %}
         {% endfor %}
 
         {% if totalDoors == 0 %}
@@ -607,9 +841,8 @@
     window.addEventListener('DOMContentLoaded', function () {
       const btn = document.getElementById('btnIA');
       const status = document.getElementById('iaStatus');
-      const node = document.getElementById('previewCols');
+      const node = document.getElementById('previewCapture');
 
-      // si no existe el botón IA porque lo comentaste, no hagas nada
       if (!btn || !status || !node) return;
 
       btn.addEventListener('click', async function () {
@@ -628,6 +861,8 @@
             - Fondo: {{ bgLabel|e('js') }}
             - Ubicación: {{ placementLabel|e('js') }}
             - Material: {{ material|e('js') }}
+            - Instalación: {{ instalacion|e('js') }}
+            - Soporte: {{ selectedType|e('js') }} {{ selectedColor|e('js') }}
             Respeta el número de puertas y proporciones del esquema.`;
 
           const form = new FormData();
