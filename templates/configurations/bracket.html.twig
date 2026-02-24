@@ -1,0 +1,650 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Soporte suelo{% endblock %}
+
+{% set p = payload ?? {} %}
+{% if p is not iterable %}{% set p = {} %}{% endif %}
+
+{# ✅ NUEVO: groups (si existe) #}
+{% set groups = p.groups ?? [] %}
+{% if groups is not iterable %}{% set groups = [] %}{% endif %}
+
+{# ✅ fallback antiguo: columns #}
+{% set columnsFlat = p.columns ?? [] %}
+{% if columnsFlat is not iterable %}{% set columnsFlat = [] %}{% endif %}
+
+{# ✅ si no hay groups, creamos 1 grupo con columns #}
+{% if groups is empty and columnsFlat is not empty %}
+  {% set groups = [columnsFlat] %}
+{% endif %}
+
+{% set type = p.type ?? '' %}
+{% set instalacion = p.instalacion ?? '' %}
+
+{% set doorColor = p.colorDoor ?? '#3a9efc' %}
+{% set bodyColor = p.colorBody ?? '#000' %}
+
+{% set selectedType = p.bracketType ?? '' %}
+{% set selectedColor = p.bracketColor ?? '' %}
+
+{# ✅ SOLO SINGLECAP (soporte_suelo) #}
+{% set singleCap = p.singleCap|default(180) %}
+
+{# ✅ MISMA ESCALA QUE RESUMEN #}
+{% set scale = 4.16 %}
+{% set scaleArm = 4.5 %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc;
+      --ink:#0b1220;
+      --muted:#6b7280;
+      --line: rgba(15,23,42,.12);
+      --shadow: 0 10px 25px rgba(2,20,60,.10);
+      --shadow-sm: 0 6px 14px rgba(2,20,60,.10);
+
+      --kuik-blue-900:#003b73;
+      --kuik-blue-600:#0b76d8;
+      --kuik-blue-500:#1187e6;
+
+      --hscale: 4.16;
+    }
+
+    .page-wrap{ max-width: 1200px; margin: 22px auto 50px; padding: 0 14px; }
+    .page-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+    .page-title{ margin:0; font-size:34px; font-weight:900; letter-spacing:-0.02em; }
+    .page-sub{ margin-top:6px; color:var(--muted); font-size:15px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+    .id-pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background: rgba(11,118,216,.10);
+      border:1px solid rgba(11,118,216,.18);
+      font-weight:900; color:#0b76d8;
+    }
+
+    .grid{ display:grid; grid-template-columns: 1fr; gap:14px; }
+    .card{
+      background:#fff; border:1px solid var(--line);
+      border-radius:16px; padding:16px;
+      box-shadow: 0 1px 0 rgba(15,23,42,.04);
+    }
+    .card h3{ margin:0 0 12px; font-size:16px; font-weight:900; letter-spacing:-0.01em; }
+    .muted{ color:var(--muted); font-size:15px; }
+
+    .section-sep{ height:1px; background: rgba(15,23,42,.10); margin:14px 0; }
+
+    .btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff; border-radius:12px;
+      padding:10px 14px; font-weight:900;
+      cursor:pointer; display:inline-flex;
+      align-items:center; gap:10px;
+      text-decoration:none; color:#0b1220;
+      transition:.15s; user-select:none;
+    }
+    .btn:hover{ background: rgba(2,6,23,.03); }
+    .btn.primary{
+      background:#0b76d8; border-color:#0b76d8;
+      color:#fff; box-shadow: 0 10px 18px rgba(11,118,216,.18);
+    }
+    .btn.primary:hover{ filter:brightness(.98); transform: translateY(-1px); }
+    .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
+
+    /* Selector cards */
+    .pick-grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
+    @media (max-width: 720px){ .pick-grid{ grid-template-columns: 1fr; } }
+
+    .pick{
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px; padding:14px;
+      background:#fbfcfe; cursor:pointer;
+      transition:.15s; position:relative;
+      display:flex; flex-direction:column;
+      gap:8px; min-height:96px;
+    }
+    .pick:hover{ background: rgba(2,6,23,.02); }
+    .pick .t{
+      font-weight:900; font-size:16px;
+      letter-spacing:-0.01em; color:var(--ink);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .pick .d{ color:var(--muted); font-size:14px; line-height:1.35; }
+    .pick.selected{
+      border-color: rgba(11,118,216,.65);
+      box-shadow: 0 10px 18px rgba(11,118,216,.12);
+      background: rgba(11,118,216,.06);
+    }
+
+    .tick{
+      width:22px; height:22px; border-radius:999px;
+      border:2px solid rgba(15,23,42,.18);
+      display:inline-flex; align-items:center; justify-content:center;
+      flex:0 0 22px;
+    }
+    .pick.selected .tick{ border-color:#0b76d8; background:#0b76d8; color:#fff; }
+    .tick svg{ display:block; }
+
+    /* Color chips */
+    .color-grid{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:12px; }
+    @media (max-width: 720px){ .color-grid{ grid-template-columns: 1fr; } }
+
+    .chip{
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px; padding:12px 14px;
+      background:#fbfcfe; cursor:pointer;
+      transition:.15s; display:flex; align-items:center; gap:12px;
+      font-weight:900;
+    }
+    .chip:hover{ background: rgba(2,6,23,.02); }
+    .chip.selected{
+      border-color: rgba(11,118,216,.65);
+      background: rgba(11,118,216,.06);
+      box-shadow: 0 10px 18px rgba(11,118,216,.10);
+    }
+
+    .dot{
+      width:18px; height:18px; border-radius:6px;
+      border:1px solid rgba(0,0,0,.18);
+      flex:0 0 18px;
+    }
+    .dot.white{ background:#ffffff; }
+    .dot.black{ background:#111827; }
+    .dot.silver{ background: linear-gradient(135deg, #cbd5e1, #94a3b8); }
+
+    .hidden{ display:none !important; }
+
+    /* ===========================
+       ✅ PREVIEW
+       =========================== */
+    .preview-area{
+      margin-top:14px;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px;
+      background:#fbfcfe;
+      padding:14px;
+    }
+    .preview-title{ font-weight:900; color:var(--ink); margin-bottom:10px; }
+
+    .preview-stage{
+      position:relative;
+      border-radius:14px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.10);
+      padding:18px;
+      padding-bottom:140px;
+      overflow:visible;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    /* ✅ contenedor de todos los grupos */
+    .groups-stage{
+      display:flex;
+      flex-direction:column;
+      gap:150px;
+      align-items:center;
+      width:100%;
+    }
+
+    /* ✅ etiqueta de grupo */
+    .group-label{
+      font-weight:900;
+      color:#0b1220;
+      font-size:14px;
+      margin-bottom:8px;
+      text-align:center;
+    }
+
+    /* ✅ Wrapper por grupo (brazos/patas por grupo)
+       + variables para grid de columnas/patas */
+    .support-wrap{
+      --armW: 75px;
+      --armOverlap: 24px;
+
+      /* ✅ mismas medidas para .cols y .legs-under */
+      --colW: 135px;
+      --colGap: 6px;
+
+      position:relative;
+      display:inline-block;
+      padding-left:  calc(var(--armW) - var(--armOverlap));
+      padding-right: calc(var(--armW) - var(--armOverlap));
+    }
+
+    /* ✅ columnas en GRID para alinear patas */
+    .cols{
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
+      align-items:flex-start;
+    }
+
+    .col-shell{
+      width:var(--colW);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:center;
+    }
+
+    .col-card{
+      width:100%;
+      border-style:solid;
+      border-color: var(--col-border, #000);
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:8px;
+      border-bottom-width:8px;
+      border-radius:12px;
+      overflow:hidden;
+      background:#f7f7f7;
+      box-shadow: var(--shadow);
+      position:relative;
+      z-index:2;
+    }
+
+    .col-body{
+      background:#eaeaea;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .col-half{
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .door{
+      width:100%;
+      border:1px solid rgba(44,62,80,.9);
+      background: var(--door-color, #3a9efc);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .door.screen{ padding:6px; }
+    .door.screen img{
+      width:125%;
+      height:125%;
+      object-fit:contain;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .door .num{
+      position:absolute;
+      left:6px;
+      top:4px;
+      font-weight:900;
+      font-size:12px;
+      background: rgba(0,0,0,.65);
+      color:#fff;
+      border-radius:999px;
+      padding:2px 7px;
+      line-height:1.2;
+    }
+
+    /* ✅ PATAS por GRUPO (IMAGEN) alineadas con columnas */
+    .legs-under{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
+      pointer-events:none;
+      user-select:none;
+      z-index:1;
+      padding: 0 18px;
+    }
+
+    .leg-img{
+      width:135px;
+      height:175px;
+      object-fit:contain;
+      justify-self:center;
+      flex:0 0 auto;
+    }
+
+    /* ✅ BRAZOS por grupo */
+    .arm-img{
+      position:absolute;
+      top:58px;
+      width: var(--armW);
+      height: calc({{ (singleCap * scaleArm) }}px + 86px);
+      object-fit: contain;
+      z-index:1;
+      pointer-events:none;
+      user-select:none;
+      opacity:1;
+    }
+
+    .arm-img.left{
+      left: calc(-0.2 * var(--armOverlap));
+      transform: scaleX(-1);
+    }
+
+    .arm-img.right{
+      right: calc(-0.2 * var(--armOverlap));
+    }
+
+    @media (max-width: 720px){
+      .support-wrap{
+        --armW: 100px;
+        --armOverlap: 14px;
+
+        --colW: 165px;
+        --colGap: 6px;
+      }
+
+      .arm-img{ top:42px; }
+
+      .legs-under{ padding:0 14px; }
+      .leg-img{ width:42px; height:42px; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-wrap">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title">Soporte suelo</h2>
+        <div class="page-sub">
+          <span class="id-pill">ID configuración: {{ configuration.id }}</span>
+          <span class="id-pill">Proyecto: {{ project.projectName }}</span>
+          <span class="id-pill">Instalación: soporte_suelo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>1) Elige el tipo de soporte</h3>
+        <div class="muted">Selecciona <b>Patas</b> o <b>Brazos</b>.</div>
+
+        <div class="pick-grid" style="margin-top:12px;">
+          <div class="pick js-pick-type {% if selectedType == 'patas' %}selected{% endif %}" data-value="patas" role="button" tabindex="0">
+            <div class="t">
+              Patas
+              <span class="tick" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+            <div class="d">Soporte inferior con patas.</div>
+          </div>
+
+          <div class="pick js-pick-type {% if selectedType == 'brazos' %}selected{% endif %}" data-value="brazos" role="button" tabindex="0">
+            <div class="t">
+              Brazos
+              <span class="tick" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+            <div class="d">Soporte lateral/estructura tipo brazo.</div>
+          </div>
+        </div>
+
+        <div class="section-sep"></div>
+
+        <div id="colorSection" class="{% if not selectedType %}hidden{% endif %}">
+          <h3>2) Elige el color</h3>
+          <div class="muted">Selecciona el acabado del soporte.</div>
+
+          <div class="color-grid" style="margin-top:12px;">
+            <div class="chip js-pick-color {% if selectedColor == 'blanco' %}selected{% endif %}" data-value="blanco" role="button" tabindex="0">
+              <span class="dot white"></span> Blanco
+            </div>
+            <div class="chip js-pick-color {% if selectedColor == 'negro' %}selected{% endif %}" data-value="negro" role="button" tabindex="0">
+              <span class="dot black"></span> Negro
+            </div>
+            <div class="chip js-pick-color {% if selectedColor == 'plata' %}selected{% endif %}" data-value="plata" role="button" tabindex="0">
+              <span class="dot silver"></span> Plata
+            </div>
+          </div>
+        </div>
+
+        {# ✅ PREVIEW: por GRUPOS #}
+        <div class="preview-area">
+          <div class="preview-title">Vista previa</div>
+
+          <div class="preview-stage">
+            <div class="groups-stage" id="previewGroups" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+              {% if groups is empty %}
+                <div class="muted">No hay columnas en esta configuración.</div>
+              {% else %}
+                {% set doorIndex = 0 %}
+
+                {% for groupCols in groups %}
+                  {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+
+                  <div class="group-block">
+                    <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
+
+                    {# ✅ --colsN para alinear grid columnas + patas #}
+                    <div class="support-wrap" style="--colsN: {{ groupCols|length }};">
+
+                      {# ✅ brazos por grupo #}
+                      <img
+                        class="arm-img left js-arm {% if selectedType != 'brazos' %}hidden{% endif %}"
+                        data-arm="left"
+                        src="{% if selectedColor == 'blanco' %}
+                              {{ asset('assets/brazo_blanco.jpg') }}
+                            {% elseif selectedColor == 'plata' %}
+                              {{ asset('assets/brazo_plata.jpg') }}
+                            {% else %}
+                              {{ asset('assets/brazo_negro.jpg') }}
+                            {% endif %}"
+                        alt="Brazo izquierdo">
+
+                      <img
+                        class="arm-img right js-arm {% if selectedType != 'brazos' %}hidden{% endif %}"
+                        data-arm="right"
+                        src="{% if selectedColor == 'blanco' %}
+                              {{ asset('assets/brazo_blanco.jpg') }}
+                            {% elseif selectedColor == 'plata' %}
+                              {{ asset('assets/brazo_plata.jpg') }}
+                            {% else %}
+                              {{ asset('assets/brazo_negro.jpg') }}
+                            {% endif %}"
+                        alt="Brazo derecho">
+
+                      <div class="cols">
+                        {% for col in groupCols %}
+                          <div class="col-shell">
+
+                            <div class="col-card">
+                              <div class="col-body" style="height: {{ (singleCap * scale) }}px;">
+                                <div class="col-half" style="height: {{ (singleCap * scale) }}px;">
+
+                                  {% set blocks = (col.single.blocks ?? col.blocks ?? []) %}
+                                  {% if blocks is not iterable %}{% set blocks = [] %}{% endif %}
+
+                                  {% for blk in blocks %}
+                                    {% set hh = blk.h|default(blk) %}
+                                    {% set btype = blk.type|default('door') %}
+
+                                    {% if btype != 'screen' %}
+                                      {% set doorIndex = doorIndex + 1 %}
+                                    {% endif %}
+
+                                    <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                         style="height: {{ (hh * scale) }}px;">
+                                      {% if btype == 'screen' %}
+                                        <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                      {% else %}
+                                        <div class="num">{{ doorIndex }}</div>
+                                      {% endif %}
+                                    </div>
+                                  {% endfor %}
+
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        {% endfor %}
+                      </div>
+
+                      {# ✅ PATAS por GRUPO -> posiciones alineadas (1,3,5 cuando son 5) #}
+                      {% set n = groupCols|length %}
+
+                      {% if n == 1 %}
+                        {% set legPositions = [1] %}
+                      {% elseif n <= 3 %}
+                        {% set legPositions = [1, n] %}
+                      {% elseif n == 4 %}
+                        {% set legPositions = [1, 3, 4] %}
+                      {% else %}
+                        {# n == 5 (o más) #}
+                        {% set legPositions = [1, 3, 5] %}
+                      {% endif %}
+
+                      <div class="legs-under js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
+                        {% for pos in legPositions %}
+                          <img class="leg-img"
+                               style="grid-column: {{ pos }};"
+                               src="{{ asset('assets/pie_negro.jpg') }}"
+                               alt="Pata">
+                        {% endfor %}
+                      </div>
+
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <form id="bracketForm" method="post" action="{{ path('save_brackets') }}" style="margin-top:16px;">
+          <input type="hidden" name="project_id" value="{{ project.id }}">
+          <input type="hidden" name="configuration_id" value="{{ configuration.id }}">
+
+          <input type="hidden" name="bracketType" id="bracketType" value="{{ selectedType }}">
+          <input type="hidden" name="bracketColor" id="bracketColor" value="{{ selectedColor }}">
+
+          <div class="btn-row">
+            <a class="btn" style="text-decoration:none; color:#000"
+               href="{{ path('configuration_columns', {
+                 config_id: configuration.id,
+                 type: payload.type|default('')
+               }) }}">
+              Volver atrás
+            </a>
+
+            <button id="btnContinue" class="btn primary" type="submit" {% if not selectedType or not selectedColor %}disabled{% endif %}>
+              Continuar
+            </button>
+          </div>
+
+          <div class="muted" style="margin-top:10px;">
+            * El botón <b>Continuar</b> se activa cuando elijas tipo y color.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const typeBtns = Array.from(document.querySelectorAll('.js-pick-type'));
+      const colorBtns = Array.from(document.querySelectorAll('.js-pick-color'));
+
+      const colorSection = document.getElementById('colorSection');
+      const inpType = document.getElementById('bracketType');
+      const inpColor = document.getElementById('bracketColor');
+      const btnContinue = document.getElementById('btnContinue');
+
+      // ✅ brazos (por grupo) y patas (por grupo)
+      const armList = Array.from(document.querySelectorAll('.js-arm'));
+      const legsList = Array.from(document.querySelectorAll('.js-legs'));
+
+      if (!colorSection || !inpType || !inpColor || !btnContinue) return;
+
+      const armSrcMap = {
+        blanco: '{{ asset("assets/brazo_blanco.jpg") }}',
+        negro:  '{{ asset("assets/brazo_negro.jpg") }}',
+        plata:  '{{ asset("assets/brazo_plata.jpg") }}'
+      };
+
+      function setSelected(list, el){
+        list.forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+      }
+
+      function updateContinue(){
+        btnContinue.disabled = !(inpType.value && inpColor.value);
+      }
+
+      function enableColors(){
+        colorSection.classList.remove('hidden');
+      }
+
+      function toggleSupports(){
+        const v = (inpType.value || '').trim();
+
+        // brazos (todos)
+        if (armList.length){
+          if (v === 'brazos') armList.forEach(x => x.classList.remove('hidden'));
+          else armList.forEach(x => x.classList.add('hidden'));
+        }
+
+        // patas (todas)
+        if (legsList.length){
+          if (v === 'patas') legsList.forEach(x => x.classList.remove('hidden'));
+          else legsList.forEach(x => x.classList.add('hidden'));
+        }
+      }
+
+      function updateSupportColor(){
+        const c = (inpColor.value || '').trim(); // blanco|negro|plata
+
+        // ✅ patas ahora son imagen fija (pie_negro.jpg) -> no se recolorean
+
+        // brazos (cambia src a todos)
+        const src = armSrcMap[c] || armSrcMap.negro;
+        armList.forEach(img => { img.src = src; });
+      }
+
+      typeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setSelected(typeBtns, btn);
+          inpType.value = btn.dataset.value;
+          enableColors();
+          toggleSupports();
+          updateSupportColor();
+          updateContinue();
+        });
+      });
+
+      colorBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setSelected(colorBtns, btn);
+          inpColor.value = btn.dataset.value;
+          updateSupportColor();
+          updateContinue();
+        });
+      });
+
+      // init
+      if (inpType.value) enableColors();
+      toggleSupports();
+      updateSupportColor();
+      updateContinue();
+    });
+  </script>
+{% endblock %}
