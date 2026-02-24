@@ -149,6 +149,17 @@
     white-space:nowrap;
   }
 
+  .pill-status{
+    font-size:12px;
+    font-weight:900;
+    color: rgb(30, 102, 2);
+    background: rgba(73, 253, 2, 0.21);
+    border:1px solid  rgba(73, 253, 2, 0.21);
+    padding:5px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
   .p-meta{
     margin-top:10px;
     display:grid;
@@ -257,7 +268,12 @@
              data-city="{{ (project.city ?? '')|lower }}">
           <div class="p-top">
             <div>
-              <h3 class="p-name">{{ project.projectName }}</h3>
+              <div style="display:flex; gap: 10px;">
+                <h3 class="p-name">{{ project.projectName }}</h3>
+                {% if project.status == 1 %}
+                  <div class="pill-status">Aceptado</div>
+                {% endif %}
+              </div>
               <div class="meta-row" style="margin-top:6px;">
                 <span class="micon">👤</span>
                 <span class="muted">{{ project.clientName }}</span>
@@ -279,7 +295,8 @@
               <span class="micon">📅</span>
               <span class="muted">
                 {% if project.createdAt is defined and project.createdAt %}
-                  {{ project.createdAt|date('d M Y') }}
+                  {{ project.createdAt|format_datetime('none', 'none', locale='es', pattern='d MMMM y') }}
+
                 {% else %}
                   —
                 {% endif %}
