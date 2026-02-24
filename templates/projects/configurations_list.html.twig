@@ -130,7 +130,7 @@
       background: #23C920;
       color: #fff;
     }
-    
+
     .config-body{
       margin-top:14px;
       display:grid;
@@ -157,7 +157,6 @@
     }
     .kv .k{ font-size:12px; color:#6b7280; font-weight:900; }
     .kv .v{ font-size:14px; font-weight:900; margin-top:4px; }
-
     .kv.wide{ grid-column: 1 / -1; }
 
     /* Color swatch */
@@ -174,7 +173,7 @@
       display:inline-block;
     }
 
-    /* ===== MINI PREVIEW (NO CAMBIAR DIBUJO) ===== */
+    /* ===== MINI PREVIEW ===== */
     .mini-wrap{
       border:0;
       border-radius:14px;
@@ -187,10 +186,52 @@
       margin-bottom:10px;
     }
 
-    .cols{
+    /* ✅ bloques por grupo */
+    .mini-groups{
       display:flex;
-      gap:10px;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .mini-group{
+      border-radius:12px;
+      background: rgba(255,255,255,.55);
+      border:1px dashed rgba(15,23,42,.14);
+      padding:10px;
+      overflow: visible;
+    }
+
+ 
+    .mini-group-label{
+      font-size:11px;
+      font-weight:900;
+      color:#334155;
+      margin-bottom:6px;
+    }
+
+    /* ✅ CLAVE: wrapper INLINE del grupo (brazos/patas se posicionan aquí) */
+    .mini-support-wrap{
+      --armW: 38px;
+      --armOverlap: 14px;
+      position:relative;
+      display:inline-block;            /* 👈 ancho = solo lo que ocupan las columnas */
+      padding-left:  calc(var(--armW) - var(--armOverlap));
+      padding-right: calc(var(--armW) - var(--armOverlap));
+      padding-bottom: 44px;            /* espacio para patas */
+    }
+
+    /* Centrar el wrapper dentro del grupo */
+    .mini-support-center{
+      text-align:center;
+    }
+
+    .cols{
+      position:relative;
+      z-index:2;
+      display:flex;
+      gap:0px;
       flex-wrap:wrap;
+      justify-content:center;
       margin-top:6px;
     }
 
@@ -216,6 +257,8 @@
       border-radius:8px;
       overflow:hidden;
       background:#f7f7f7;
+      position:relative;
+      z-index:2;
     }
 
     .col-body{
@@ -269,7 +312,6 @@
       user-select:none;
     }
 
-    /* helper */
     .badge{
       display:inline-flex;
       align-items:center;
@@ -281,6 +323,46 @@
       background:#fff;
       margin-left:6px;
     }
+
+    /* ===== SOPORTE SUELO POR GRUPO (mini) ===== */
+
+    /* patas debajo del WRAPPER (NO del grupo ancho) */
+    .mini-support{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:10px;
+      height:34px;
+      display:flex;
+      justify-content:space-between;
+      padding:0 18px;
+      pointer-events:none;
+      z-index:1;
+    }
+
+    .mini-leg{
+      width:14px;
+      height:22px;
+      border-radius:6px;
+      border:1px solid rgba(0,0,0,.18);
+      background:#111;
+    }
+    .mini-leg.white{ background:#fff; border-color: rgba(0,0,0,.25); }
+    .mini-leg.black{ background:#111; }
+    .mini-leg.silver{ background: linear-gradient(135deg, #cbd5e1, #94a3b8); }
+
+    /* brazos posicionados respecto al WRAPPER */
+    .mini-arm{
+      position:absolute;
+      top:64px;
+      width: var(--armW);
+      height:180px;
+      object-fit:contain;
+      pointer-events:none;
+      z-index:1;
+    }
+    .mini-arm.left{ left: calc(-0.2 * var(--armOverlap)); transform:scaleX(-1); }
+    .mini-arm.right{ right: calc(-0.2 * var(--armOverlap)); }
   </style>
 {% endblock %}
 
@@ -292,11 +374,9 @@
     Proyecto: <b>{{ project.projectName }}</b> · Cliente: <b>{{ project.clientName }}</b>
   </div>
 
-  {# Barra info (si algún campo no existe, muestra —) #}
   <div class="info-bar">
     <div class="info-item">
       <div class="info-ico" aria-hidden="true">
-        <!-- user -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="#0b76d8" stroke-width="2"/>
           <path d="M4 21a8 8 0 0 1 16 0" stroke="#0b76d8" stroke-width="2" stroke-linecap="round"/>
@@ -310,7 +390,6 @@
 
     <div class="info-item">
       <div class="info-ico" aria-hidden="true">
-        <!-- mail -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M4 6h16v12H4V6Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
           <path d="m4 7 8 6 8-6" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
@@ -324,7 +403,6 @@
 
     <div class="info-item">
       <div class="info-ico" aria-hidden="true">
-        <!-- phone -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1A19.5 19.5 0 0 1 3.2 10.8 19.8 19.8 0 0 1 .1 2.2 2 2 0 0 1 2.1 0h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L6 8a16 16 0 0 0 10 10l1.5-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6A2 2 0 0 1 22 16.9Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
         </svg>
@@ -337,7 +415,6 @@
 
     <div class="info-item">
       <div class="info-ico" aria-hidden="true">
-        <!-- pin -->
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M12 22s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
           <path d="M12 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="#0b76d8" stroke-width="2"/>
@@ -352,16 +429,14 @@
 
   <div class="top-actions">
     <a class="btn" href="{{ path('projects_list', { user_id: app.user.id }) }}">
-      <!-- arrow -->
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       Volver a proyectos
     </a>
 
-    {% if project.status == 0%}
+    {% if project.status == 0 %}
       <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
-        <!-- plus -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
@@ -386,13 +461,46 @@
       {% set p = it.payload %}
       {% if p is not iterable %}{% set p = {} %}{% endif %}
 
-      {% set columns = p.columns ?? [] %}
+      {# ==== GRUPOS (fallback a columns) ==== #}
+      {% set groups = p.groups ?? [] %}
+      {% if groups is not iterable %}{% set groups = [] %}{% endif %}
+
+      {% set columnsFlat = p.columns ?? [] %}
+      {% if columnsFlat is not iterable %}{% set columnsFlat = [] %}{% endif %}
+
+      {% if groups is empty and columnsFlat is not empty %}
+        {% set groups = [columnsFlat] %}
+      {% endif %}
+
+      {# columnas totales para contadores #}
+      {% set columnsAll = [] %}
+      {% for g in groups %}
+        {% if g is iterable %}
+          {% set columnsAll = columnsAll|merge(g) %}
+        {% endif %}
+      {% endfor %}
+
       {% set doorColor = p.colorDoor ?? '#3a9efc' %}
       {% set doorColorRal = p.colorDoorRal ?? p.colorDoor ?? '#3a9efc' %}
       {% set bodyColor = p.colorBody ?? '#000' %}
       {% set bodyColorRal = p.colorBodyRal ?? p.colorBody ?? '#000' %}
 
       {% set type = p.type ?? '—' %}
+      {% set instalacion = p.instalacion ?? '' %}
+
+      {# soporte_suelo #}
+      {% set selectedType  = p.bracketType ?? '' %}
+      {% set selectedColor = p.bracketColor ?? '' %}
+      {% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
+
+      {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
+        {% set armSrc =
+          selectedColor == 'blanco' ? asset('assets/brazo_blanco.jpg') :
+          (selectedColor == 'plata' ? asset('assets/brazo_plata.jpg') : asset('assets/brazo_negro.jpg'))
+        %}
+      {% endif %}
+
+      {% set legClass = selectedColor == 'blanco' ? 'white' : (selectedColor == 'plata' ? 'silver' : 'black') %}
 
       <div class="card">
         <div class="config-head">
@@ -410,6 +518,9 @@
 
             <div class="config-sub">
               Tipo: <b>{{ type }}</b>
+              {% if instalacion %}
+                · Instalación: <b>{{ instalacion }}</b>
+              {% endif %}
               {% if c.createdAt is defined and c.createdAt %}
                 · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
               {% endif %}
@@ -418,10 +529,9 @@
 
           <div class="actions">
 
-            {% if project.status == 0  %}
-              <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}" 
+            {% if project.status == 0 %}
+              <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
                  onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">
-                <!-- pdf/doc -->
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -430,9 +540,8 @@
               </a>
             {% endif %}
 
-            {% if project.status == 0%}
+            {% if project.status == 0 %}
               <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
-                <!-- copy -->
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -442,16 +551,15 @@
             {% endif %}
 
             <a class="btn icon" href="{{ path('configuration_summary', { id: c.id }) }}">
-              <!-- file -->
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
               </svg>
               Resumen
             </a>
+
             {% if c.status == 0 and project.status == 0 %}
               <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
-                <!-- edit -->
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
@@ -461,7 +569,6 @@
             {% endif %}
 
             <a class="btn icon" href="{{ path('configuration_pdf', { id: c.id }) }}">
-              <!-- pdf/doc -->
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -475,119 +582,166 @@
         <div class="config-body">
           <div>
             <div class="kvs">
-              <div class="kv">
-                <div class="k">Estado</div>
-                <div class="v">{{ c.statusLabel }}</div>
-              </div>
-
-              <div class="kv">
-                <div class="k">Columnas</div>
-                <div class="v">{{ columns|length }}</div>
-              </div>
-
+              <div class="kv"><div class="k">Estado</div><div class="v">{{ c.statusLabel }}</div></div>
+              <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
               <div class="kv">
                 <div class="k">Color cuerpo</div>
-                <div class="v">
-                  <span class="swatch">
-                    <span class="dot" style="background: {{ bodyColor }};"></span>
-                    {{ bodyColorRal }}
-                  </span>
-                </div>
+                <div class="v"><span class="swatch"><span class="dot" style="background: {{ bodyColor }};"></span>{{ bodyColorRal }}</span></div>
               </div>
-
               <div class="kv">
                 <div class="k">Color puerta</div>
-                <div class="v">
-                  <span class="swatch">
-                    <span class="dot" style="background: {{ doorColor }};"></span>
-                    {{ doorColorRal }}
-                  </span>
-                </div>
+                <div class="v"><span class="swatch"><span class="dot" style="background: {{ doorColor }};"></span>{{ doorColorRal }}</span></div>
               </div>
-
-              <div class="kv wide">
-                <div class="k">Config ID</div>
-                <div class="v">#{{ c.id }}</div>
-              </div>
+              <div class="kv wide"><div class="k">Config ID</div><div class="v">#{{ c.id }}</div></div>
             </div>
           </div>
 
           <div class="mini-wrap">
             <div class="mini-title">Vista previa (miniatura)</div>
 
-            {% if columns is empty %}
-              <div style="margin-top:8px; color:#c0392b; font-weight:900;">
-                Sin columnas
-              </div>
+            {% if columnsAll is empty %}
+              <div style="margin-top:8px; color:#c0392b; font-weight:900;">Sin columnas</div>
             {% else %}
-              {% set colsToShow = columns|slice(0, 4) %}
 
-              {# ✅ NO cambiar forma de dibujar la miniatura: bloque intacto #}
-              <div class="cols" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
-                {% set doorIndex = 0 %}
+              {% set isHome = (type == 'home') %}
+              {% set isZocalo = (isHome and instalacion == 'zocalo') %}
+              {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
+              {% set topCap = isZocalo ? (p.topCap|default(90)) : 90 %}
+              {% set bottomCap = isZocalo ? 70 : 90 %}
+              {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
 
-                {% for col in colsToShow %}
-                  <div class="col-shell">
-                    <div class="col-topbar">Col {{ loop.index }}</div>
+              {% set maxCols = 40 %}
+              {% set shown = 0 %}
+              {% set totalCols = columnsAll|length %}
+              {% set doorIndex = 0 %}
 
-                    <div class="col-card">
-                      <div class="col-body">
+              <div class="mini-groups" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
-                        <div class="col-half">
-                          {% for blk in (col.top.blocks ?? []) %}
-                            {% set hh = blk.h|default(blk) %}
-                            {% set btype = blk.type|default('door') %}
+                {% for groupCols in groups %}
+                  {% if shown < maxCols %}
+                    {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+                    {% set left = maxCols - shown %}
+                    {% set colsToShow = groupCols|slice(0, left) %}
 
-                            {% if btype != 'screen' %}
-                              {% set doorIndex = doorIndex + 1 %}
+                    {% if colsToShow is not empty %}
+                      <div class="mini-group" {% if instalacion == 'soporte_suelo' %} style="padding-bottom:70px;" {% endif %}>
+
+                        <div class="mini-group-label">Grupo {{ loop.index }}</div>
+
+                        <div class="mini-support-center">
+                          <div class="mini-support-wrap">
+
+                            {# ✅ BRAZOS: ahora relativos al wrapper del grupo #}
+                            {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
+                              <img class="mini-arm left"  src="{{ armSrc }}" alt="Brazo izq">
+                              <img class="mini-arm right" src="{{ armSrc }}" alt="Brazo der">
                             {% endif %}
 
-                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
-                                 style="height: calc({{ hh }}px * var(--hscale));">
-                              {% if btype == 'screen' %}
-                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                              {% else %}
-                                <div class="num">{{ doorIndex }}</div>
-                              {% endif %}
+                            <div class="cols">
+                              {% for col in colsToShow %}
+                                {% set isEmpotrado = (col.single is defined and col.single is not empty) %}
+
+                                <div class="col-shell">
+                                  <div class="col-topbar">Col {{ shown + loop.index }}</div>
+
+                                  <div class="col-card">
+                                    <div class="col-body"
+                                      {% if isEmpotrado %}
+                                        style="height: calc({{ singleCap }}px * var(--hscale));"
+                                      {% elseif type == 'home' and instalacion == 'zocalo' %}
+                                        style="height: calc({{ (topCap + bottomCap) }}px * var(--hscale));"
+                                      {% endif %}>
+
+                                      {% if isEmpotrado %}
+                                        <div class="col-half" style="height: calc({{ singleCap }}px * var(--hscale));">
+                                          {% for blk in (col.single.blocks ?? []) %}
+                                            {% set hh = blk.h|default(blk) %}
+                                            {% set btype = blk.type|default('door') %}
+                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                                 style="height: calc({{ hh }}px * var(--hscale));">
+                                              {% if btype == 'screen' %}
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                              {% else %}
+                                                <div class="num">{{ doorIndex }}</div>
+                                              {% endif %}
+                                            </div>
+                                          {% endfor %}
+                                        </div>
+                                      {% else %}
+                                        <div class="col-half" style="height: calc({{ topCap }}px * var(--hscale));">
+                                          {% for blk in (col.top.blocks ?? []) %}
+                                            {% set hh = blk.h|default(blk) %}
+                                            {% set btype = blk.type|default('door') %}
+                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                                 style="height: calc({{ hh }}px * var(--hscale));">
+                                              {% if btype == 'screen' %}
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                              {% else %}
+                                                <div class="num">{{ doorIndex }}</div>
+                                              {% endif %}
+                                            </div>
+                                          {% endfor %}
+                                        </div>
+
+                                        <div class="half-sep"></div>
+
+                                        <div class="col-half" style="height: calc({{ bottomCap }}px * var(--hscale));">
+                                          {% for blk in (col.bottom.blocks ?? []) %}
+                                            {% set hh = blk.h|default(blk) %}
+                                            {% set btype = blk.type|default('door') %}
+                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                                 style="height: calc({{ hh }}px * var(--hscale));">
+                                              {% if btype == 'screen' %}
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                              {% else %}
+                                                <div class="num">{{ doorIndex }}</div>
+                                              {% endif %}
+                                            </div>
+                                          {% endfor %}
+                                        </div>
+                                      {% endif %}
+
+                                    </div>
+                                  </div>
+                                </div>
+
+                              {% endfor %}
                             </div>
-                          {% endfor %}
-                        </div>
 
-                        <div class="half-sep"></div>
-
-                        <div class="col-half">
-                          {% for blk in (col.bottom.blocks ?? []) %}
-                            {% set hh = blk.h|default(blk) %}
-                            {% set btype = blk.type|default('door') %}
-
-                            {% if btype != 'screen' %}
-                              {% set doorIndex = doorIndex + 1 %}
+                            {# ✅ PATAS: ahora relativas al wrapper del grupo #}
+                            {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
+                              <div class="mini-support">
+                                <div class="mini-leg {{ legClass }}"></div>
+                                <div class="mini-leg {{ legClass }}"></div>
+                              </div>
                             {% endif %}
 
-                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
-                                 style="height: calc({{ hh }}px * var(--hscale));">
-                              {% if btype == 'screen' %}
-                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                              {% else %}
-                                <div class="num">{{ doorIndex }}</div>
-                              {% endif %}
-                            </div>
-                          {% endfor %}
+                          </div>
                         </div>
 
                       </div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
 
-              {% if columns|length > 4 %}
-                <div class="muted" style="margin-top:10px;">
-                  Mostrando 4 de {{ columns|length }} columnas…
-                </div>
-              {% endif %}
+                      {% set shown = shown + (colsToShow|length) %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+                {% if totalCols > maxCols %}
+                  <div class="muted" style="margin-top:10px;">
+                    Mostrando {{ maxCols }} de {{ totalCols }} columnas…
+                  </div>
+                {% endif %}
+
+              </div>
             {% endif %}
           </div>
+
         </div>
       </div>
     {% endfor %}
@@ -595,3 +749,5 @@
   {% endif %}
 </div>
 {% endblock %}
+
+ 
