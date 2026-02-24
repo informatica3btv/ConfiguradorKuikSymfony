@@ -161,6 +161,7 @@
       color:#fff;
       font-weight:900;
       box-shadow: var(--shadow-sm);
+      text-align:center;
     }
 
     .col-card{
@@ -401,9 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function labelBg(bg){
-    if (bg === 'small') return 'Serie 300';
-    if (bg === 'medium') return 'Serie 400';
-    if (bg === 'large') return 'Serie 500';
+    if (bg === '300') return 'Serie 300';
+    if (bg === '400') return 'Serie 400';
+    if (bg === '500') return 'Serie 500';
     return '—';
   }
 
@@ -423,20 +424,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return div;
   }
 
-  function isScreenBlock(blk){
-    if (!blk) return false;
-    if (typeof blk === 'object' && (blk.type === 'screen')) return true;
-    return false;
-  }
-
   function blockHeight(blk){
     if (typeof blk === 'number') return blk;
-    if (typeof blk === 'object' && blk.h != null) return blk.h;
+    if (typeof blk === 'object' && blk && blk.h != null) return blk.h;
     return 0;
   }
 
   function blockType(blk){
-    if (typeof blk === 'object' && blk.type) return blk.type;
+    if (typeof blk === 'object' && blk && blk.type) return blk.type;
     return 'door';
   }
 
@@ -452,9 +447,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return b;
   }
 
-  function buildColumn(col, doorHex, bodyHex, addons, counterRef){
+  function buildColumn(col, doorHex, bodyHex, addons, counterRef, payload){
+    const type = (payload?.type || '').trim();
+    const instalacion = (payload?.instalacion || '').trim();
+
+    const isEmpotrado = !!(col && col.single && Array.isArray(col.single.blocks));
+    const topCap = (type === 'home' && instalacion === 'zocalo') ? (parseInt(payload?.topCap, 10) || 90) : 90;
+    const bottomCap = (type === 'home' && instalacion === 'zocalo') ? 70 : 90;
+    const singleCap = (parseInt(payload?.singleCap, 10) || 180);
+
     const shell = document.createElement('div');
     shell.className = 'col-shell';
+
+    const topbar = document.createElement('div');
+    topbar.className = 'col-topbar';
+    topbar.textContent = `Col ${counterRef.colIndex}`;
 
     const card = document.createElement('div');
     card.className = 'col-card';
@@ -463,9 +470,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.createElement('div');
     body.className = 'col-body';
 
-    function half(blocks){
+    // ✅ Ajuste altura contenedor según tipo
+    if (isEmpotrado){
+      body.style.height = (singleCap * SCALE) + 'px';
+    } else if (type === 'home' && instalacion === 'zocalo'){
+      body.style.height = ((topCap + bottomCap) * SCALE) + 'px';
+    } // si no, usa la CSS (180*scale)
+
+    function half(blocks, capH){
       const halfEl = document.createElement('div');
       halfEl.className = 'col-half';
+
+      // ✅ Ajuste altura mitad cuando hay caps variables
+      if (typeof capH === 'number' && capH > 0){
+        halfEl.style.height = (capH * SCALE) + 'px';
+      }
 
       (blocks || []).forEach((blk) => {
         const h = blockHeight(blk);
@@ -484,6 +503,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           counterRef.value += 1;
           const doorIndex = counterRef.value;
+
+          const num = document.createElement('div');
+          num.className = 'num';
+          num.textContent = doorIndex;
+          d.appendChild(num);
 
           const sel = getAddonForDoor(addons, doorIndex);
           const socket = !!(sel && sel.socket);
@@ -504,14 +528,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return halfEl;
     }
 
-    const sep = document.createElement('div');
-    sep.className = 'half-sep';
+    if (isEmpotrado){
+      body.appendChild(half(col?.single?.blocks || [], singleCap));
+    } else {
+      const sep = document.createElement('div');
+      sep.className = 'half-sep';
 
-    body.appendChild(half(col?.top?.blocks || []));
-    body.appendChild(sep);
-    body.appendChild(half(col?.bottom?.blocks || []));
+      body.appendChild(half(col?.top?.blocks || [], (type === 'home' && instalacion === 'zocalo') ? topCap : null));
+      body.appendChild(sep);
+      body.appendChild(half(col?.bottom?.blocks || [], (type === 'home' && instalacion === 'zocalo') ? bottomCap : null));
+    }
 
     card.appendChild(body);
+    shell.appendChild(topbar);
     shell.appendChild(card);
 
     return shell;
@@ -522,9 +551,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalDoors = 0;
 
     (columns || []).forEach(col => {
-      const all = []
-        .concat(col?.top?.blocks || [])
-        .concat(col?.bottom?.blocks || []);
+      const isEmpotrado = !!(col && col.single && Array.isArray(col.single.blocks));
+      const all = isEmpotrado
+        ? (col?.single?.blocks || [])
+        : []
+            .concat(col?.top?.blocks || [])
+            .concat(col?.bottom?.blocks || []);
 
       all.forEach(blk => {
         const t = blockType(blk);
@@ -610,9 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // ordenar por nº de puerta si son numéricos
     detail.sort((a,b) => (parseInt(a.door,10) || 0) - (parseInt(b.door,10) || 0));
-
     return { totalSocket, totalUsb, totalBoth, detail };
   }
 
@@ -697,12 +727,13 @@ document.addEventListener('DOMContentLoaded', () => {
         projName.textContent = item.projectName;
       }
 
-      // INFO (sin cliente)
+      // INFO
       infoBox.innerHTML = '';
       infoBox.appendChild(kv('ID', item.id));
       infoBox.appendChild(kv('Proyecto', item.projectName || '—'));
       infoBox.appendChild(kv('Tipo', payload.type || '—'));
-      infoBox.appendChild(kv('Fondo', labelBg(payload.background_size)));
+      if (payload.instalacion) infoBox.appendChild(kv('Instalación', payload.instalacion));
+      infoBox.appendChild(kv('Fondo', labelBg(payload.fondo)));
       infoBox.appendChild(kv('Ubicación', labelPlacement(payload.placement)));
       infoBox.appendChild(kv('Material', payload.material || '—'));
       infoBox.appendChild(kv('Color puerta', doorColorRal || doorColor));
@@ -723,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const counterRef = { value: 0, colIndex: 0 };
         columns.forEach((col) => {
           counterRef.colIndex += 1;
-          previewCols.appendChild(buildColumn(col, doorColor, bodyColor, addons, counterRef));
+          previewCols.appendChild(buildColumn(col, doorColor, bodyColor, addons, counterRef, payload));
         });
       }
 

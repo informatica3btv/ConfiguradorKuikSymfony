@@ -73,21 +73,18 @@
       data-home-url="{{ path('configuration_home_instalacion') }}"
       data-professional-url="{{ path('configuration_columns') }}">
 
-  <input type="hidden" name="config_id" value="{{ configuration.id }}">
-  <input type="hidden" name="project_id" value="{{ project.id }}">
+  <input type="hidden" name="config_id" id="config_id" value="{{ configuration.id }}">
+  <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
   <input type="hidden" name="type" id="type" value="">
 
   <div style="margin:16px 0;">
-    <h3 style="margin-bottom: 8px; font-size=24px">Selecciona tipo de configuracion</h3>
+    <h3 style="margin-bottom: 8px; font-size:24px;">Selecciona tipo de configuracion</h3>
 
     <div class="option-row" data-group="type" style="grid-template-columns:repeat(3,1fr);">
-
       {% for type in types %}
-
-        <button type="button" class="option-card" data-value="{{type.value}}">
-          <div class="option-title">{{type.name}}</div>
+        <button type="button" class="option-card" data-value="{{ type.value }}">
+          <div class="option-title">{{ type.name }}</div>
         </button>
-
       {% endfor %}
     </div>
   </div>
@@ -103,37 +100,50 @@
 {{ parent() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('typeForm');
   const hidden = document.getElementById('type');
   const err = document.getElementById('typeError');
-  const form = document.getElementById('typeForm');
 
+  const configId = document.getElementById('config_id')?.value || '';
+  const projectId = document.getElementById('project_id')?.value || '';
+
+  const homeUrl = form.dataset.homeUrl;
+  const professionalUrl = form.dataset.professionalUrl;
+
+  // Selección de tarjeta
   document.querySelectorAll('.option-row[data-group="type"] .option-card').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.option-row[data-group="type"] .option-card')
         .forEach(b => b.classList.remove('selected'));
 
       btn.classList.add('selected');
-      hidden.value = btn.getAttribute('data-value');
-      err.textContent = '';
+      hidden.value = btn.dataset.value || '';
+      if (err) err.textContent = '';
     });
   });
 
+  // Submit -> redirección controlada
   form.addEventListener('submit', (e) => {
-    if (!hidden.value) {
-      e.preventDefault();
-      err.textContent = 'Selecciona un tipo de columna para continuar.';
+    e.preventDefault(); // ✅ clave: evita recarga a la misma URL
+
+    const v = (hidden.value || '').trim();
+    if (!v) {
+      if (err) err.textContent = 'Selecciona un tipo de columna para continuar.';
       return;
     }
 
-    if (hidden.value === 'home') {
-      form.action = form.dataset.homeUrl;
-    }
+    let target = '';
+    if (v === 'home') target = homeUrl;
+    else if (v === 'professional') target = professionalUrl;
+    else target = professionalUrl; // fallback por si hay más tipos
 
-    if (hidden.value === 'professional') {
-      form.action = form.dataset.professionalUrl;
-    }
+    const params = new URLSearchParams();
+    if (configId) params.set('config_id', configId);
+    if (projectId) params.set('project_id', projectId);
+    params.set('type', v);
+
+    window.location.href = target + '?' + params.toString();
   });
 });
 </script>
-
 {% endblock %}
