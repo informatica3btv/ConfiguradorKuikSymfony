@@ -138,6 +138,13 @@
     font-weight:900;
   }
 
+  .c-name{
+    margin:0;
+    padding: 5px 10px;
+    font-size:18px;
+    font-weight:900;
+  }
+
   .pill{
     font-size:12px;
     font-weight:900;
@@ -273,6 +280,8 @@
                 {% if project.status == 1 %}
                   <div class="pill-status">Aceptado</div>
                 {% endif %}
+                
+              
               </div>
               <div class="meta-row" style="margin-top:6px;">
                 <span class="micon">👤</span>
@@ -302,6 +311,12 @@
                 {% endif %}
               </span>
             </div>
+
+            <div class="meta-row" style="margin-top:6px;">
+              <span class="micon">💼</span>
+              <span class="muted">{{ app.user.name }}</span>
+            </div>
+            
           </div>
 
           <div class="divider"></div>

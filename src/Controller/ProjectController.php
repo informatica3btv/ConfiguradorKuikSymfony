@@ -50,9 +50,9 @@ class ProjectController extends AbstractController
         }
 
         // Seguridad: que el proyecto sea del usuario
-        if ($project->getUser() !== $this->getUser()) {
+        /*if ($project->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
-        }
+        }*/
 
         $configurations = $configRepo->findBy(
             ['project' => $project],
@@ -79,6 +79,7 @@ class ProjectController extends AbstractController
         return $this->render('projects/configurations_list.html.twig', [
             'project' => $project,
             'items' => $items,
+            'user' => $project->getUser()
         ]);
     }
 

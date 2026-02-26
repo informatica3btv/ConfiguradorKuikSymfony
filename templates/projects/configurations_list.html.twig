@@ -371,7 +371,7 @@
 
   <h1 class="page-title">Configuraciones del proyecto</h1>
   <div class="muted" style="margin-top:6px;">
-    Proyecto: <b>{{ project.projectName }}</b> · Cliente: <b>{{ project.clientName }}</b>
+    Proyecto: <b>{{ project.projectName }}</b> · Comercial: <b>{{user.name}}</b>
   </div>
 
   <div class="info-bar">
@@ -435,7 +435,7 @@
       Volver a proyectos
     </a>
 
-    {% if project.status == 0 %}
+    {% if project.status == 0 and app.user.id == user.id %}
       <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -529,7 +529,7 @@
 
           <div class="actions">
 
-            {% if project.status == 0 %}
+            {% if project.status == 0 and app.user.id == user.id %}
               <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
                  onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -540,7 +540,7 @@
               </a>
             {% endif %}
 
-            {% if project.status == 0 %}
+            {% if project.status == 0 and app.user.id == user.id%}
               <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -558,7 +558,7 @@
               Resumen
             </a>
 
-            {% if c.status == 0 and project.status == 0 %}
+            {% if c.status == 0 and project.status == 0 and app.user.id == user.id%}
               <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
