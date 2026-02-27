@@ -4,6 +4,7 @@
    ✅ FIX: patas en PDF (TABLE)
    ✅ FIX: brazos/patas derecha alineados (ancho explícito por grupo)
    ✅ NUEVO: 2 agrupaciones por fila si caben (GRID con TABLE)
+   ✅ FIX: SIEMPRE dibuja puertas (también cuando NO hay brazos)
    ============================================================ #}
 
 {% set pxPerH = 2.2 %}
@@ -102,8 +103,8 @@
       border-style:solid;
       border-left-width:4px;
       border-right-width:4px;
-      border-top-width:8px;
-      border-bottom-width:8px;
+      border-top-width:6px;
+      border-bottom-width:6px;
       border-radius:8px;
       overflow:hidden;
       background:#f7f7f7;
@@ -407,7 +408,7 @@
   </div>
 
   {# =========================
-     Vista previa (2 grupos por fila)
+     Vista previa (2 grupos por fila) ✅ FIX: siempre dibuja puertas
      ========================= #}
   <div class="card-preview">
 
@@ -428,123 +429,22 @@
           {% endif %}
 
           <td class="group-cell" style="width:47%;">
-            {# ancho real del grupo #}
             {% set n = groupCols|length %}
             {% set groupW = n > 0 ? (n * 75 + (n - 1) * 10) : 0 %}
 
-            {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-              <div class="support-wrap" style="width: {{ groupW }}px;">
+            <div class="support-wrap" style="width: {{ groupW }}px;">
+
+              {# brazos solo si toca #}
+              {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                 <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo" style="height: {{ armHeightPx }}px;">
                 <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho"  style="height: {{ armHeightPx }}px;">
+              {% endif %}
 
-                <div class="cols-wrap" style="width: {{ groupW }}px;">
-                  {% for col in groupCols %}
-                    <div class="col-shell">
-                      <div class="col-card" style="border-color: {{ bodyColor }}; background: {{ bodyColor }};">
-                        <div class="col-body" style="
-                          {% if col.single is defined and col.single is not empty %}
-                            height: {{ singleCap * pxPerH }}px;
-                          {% else %}
-                            height: {{ (topCap + bottomCap) * pxPerH }}px;
-                          {% endif %}
-                        ">
-
-                          {% if col.single is defined and col.single is not empty %}
-                            <div class="col-half" style="height: {{ singleCap * pxPerH }}px;">
-                              {% for blk in (col.single.blocks ?? []) %}
-                                {% set bType = blk.type ?? 'door' %}
-                                {% set h = blk.h ?? blk %}
-                                {% if bType == 'screen' %}
-                                  <div class="door screen {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
-                                  </div>
-                                {% else %}
-                                  {% set doorIndex = doorIndex + 1 %}
-                                  {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                                  <div class="door {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <div class="badges">
-                                      {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
-                                      {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
-                                    </div>
-                                  </div>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-                          {% else %}
-                            <div class="col-half" style="height: {{ topCap * pxPerH }}px;">
-                              {% for blk in (col.top.blocks ?? []) %}
-                                {% set bType = blk.type ?? 'door' %}
-                                {% set h = blk.h ?? blk %}
-                                {% if bType == 'screen' %}
-                                  <div class="door screen {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
-                                  </div>
-                                {% else %}
-                                  {% set doorIndex = doorIndex + 1 %}
-                                  {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                                  <div class="door {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <div class="badges">
-                                      {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
-                                      {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
-                                    </div>
-                                  </div>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-
-                            <div class="half-sep"></div>
-
-                            <div class="col-half" style="height: {{ bottomCap * pxPerH }}px;">
-                              {% for blk in (col.bottom.blocks ?? []) %}
-                                {% set bType = blk.type ?? 'door' %}
-                                {% set h = blk.h ?? blk %}
-                                {% if bType == 'screen' %}
-                                  <div class="door screen {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
-                                  </div>
-                                {% else %}
-                                  {% set doorIndex = doorIndex + 1 %}
-                                  {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                                  <div class="door {% if loop.last %}last{% endif %}"
-                                       style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                    <div class="badges">
-                                      {% if sel and sel.socket %}<span class="badge">ENCH</span>{% endif %}
-                                      {% if sel and sel.usb %}<span class="badge">USB</span>{% endif %}
-                                    </div>
-                                  </div>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-                          {% endif %}
-
-                        </div>
-                      </div>
-
-                      {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
-                        <table class="legs-under">
-                          <tr>
-                            <td><span class="leg {{ legClass }}"></span></td>
-                            <td class="right"><span class="leg {{ legClass }}"></span></td>
-                          </tr>
-                        </table>
-                      {% endif %}
-                    </div>
-                  {% endfor %}
-                </div>
-              </div>
-            {% else %}
               <div class="cols-wrap" style="width: {{ groupW }}px;">
-                {# (sin brazos) -> mismo render de columnas, omitido aquí por brevedad
-                   NOTA: si lo necesitas también en este caso, te lo completo.
-                #}
                 {% for col in groupCols %}
                   <div class="col-shell">
-                    <div class="col-card" style="border-color: {{ bodyColor }}; background: {{ bodyColor }};">
+
+                    <div class="col-card" style="border-color: {{ bodyColor }};">
                       <div class="col-body" style="
                         {% if col.single is defined and col.single is not empty %}
                           height: {{ singleCap * pxPerH }}px;
@@ -552,9 +452,78 @@
                           height: {{ (topCap + bottomCap) * pxPerH }}px;
                         {% endif %}
                       ">
-                        {# Reutiliza exactamente tu bloque de puertas aquí si quieres
-                           (para no duplicar 200 líneas, lo dejo igual que tu versión anterior)
-                        #}
+
+                        {% if col.single is defined and col.single is not empty %}
+
+                          <div class="col-half" style="height: {{ singleCap * pxPerH }}px;">
+                            {% for blk in (col.single.blocks ?? []) %}
+                              {% set bType = blk.type ?? 'door' %}
+                              {% set h = blk.h ?? blk %}
+
+                              {% if bType == 'screen' %}
+                                <div class="door screen {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                  <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                </div>
+                              {% else %}
+                                {% set doorIndex = doorIndex + 1 %}
+                                {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                                <div class="door {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                  
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+
+                        {% else %}
+
+                          <div class="col-half" style="height: {{ topCap * pxPerH }}px;">
+                            {% for blk in (col.top.blocks ?? []) %}
+                              {% set bType = blk.type ?? 'door' %}
+                              {% set h = blk.h ?? blk %}
+
+                              {% if bType == 'screen' %}
+                                <div class="door screen {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                  <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                </div>
+                              {% else %}
+                                {% set doorIndex = doorIndex + 1 %}
+                                {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                                <div class="door {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                 
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+
+                          {#<div class="half-sep"></div>#}
+
+                          <div class="col-half" style="height: {{ bottomCap * pxPerH }}px;">
+                            {% for blk in (col.bottom.blocks ?? []) %}
+                              {% set bType = blk.type ?? 'door' %}
+                              {% set h = blk.h ?? blk %}
+
+                              {% if bType == 'screen' %}
+                                <div class="door screen {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                  <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                </div>
+                              {% else %}
+                                {% set doorIndex = doorIndex + 1 %}
+                                {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                                <div class="door {% if loop.last %}last{% endif %}"
+                                     style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                
+                                </div>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+
+                        {% endif %}
+
                       </div>
                     </div>
 
@@ -566,22 +535,22 @@
                         </tr>
                       </table>
                     {% endif %}
+
                   </div>
                 {% endfor %}
               </div>
-            {% endif %}
+            </div>
+
           </td>
 
           <td class="gap"></td>
 
-          {# si es el 2º de la fila, cerramos la fila y metemos separación vertical #}
           {% if loop.index0 % 2 == 1 %}
             </tr>
             <tr><td colspan="3" class="row-sep"></td></tr>
           {% endif %}
         {% endfor %}
 
-        {# si número impar, cerramos la fila con celda vacía #}
         {% if groups|length % 2 == 1 %}
           <td style="width:47%;"></td>
           </tr>
