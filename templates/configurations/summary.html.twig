@@ -67,7 +67,7 @@
   {{ parent() }}
   <style>
     :root{
-      --hscale: 4.16;
+      --hscale: 3.66;
 
       --bg:#f6f9fc;
       --ink:#0b1220;
@@ -172,14 +172,14 @@
       display:flex;
       justify-content:center;
       align-items:flex-start;
-      padding-bottom: 100px;
+      padding-bottom: 135px;
     }
 
     /* ✅ agrupaciones en preview */
     .groups-stage{
       display:flex;
       flex-direction:column;
-      gap:100px;
+      gap:155px;
       align-items:center;
       width:100%;
     }
@@ -377,7 +377,7 @@
 
     .arm-img{
       position:absolute;
-      top: 130px;
+      top: 100px;
       width: var(--armW);
       height: calc(90px * var(--hscale) + 16px);
       object-fit: contain;
@@ -387,12 +387,12 @@
     }
 
     .arm-img.left{
-      left: calc(-0.8 * var(--armOverlap));
+      left: calc(-0.4 * var(--armOverlap));
       transform: scaleX(-1);
     }
 
     .arm-img.right{
-      right: calc(-0.7 * var(--armOverlap));
+      right: calc(-0.35 * var(--armOverlap));
     }
 
     /* ✅ patas por grupo (imagen + grid) */
