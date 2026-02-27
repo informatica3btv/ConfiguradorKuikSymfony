@@ -213,6 +213,7 @@
     .mini-support-wrap{
       --armW: 38px;
       --armOverlap: 14px;
+      --colW: 80px;
       position:relative;
       display:inline-block;            /* 👈 ancho = solo lo que ocupan las columnas */
       padding-left:  calc(var(--armW) - var(--armOverlap));
@@ -323,33 +324,24 @@
       background:#fff;
       margin-left:6px;
     }
-
-    /* ===== SOPORTE SUELO POR GRUPO (mini) ===== */
-
-    /* patas debajo del WRAPPER (NO del grupo ancho) */
-    .mini-support{
-      position:absolute;
-      left:0;
-      right:0;
-      bottom:10px;
-      height:34px;
-      display:flex;
-      justify-content:space-between;
-      padding:0 18px;
+    /* ✅ PATAS por grupo (mini) -> imagen + grid como Resumen */
+    .mini-legs-under{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
       pointer-events:none;
+      user-select:none;
       z-index:1;
+      padding: 0 8px;
     }
 
-    .mini-leg{
-      width:14px;
-      height:22px;
-      border-radius:6px;
-      border:1px solid rgba(0,0,0,.18);
-      background:#111;
+    .mini-leg-img{
+      width:80px;      /* mismo ancho que .col-card/.col-shell */
+      height:95px;     /* ajusta si quieres más largas */
+      object-fit:contain;
+      justify-self:center;
     }
-    .mini-leg.white{ background:#fff; border-color: rgba(0,0,0,.25); }
-    .mini-leg.black{ background:#111; }
-    .mini-leg.silver{ background: linear-gradient(135deg, #cbd5e1, #94a3b8); }
 
     /* brazos posicionados respecto al WRAPPER */
     .mini-arm{
@@ -629,7 +621,7 @@
                         <div class="mini-group-label">Grupo {{ loop.index }}</div>
 
                         <div class="mini-support-center">
-                          <div class="mini-support-wrap">
+                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};">
 
                             {# ✅ BRAZOS: ahora relativos al wrapper del grupo #}
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
@@ -714,11 +706,34 @@
                               {% endfor %}
                             </div>
 
-                            {# ✅ PATAS: ahora relativas al wrapper del grupo #}
-                            {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
-                              <div class="mini-support">
-                                <div class="mini-leg {{ legClass }}"></div>
-                                <div class="mini-leg {{ legClass }}"></div>
+                            {# ✅ PATAS por GRUPO -> misma regla que Resumen, pero en mini #}
+                            {% if isSoporteSuelo and selectedType == 'patas' %}
+                              {% set n = colsToShow|length %}
+
+                              {% if n == 1 %}
+                                {% set legPositions = [1] %}
+                              {% elseif n <= 3 %}
+                                {% set legPositions = [1, n] %}
+                              {% elseif n == 4 %}
+                                {% set legPositions = [1, 3, 4] %}
+                              {% else %}
+                                {# n == 5 (o más) #}
+                                {% set legPositions = [1, 3, 5] %}
+                              {% endif %}
+
+                              {# ✅ imagen según color #}
+                              {% set legSrc =
+                                selectedColor == 'blanco' ? asset('assets/pie_blanco.jpg') :
+                                (selectedColor == 'plata' ? asset('assets/pie_plata.jpg') : asset('assets/pie_negro.jpg'))
+                              %}
+
+                              <div class="mini-legs-under" style="--colsN: {{ n }};">
+                                {% for pos in legPositions %}
+                                  <img class="mini-leg-img"
+                                      style="grid-column: {{ pos }};"
+                                      src="{{ legSrc }}"
+                                      alt="Pata">
+                                {% endfor %}
                               </div>
                             {% endif %}
 
