@@ -683,9 +683,9 @@ public function saveBrackets(
         }
 
         $p = $configuration->getProject();
-        if (!$p || $p->getUser() !== $this->getUser()) {
+        /*if (!$p || $p->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
-        }
+        }*/
 
         $payload = $configuration->getPayload()
             ? (json_decode($configuration->getPayload(), true) ?: [])
@@ -744,6 +744,11 @@ public function saveBrackets(
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+         $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
         $configuration = $repo->find($id);
         $configuration->setStatus(Configuration::STATUS_CLOSED);
         $em->persist($configuration);
@@ -753,11 +758,6 @@ public function saveBrackets(
         
         if (!$configuration) {
             throw $this->createNotFoundException('Configuration not found');
-        }
-
-        $project = $configuration->getProject();
-        if (!$project || $project->getUser() !== $this->getUser()) {
-            throw $this->createAccessDeniedException();
         }
 
         $payload = $configuration->getPayload()
