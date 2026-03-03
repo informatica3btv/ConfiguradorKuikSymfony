@@ -9,7 +9,11 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(name="project")
  */
 class Project
-{
+{   
+    public const STATUS_OPEN = 0;
+    public const STATUS_ACCEPTED = 1;
+    public const STATUS_REJECTED= 2;
+
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()

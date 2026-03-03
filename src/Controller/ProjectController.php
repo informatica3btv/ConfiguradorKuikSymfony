@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\Project;
 use App\Repository\ProjectRepository;
 use App\Repository\ConfigurationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -81,6 +83,37 @@ class ProjectController extends AbstractController
             'items' => $items,
             'user' => $project->getUser()
         ]);
+    }
+
+    /**
+     * @Route("/proyecto/rechazar-proyecto/{id}", name="project_reject", methods={"GET"})
+     */
+    public function rejectProject(
+        int $id,
+        ProjectRepository $repoProject,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+
+        $project = $repoProject->find($id);
+
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        
+        $project->setStatus(Project::STATUS_REJECTED);
+
+
+        $em->persist($project);
+        $em->flush();
+
+        $this->addFlash('error', ' Proyecto rechazado.');
+        
+        return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+    
+
     }
 
 }

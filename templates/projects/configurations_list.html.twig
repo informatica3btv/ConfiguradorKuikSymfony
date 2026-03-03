@@ -131,6 +131,11 @@
       color: #fff;
     }
 
+    .btn.reject{
+      background: #fc0000;
+      color: #fff;
+    }
+
     .config-body{
       margin-top:14px;
       display:grid;
@@ -435,16 +440,29 @@
         Nueva configuración
       </a>
     {% endif %}
+
+    {% if project.status == 0 and app.user.id == user.id %}
+      <a class="btn reject icon" href="{{ path('project_reject', { id: project.id }) }}"
+          onclick="return confirm('¿Seguro que quieres rechazar esta configuración?');">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        Rechazar proyecto
+      </a>
+    {% endif %}
   </div>
 
   {% if items is empty %}
     <div class="card">
       <b>No hay configuraciones aún.</b>
-      <div style="margin-top:10px;">
-        <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
-          Nueva configuración
-        </a>
-      </div>
+      {% if app.user.id == user.id %}
+        <div style="margin-top:10px;">
+          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
+            Nueva configuración
+          </a>
+        </div>
+      {% endif %}
     </div>
   {% else %}
 
@@ -560,13 +578,15 @@
               </a>
             {% endif %}
 
-            <a class="btn icon" href="{{ path('configuration_pdf', { id: c.id }) }}">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              </svg>
-              PDF
-            </a>
+            {% if app.user.id == project.user.id %}
+              <a class="btn icon" href="{{ path('configuration_pdf', { id: c.id }) }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                PDF
+              </a>
+            {% endif %}
 
           </div>
         </div>
