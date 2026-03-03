@@ -442,15 +442,20 @@
     <div class="btn-row">
       <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
 
-      {% if project.status == 0 %}
-        <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
-      {% endif %}
+      {% if app.user.id == project.user.id %}
+      
+        {% if project.status == 0 %}
+          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+        {% endif %}
 
-      {% if configuration.status == 0 %}
-        <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
-      {% endif %}
+        {% if configuration.status == 0 %}
+          <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
+        {% endif %}
 
-      <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
+        
+        <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
+        
+        {% endif %}
     </div>
 
     <div class="grid">
