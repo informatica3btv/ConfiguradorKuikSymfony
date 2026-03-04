@@ -441,7 +441,7 @@
 
     <div class="btn-row">
       <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
-
+      <a class="btn" href="{{ path('project_configurations', { project_id: project.id }) }}">Ver proyecto</a>
       {% if app.user.id == project.user.id %}
       
         {% if project.status == 0 %}
