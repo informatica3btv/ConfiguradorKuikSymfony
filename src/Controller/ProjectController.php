@@ -8,6 +8,7 @@ use App\Repository\ConfigurationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
@@ -114,6 +115,48 @@ class ProjectController extends AbstractController
         return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
     
 
+    }
+
+    /**
+     * @Route("/{id}/update-info", name="project_update_info", methods={"POST"})
+     */
+    public function updateInfo(
+        int $id,
+        Request $request,
+        ProjectRepository $projectRepo,
+        EntityManagerInterface $em
+    ): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $project = $projectRepo->find($id);
+        if (!$project) {
+            throw $this->createNotFoundException('Project not found');
+        }
+
+        // seguridad: solo dueño
+        if ($project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $token = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('update_project_info_' . $project->getId(), $token)) {
+            throw $this->createAccessDeniedException('CSRF token inválido');
+        }
+
+        $project->setClientName($request->request->get('clientName'));
+        $project->setEmail($request->request->get('email'));
+        $project->setPhone($request->request->get('phone'));
+        $project->setCity($request->request->get('city'));
+        $project->setAddress($request->request->get('address'));
+        $em->flush();
+
+        $this->addFlash('success', 'Datos actualizados correctamente.');
+
+        // vuelve a tu lista de configuraciones del proyecto
+        return $this->redirectToRoute('project_configurations', [
+            'project_id' => $project->getId()
+        ]);
     }
 
 }

@@ -206,7 +206,6 @@
       overflow: visible;
     }
 
- 
     .mini-group-label{
       font-size:11px;
       font-weight:900;
@@ -329,6 +328,7 @@
       background:#fff;
       margin-left:6px;
     }
+
     /* ✅ PATAS por grupo (mini) -> imagen + grid como Resumen */
     .mini-legs-under{
       width:100%;
@@ -360,6 +360,93 @@
     }
     .mini-arm.left{ left: calc(-0.2 * var(--armOverlap)); transform:scaleX(-1); }
     .mini-arm.right{ right: calc(-0.2 * var(--armOverlap)); }
+
+    /* ===== Modal (simple) ===== */
+    .modalx{
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 9999;
+    }
+    .modalx.is-open{ display:block; }
+
+    .modalx__backdrop{
+      position:absolute;
+      inset:0;
+      background: rgba(2,6,23,.55);
+      backdrop-filter: blur(2px);
+    }
+
+    .modalx__dialog{
+      position: relative;
+      max-width: 560px;
+      margin: 8vh auto;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:16px;
+      box-shadow: 0 20px 45px rgba(2,20,60,.20);
+      overflow:hidden;
+    }
+
+    .modalx__head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 16px;
+      border-bottom:1px solid rgba(15,23,42,.10);
+    }
+
+    .modalx__title{
+      margin:0;
+      font-size:16px;
+      font-weight:900;
+    }
+
+    .modalx__close{
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      font-size:22px;
+      line-height:1;
+      padding:6px 10px;
+      border-radius:10px;
+    }
+    .modalx__close:hover{ background: rgba(2,6,23,.06); }
+
+    .modalx__body{ padding:16px; }
+    .modalx__footer{
+      padding:14px 16px;
+      border-top:1px solid rgba(15,23,42,.10);
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .form-row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .field label{
+      display:block;
+      font-size:12px;
+      font-weight:900;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .field input{
+      width:100%;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+    }
+    .field input:focus{
+      border-color: rgba(11,118,216,.55);
+      box-shadow: 0 0 0 3px rgba(11,118,216,.12);
+    }
   </style>
 {% endblock %}
 
@@ -399,6 +486,21 @@
     </div>
 
     <div class="info-item">
+     <div class="info-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 22s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="#0b76d8" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="info-k">Ubicación</div>
+        <div class="info-v">{{ project.city ?: '—' }} - {{ project.address }}</div>
+      </div>
+      
+    </div>
+
+    <div class="info-item">
+      
       <div class="info-ico" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1A19.5 19.5 0 0 1 3.2 10.8 19.8 19.8 0 0 1 .1 2.2 2 2 0 0 1 2.1 0h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L6 8a16 16 0 0 0 10 10l1.5-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6A2 2 0 0 1 22 16.9Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
@@ -408,19 +510,68 @@
         <div class="info-k">Teléfono</div>
         <div class="info-v">{{ project.phone ?: '—' }}</div>
       </div>
-    </div>
 
-    <div class="info-item">
-      <div class="info-ico" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M12 22s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M12 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="#0b76d8" stroke-width="2"/>
-        </svg>
+      {% if project.user.id == app.user.id %}
+        <a class="btn primary icon" style="margin-left:80px;"
+          href="#"
+          id="openEditClient">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          Editar
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ✅ CAMBIO: Modal Bootstrap fuera -> ModalX #}
+  <div class="modalx" id="editClientModal" aria-hidden="true">
+    <div class="modalx__backdrop" data-close="1"></div>
+
+    <div class="modalx__dialog" role="dialog" aria-modal="true" aria-labelledby="editClientTitle">
+      <div class="modalx__head">
+        <h4 class="modalx__title" id="editClientTitle">Editar datos</h4>
+        <button type="button" class="modalx__close" aria-label="Cerrar" data-close="1">×</button>
       </div>
-      <div>
-        <div class="info-k">Ubicación</div>
-        <div class="info-v">{{ project.city ?: '—' }}</div>
-      </div>
+
+      <form method="post" action="{{ path('project_update_info', {id: project.id}) }}">
+        <div class="modalx__body">
+          <input type="hidden" name="_token" value="{{ csrf_token('update_project_info_' ~ project.id) }}">
+
+          <div class="form-row">
+            <div class="field">
+              <label>Cliente</label>
+              <input type="text" name="clientName" value="{{ project.clientName }}">
+            </div>
+
+            <div class="field">
+              <label>Email</label>
+              <input type="email" name="email" value="{{ project.email }}">
+            </div>
+
+            <div class="field">
+              <label>Teléfono</label>
+              <input type="text" name="phone" value="{{ project.phone }}">
+            </div>
+
+            <div class="field">
+              <label>Ubicación</label>
+              <input type="text" name="city" value="{{ project.city }}">
+            </div>
+
+            <div class="field">
+              <label>Dirección</label>
+              <input type="text" name="address" value="{{ project.address }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="modalx__footer">
+          <button type="button" class="btn" data-close="1">Cancelar</button>
+          <button type="submit" class="btn primary">Guardar cambios</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -785,4 +936,43 @@
 </div>
 {% endblock %}
 
- 
+{% block javascripts %}
+  {{ parent() }}
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const openBtn = document.getElementById('openEditClient');
+      const modal = document.getElementById('editClientModal');
+
+      if (!openBtn || !modal) return;
+
+      const open = () => {
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        modal.setAttribute('aria-hidden', 'false');
+
+        const first = modal.querySelector('input[name="clientName"]');
+        if (first) first.focus();
+      };
+
+      const close = () => {
+        modal.classList.remove('is-open');
+        document.body.style.overflow = '';
+        modal.setAttribute('aria-hidden', 'true');
+      };
+
+      openBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        open();
+      });
+
+      modal.addEventListener('click', (e) => {
+        const closeEl = e.target.closest('[data-close="1"]');
+        if (closeEl) close();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+      });
+    });
+  </script>
+{% endblock %}
