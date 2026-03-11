@@ -511,7 +511,7 @@
         <div class="info-v">{{ project.phone ?: '—' }}</div>
       </div>
 
-      {% if project.user.id == app.user.id %}
+      {% if project.user.id == app.user.id and project.status == "0" %}
         <a class="btn primary icon" style="margin-left:80px;"
           href="#"
           id="openEditClient">
