@@ -16,23 +16,28 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class ProjectController extends AbstractController
 {
-    /**
+   /**
      * @Route("/list", name="projects_list", methods={"GET"})
      */
-    public function list(ProjectRepository $projectRepo): Response
+    public function list(Request $request, ProjectRepository $projectRepo): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        $projects = $projectRepo->findBy([], ['id' => 'DESC']);
+        $status = (int) $request->query->get('status', 0);
 
-        foreach($projects as $project){
-            
-             $total = $projectRepo->countConfigurationsByProject($project->getId());
-             $project->totalConfigurations = $total;
+        $projects = $projectRepo->findBy(
+            ['status' => $status],
+            ['id' => 'DESC']
+        );
+
+        foreach ($projects as $project) {
+            $total = $projectRepo->countConfigurationsByProject($project->getId());
+            $project->totalConfigurations = $total;
         }
 
         return $this->render('projects/list.html.twig', [
             'projects' => $projects,
+            'currentStatus' => $status,
         ]);
     }
 

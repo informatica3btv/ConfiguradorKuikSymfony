@@ -249,6 +249,53 @@
 
   /* pequeño detalle para que “parezca” como en la imagen */
   .wrap *{ box-sizing:border-box; }
+
+
+
+  .top-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .btn-filter{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 14px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff;
+    color: var(--ink);
+    text-decoration:none;
+    font-weight:800;
+    transition:.2s ease;
+    white-space:nowrap;
+  }
+
+  .btn-filter:hover{
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-filter.active-open{
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+    color:#fff;
+    border-color: transparent;
+  }
+
+  .btn-filter.active-accept{
+    background:#23C920;
+    color:#fff;
+    border-color:#23C920;
+  }
+
+  .btn-filter.active-reject{
+    background:#fc0000;
+    color:#fff;
+    border-color:#fc0000;
+  }
 </style>
 {% endblock %}
 
@@ -261,10 +308,29 @@
       <div class="subtitle">Gestiona tus proyectos de taquillas inteligentes</div>
     </div>
 
-    <a class="btn-primary" href="{{ path('configuration_project_new') }}">
-      <span class="plus">+</span>
-      Nuevo Proyecto
-    </a>
+    <div class="top-actions">
+
+      <a class="btn-filter {{ currentStatus == 1 ? 'active-accept' : '' }}"
+        href="{{ path('projects_list', { status: 1 }) }}">
+        Aceptados
+      </a>
+
+      <a class="btn-filter {{ currentStatus == 2 ? 'active-reject' : '' }}"
+        href="{{ path('projects_list', { status: 2 }) }}">
+        Rechazados
+      </a>
+
+      <a class="btn-filter {{ currentStatus == 0 ? 'active-open' : '' }}"
+        href="{{ path('projects_list', { status: 0 }) }}">
+        Abiertos
+      </a>
+
+      <a class="btn-primary" href="{{ path('configuration_project_new') }}">
+        <span class="plus">+</span>
+        Nuevo Proyecto
+      </a>
+    </div>
+ 
   </div>
 
   <div class="search-row">
