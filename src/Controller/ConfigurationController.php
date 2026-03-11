@@ -743,13 +743,14 @@ public function saveBrackets(
         ConfigurationRepository $repo,EntityManagerInterface $em
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-         $project = $configuration->getProject();
+        
+        $configuration = $repo->find($id);
+        $project = $configuration->getProject();
+        
         if (!$project || $project->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
-        $configuration = $repo->find($id);
         $configuration->setStatus(Configuration::STATUS_CLOSED);
         $em->persist($configuration);
         $em->flush();
