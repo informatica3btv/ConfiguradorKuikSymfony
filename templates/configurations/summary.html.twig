@@ -278,17 +278,17 @@
     .door .badges{
       position:absolute;
       right:6px;
-      top:4px;
+      bottom:4px;
       display:flex;
       gap:4px;
     }
     .badge-mini{
-      font-size:11px;
+      font-size:10px;
       font-weight:900;
       background: rgba(255,255,255,.92);
       border:1px solid rgba(0,0,0,.18);
       border-radius:999px;
-      padding:1px 7px;
+      padding:1px 5px;
     }
 
     .addons-table{
@@ -530,7 +530,9 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
-                                          <div class="num">{{ doorIndex }}</div>
+                                          <div class="num">
+                                            {{ doorIndex }},{{ (doorIndex - 1) // 16 }}
+                                          </div>
 
                                           <div class="badges">
                                             {% set key = doorIndex ~ '' %}
@@ -562,7 +564,9 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
-                                          <div class="num">{{ doorIndex }}</div>
+                                          <div class="num">
+                                            {{ doorIndex }},{{ (doorIndex - 1) // 16 }}
+                                          </div>
 
                                           <div class="badges">
                                             {% set key = doorIndex ~ '' %}
@@ -594,7 +598,9 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
-                                          <div class="num">{{ doorIndex }}</div>
+                                          <div class="num">
+                                            {{ doorIndex }},{{ (doorIndex - 1) // 16 }}
+                                          </div>
 
                                           <div class="badges">
                                             {% set key = doorIndex ~ '' %}
