@@ -740,13 +740,19 @@ public function saveBrackets(
      */
     public function pdf(
         int $id,
-        ConfigurationRepository $repo,EntityManagerInterface $em
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-        
+
         $configuration = $repo->find($id);
+
+        if (!$configuration) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
         $project = $configuration->getProject();
-        
+
         if (!$project || $project->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
@@ -754,28 +760,23 @@ public function saveBrackets(
         $configuration->setStatus(Configuration::STATUS_CLOSED);
         $em->persist($configuration);
         $em->flush();
-        
-        $configuration->setStatus(Configuration::STATUS_CLOSED);
-        
-        if (!$configuration) {
-            throw $this->createNotFoundException('Configuration not found');
-        }
 
         $payload = $configuration->getPayload()
             ? (json_decode($configuration->getPayload(), true) ?: [])
             : [];
 
-        // Render HTML del PDF (Twig)
+        $publicDir = $this->getParameter('kernel.project_dir') . '/public';
+
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project' => $project,
             'configuration' => $configuration,
             'payload' => $payload,
+            'public_dir' => $publicDir,
         ]);
 
-        // Dompdf options
         $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans'); // soporta acentos
-        $options->setIsRemoteEnabled(true); // por si metes imágenes remotas
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->setIsRemoteEnabled(true);
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html, 'UTF-8');

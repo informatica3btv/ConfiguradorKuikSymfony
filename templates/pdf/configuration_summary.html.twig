@@ -5,6 +5,7 @@
    ✅ FIX: brazos/patas derecha alineados (ancho explícito por grupo)
    ✅ NUEVO: 2 agrupaciones por fila si caben (GRID con TABLE)
    ✅ FIX: SIEMPRE dibuja puertas (también cuando NO hay brazos)
+   ✅ FIX: imágenes locales para Dompdf en servidor Debian
    ============================================================ #}
 
 {% set pxPerH = 2.2 %}
@@ -257,10 +258,13 @@
 
   {% set legClass = selectedColor == 'blanco' ? 'white' : (selectedColor == 'plata' ? 'silver' : 'black') %}
 
+  {# ✅ imágenes locales para Dompdf #}
+  {% set screenSrc = 'file://' ~ public_dir ~ '/assets/pantalla.png' %}
+
   {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
     {% set armSrc =
-      selectedColor == 'blanco' ? absolute_url(asset('assets/brazo_blanco.jpg')) :
-      (selectedColor == 'plata' ? absolute_url(asset('assets/brazo_plata.jpg')) : absolute_url(asset('assets/brazo_negro.jpg')))
+      selectedColor == 'blanco' ? 'file://' ~ public_dir ~ '/assets/brazo_blanco.jpg' :
+      (selectedColor == 'plata' ? 'file://' ~ public_dir ~ '/assets/brazo_plata.jpg' : 'file://' ~ public_dir ~ '/assets/brazo_negro.jpg')
     %}
   {% endif %}
 
@@ -435,13 +439,13 @@
 
                             {% if bType == 'screen' %}
                               <div class="door screen {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                <img class="screen-img" src="{{ screenSrc }}" alt="Pantalla">
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               <div class="door {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                               </div>
                             {% endif %}
                           {% endfor %}
@@ -456,13 +460,13 @@
 
                             {% if bType == 'screen' %}
                               <div class="door screen {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                <img class="screen-img" src="{{ screenSrc }}" alt="Pantalla">
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               <div class="door {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                               </div>
                             {% endif %}
                           {% endfor %}
@@ -475,13 +479,13 @@
 
                             {% if bType == 'screen' %}
                               <div class="door screen {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
-                                <img class="screen-img" src="{{ absolute_url(asset('assets/pantalla.png')) }}" alt="Pantalla">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                <img class="screen-img" src="{{ screenSrc }}" alt="Pantalla">
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               <div class="door {% if loop.last %}last{% endif %}"
-                                  style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                               </div>
                             {% endif %}
                           {% endfor %}
