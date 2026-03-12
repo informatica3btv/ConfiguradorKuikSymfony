@@ -765,13 +765,42 @@ public function saveBrackets(
             ? (json_decode($configuration->getPayload(), true) ?: [])
             : [];
 
-        $publicDir = $this->getParameter('kernel.project_dir') . '/public';
+        $screenPath = $this->getParameter('kernel.project_dir') . '/public/assets/pantalla.png';
+        $screenBase64 = null;
+
+        if (file_exists($screenPath)) {
+            $screenBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($screenPath));
+        }
+
+        $armBlanco = null;
+        $armPlata = null;
+        $armNegro = null;
+
+        $armBlancoPath = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_blanco.jpg';
+        $armPlataPath  = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_plata.jpg';
+        $armNegroPath  = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_negro.jpg';
+
+        if (file_exists($armBlancoPath)) {
+            $armBlanco = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armBlancoPath));
+        }
+
+        if (file_exists($armPlataPath)) {
+            $armPlata = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armPlataPath));
+        }
+
+        if (file_exists($armNegroPath)) {
+            $armNegro = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armNegroPath));
+        }
 
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project' => $project,
             'configuration' => $configuration,
             'payload' => $payload,
-            'public_dir' => $publicDir,
+            'public_dir' => $this->getParameter('kernel.project_dir') . '/public',
+            'screen_base64' => $screenBase64,
+            'arm_blanco' => $armBlanco,
+            'arm_plata' => $armPlata,
+            'arm_negro' => $armNegro,
         ]);
 
         $options = new Options();
