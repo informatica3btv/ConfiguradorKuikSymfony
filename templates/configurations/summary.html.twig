@@ -256,15 +256,18 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      box-sizing: border-box;
     }
 
     .door.screen{
-      padding:6px;
+      padding:0;
+      overflow:hidden;
+      background:#c5303e; /* o quítalo si quieres */
     }
 
     .door.screen img{
-      width:125%;
-      height:125%;
+      width:115%;
+      height:115%;
       object-fit:contain;
       pointer-events:none;
       user-select:none;
