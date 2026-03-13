@@ -6,6 +6,7 @@
    ✅ NUEVO: 2 agrupaciones por fila si caben (GRID con TABLE)
    ✅ FIX: SIEMPRE dibuja puertas (también cuando NO hay brazos)
    ✅ FIX: imágenes locales para Dompdf en servidor Debian
+   ✅ NUEVO: dibujar metacrilato en preview PDF
    ============================================================ #}
 
 {% set pxPerH = 2.2 %}
@@ -42,7 +43,6 @@
       page-break-inside: avoid;
     }
 
-    /* ✅ permitir que caiga en página 1 si cabe */
     .card-preview{
       padding:25px;
       margin-bottom: 10px;
@@ -92,7 +92,7 @@
       display:inline-block;
       padding: 0px;
       vertical-align: top;
-      margin-right:10px;
+      margin-right:5px;
       margin-bottom:10px;
       font-size:12px;
       page-break-inside: avoid;
@@ -128,9 +128,17 @@
       border-left:1px solid rgba(11,18,32,.55);
       border-right:1px solid rgba(11,18,32,.55);
       border-top:1px solid rgba(11,18,32,.55);
+      overflow:hidden;
     }
     .door.last{ border-bottom:1px solid rgba(11,18,32,.55); }
-    .door .badges{ position:absolute; right:6px; top:6px; white-space:nowrap; }
+
+    .door .badges{
+      position:absolute;
+      right:6px;
+      top:6px;
+      white-space:nowrap;
+      z-index:3;
+    }
 
     .badge{
       display:inline-block;
@@ -154,17 +162,30 @@
       display:block;
     }
 
+    /* ✅ Metacrilato para PDF: capa interior real, más fiable que ::after */
+    .door-overlay{
+      position:absolute;
+      top:6px;
+      left:6px;
+      right:6px;
+      bottom:6px;
+      background:rgba(0,0,0,.38);
+      border-radius:3px;
+      z-index:1;
+    }
+
     /* ===========================
        ✅ SOPORTE SUELO (PDF)
        =========================== */
     .support-wrap{
-      --armW: 45px;
+      --armW: 40px;
       --armOverlap: 22px;
       position: relative;
       display: inline-block;
       padding-left:  calc(var(--armW) - var(--armOverlap));
       padding-right: calc(var(--armW) - var(--armOverlap));
       margin: 14px 0 6px;
+      padding-bottom: 100px;
       page-break-inside: avoid;
     }
 
@@ -177,11 +198,11 @@
       z-index: 1;
     }
     .arm-img.left{
-      left: calc(-0.95 * var(--armOverlap));
+      left: calc(-0.5 * var(--armOverlap));
       transform: scaleX(-1);
     }
     .arm-img.right{
-      right: calc(-1.48 * var(--armOverlap));
+      right: calc(-1.05 * var(--armOverlap));
     }
 
     /* ✅ PATAS (PDF reliable): TABLE */
@@ -300,6 +321,7 @@
   {% set totalDoors = 0 %}
   {% set enchCount = 0 %}
   {% set usbCount = 0 %}
+  {% set methacrylateCount = 0 %}
 
   {% for col in columnsAll %}
     {% if col.single is defined and col.single is not empty %}
@@ -313,6 +335,7 @@
           {% set sel = addons[totalDoors ~ ''] ?? addons[totalDoors] ?? null %}
           {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
           {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+          {% if sel and sel.methacrylate %}{% set methacrylateCount = methacrylateCount + 1 %}{% endif %}
         {% endif %}
       {% endfor %}
     {% else %}
@@ -326,6 +349,7 @@
           {% set sel = addons[totalDoors ~ ''] ?? addons[totalDoors] ?? null %}
           {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
           {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+          {% if sel and sel.methacrylate %}{% set methacrylateCount = methacrylateCount + 1 %}{% endif %}
         {% endif %}
       {% endfor %}
       {% for blk in (col.bottom.blocks ?? []) %}
@@ -338,6 +362,7 @@
           {% set sel = addons[totalDoors ~ ''] ?? addons[totalDoors] ?? null %}
           {% if sel and sel.socket %}{% set enchCount = enchCount + 1 %}{% endif %}
           {% if sel and sel.usb %}{% set usbCount = usbCount + 1 %}{% endif %}
+          {% if sel and sel.methacrylate %}{% set methacrylateCount = methacrylateCount + 1 %}{% endif %}
         {% endif %}
       {% endfor %}
     {% endif %}
@@ -351,8 +376,6 @@
       <div class="col col-50">
         <p class="brand">Kuik</p>
         <p class="muted" style="margin:2px 0 0;">
-          Documento técnico (sin precios)<br>
-          Configurador Kuik
         </p>
       </div>
       <div class="col col-50" style="text-align:right;">
@@ -393,7 +416,7 @@
   </div>
 
   {# =========================
-     Vista previa (2 grupos por fila) ✅ FIX: siempre dibuja puertas
+     Vista previa
      ========================= #}
   <div class="card-preview">
 
@@ -444,8 +467,13 @@
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
+                              {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                              {% set hasMethacrylate = sel and sel.methacrylate %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                {% if hasMethacrylate %}
+                                  <span class="door-overlay"></span>
+                                {% endif %}
                               </div>
                             {% endif %}
                           {% endfor %}
@@ -465,8 +493,13 @@
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
+                              {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                              {% set hasMethacrylate = sel and sel.methacrylate %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                {% if hasMethacrylate %}
+                                  <span class="door-overlay"></span>
+                                {% endif %}
                               </div>
                             {% endif %}
                           {% endfor %}
@@ -484,8 +517,13 @@
                               </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
+                              {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
+                              {% set hasMethacrylate = sel and sel.methacrylate %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
+                                {% if hasMethacrylate %}
+                                  <span class="door-overlay"></span>
+                                {% endif %}
                               </div>
                             {% endif %}
                           {% endfor %}
@@ -549,6 +587,7 @@
             <tr><th>Total puertas</th><td><b>{{ totalDoors }}</b></td></tr>
             <tr><th>ENCH usados</th><td>{{ enchCount }}</td></tr>
             <tr><th>USB usados</th><td>{{ usbCount }}</td></tr>
+            <tr><th>Metacrilato</th><td>{{ methacrylateCount }}</td></tr>
           </tbody>
         </table>
 
@@ -575,7 +614,7 @@
   </div>
 
   <div class="footer">
-    Documento generado automáticamente desde el configurador. Sin precios ni condiciones comerciales.
+
   </div>
 
 </div>

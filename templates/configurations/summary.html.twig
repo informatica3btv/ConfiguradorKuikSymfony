@@ -46,8 +46,8 @@
 {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
 
 {# soporte suelo #}
-{% set selectedType  = p.bracketType ?? '' %}   {# 'patas' | 'brazos' | '' #}
-{% set selectedColor = p.bracketColor ?? '' %}  {# 'blanco' | 'negro' | 'plata' | '' #}
+{% set selectedType  = p.bracketType ?? '' %}
+{% set selectedColor = p.bracketColor ?? '' %}
 {% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
 
 {% set bgLabel =
@@ -172,10 +172,9 @@
       display:flex;
       justify-content:center;
       align-items:flex-start;
-      padding-bottom: 135px;
+      padding-bottom: 175px;
     }
 
-    /* ✅ agrupaciones en preview */
     .groups-stage{
       display:flex;
       flex-direction:column;
@@ -183,6 +182,7 @@
       align-items:center;
       width:100%;
     }
+
     .group-label{
       font-weight:900;
       color:#0b1220;
@@ -191,7 +191,6 @@
       text-align:center;
     }
 
-    /* ✅ cols en GRID para alinear patas */
     .cols{
       display:grid;
       grid-template-columns: repeat(var(--colsN), 135px);
@@ -200,7 +199,13 @@
       margin-top:10px;
     }
 
-    .col-shell{ width:135px; display:flex; flex-direction:column; gap:6px; }
+    .col-shell{
+      width:135px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
     .col-topbar{
       padding:7px 10px;
       border-radius:12px;
@@ -218,11 +223,9 @@
       border-right-width:4px;
       border-top-width:8px;
       border-bottom-width:8px;
-      border-radius:12px;
       overflow:hidden;
       background:#f7f7f7;
       box-shadow: var(--shadow);
-
       position: relative;
       z-index: 2;
     }
@@ -241,7 +244,9 @@
       overflow:hidden;
     }
 
-    .half-sep{ border-top:2px dashed rgba(0,0,0,.28); }
+    .half-sep{
+      border-top:2px dashed rgba(0,0,0,.28);
+    }
 
     .door{
       width:100%;
@@ -253,13 +258,30 @@
       justify-content:center;
     }
 
-    .door.screen{ padding:6px; }
+    .door.screen{
+      padding:6px;
+    }
+
     .door.screen img{
       width:125%;
       height:125%;
       object-fit:contain;
       pointer-events:none;
       user-select:none;
+    }
+
+    .door.methacrylate::after{
+      content:"";
+      position:absolute;
+      inset:12px;
+      background:rgba(0,0,0,.38);
+      border-radius:4px;
+      pointer-events:none;
+    }
+
+    .door .num,
+    .door .badges{
+      z-index:2;
     }
 
     .door .num{
@@ -281,7 +303,9 @@
       bottom:4px;
       display:flex;
       gap:4px;
+      flex-wrap:wrap;
     }
+
     .badge-mini{
       font-size:10px;
       font-weight:900;
@@ -301,6 +325,7 @@
       overflow:hidden;
       background:#fff;
     }
+
     .addons-table th,
     .addons-table td{
       padding:10px 12px;
@@ -308,13 +333,17 @@
       font-size:14px;
       text-align:left;
     }
+
     .addons-table th{
       background:#fbfcfe;
       font-weight:900;
       color:#334155;
       font-size:12px;
     }
-    .addons-table tr:last-child td{ border-bottom:0; }
+
+    .addons-table tr:last-child td{
+      border-bottom:0;
+    }
 
     .btn-row{
       display:flex;
@@ -338,16 +367,27 @@
       color:#0b1220;
       transition:.15s;
     }
-    .btn:hover{ background: rgba(2,6,23,.03); }
+
+    .btn:hover{
+      background: rgba(2,6,23,.03);
+    }
+
     .btn.primary{
       background:#0b76d8;
       border-color:#0b76d8;
       color:#fff;
       box-shadow: 0 10px 18px rgba(11,118,216,.18);
     }
-    .btn.primary:hover{ filter:brightness(.98); transform: translateY(-1px); }
 
-    .muted{ color:var(--muted); font-size:15px; }
+    .btn.primary:hover{
+      filter:brightness(.98);
+      transform: translateY(-1px);
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:15px;
+    }
 
     .id-pill{
       display:inline-flex;
@@ -361,12 +401,9 @@
       color:#0b76d8;
     }
 
-    /* ===== Soporte suelo (Resumen) ===== */
     .support-wrap{
       --armW: 65px;
       --armOverlap: 14px;
-
-      /* ✅ columnas/patas */
       --colW: 135px;
 
       position: relative;
@@ -377,25 +414,25 @@
 
     .arm-img{
       position:absolute;
-      top: 100px;
+      top: 60px;
       width: var(--armW);
       height: calc(90px * var(--hscale) + 16px);
       object-fit: contain;
       z-index: 1;
       pointer-events:none;
+      padding-bottom: 40px;
       user-select:none;
     }
 
     .arm-img.left{
-      left: calc(-0.4 * var(--armOverlap));
+      left: calc(-0.3 * var(--armOverlap));
       transform: scaleX(-1);
     }
 
     .arm-img.right{
-      right: calc(-0.35 * var(--armOverlap));
+      right: calc(-0.3 * var(--armOverlap));
     }
 
-    /* ✅ patas por grupo (imagen + grid) */
     .legs-under{
       width:100%;
       display:grid;
@@ -443,7 +480,7 @@
       <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
       <a class="btn" href="{{ path('project_configurations', { project_id: project.id }) }}">Ver proyecto</a>
       {% if app.user.id == project.user.id %}
-      
+
         {% if project.status == 0 %}
           <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
         {% endif %}
@@ -452,15 +489,12 @@
           <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
         {% endif %}
 
-        
         <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
-        
-        {% endif %}
+      {% endif %}
     </div>
 
     <div class="grid">
 
-      {# IZQUIERDA #}
       <div class="card">
         <h3>Vista previa</h3>
 
@@ -474,7 +508,6 @@
           {% endif %}
 
           <div class="preview-stage" id="previewCapture">
-
             <div class="groups-stage" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
               {% if groups is empty %}
@@ -488,30 +521,26 @@
                   <div class="group-block">
                     <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
 
-                    {# ✅ --colsN para alinear cols + patas #}
                     <div class="support-wrap" style="--colsN: {{ groupCols|length }};">
 
-                      {# ✅ brazos por agrupación #}
                       {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-                        <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo">
+                        <img class="arm-img left" src="{{ armSrc }}" alt="Brazo izquierdo">
                         <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho">
                       {% endif %}
 
                       <div class="cols" id="previewCols">
-
                         {% for col in groupCols %}
                           {% set isEmpotrado = (col.single is defined and col.single is not empty) %}
 
                           <div class="col-shell">
-                            {#<div class="col-topbar">Columna {{ loop.index }}</div>#}
-
                             <div class="col-card">
                               <div class="col-body"
                                 {% if isEmpotrado %}
                                   style="height: {{ (singleCap * scale) }}px;"
                                 {% elseif type == 'home' and instalacion == 'zocalo' %}
                                   style="height: {{ ((topCap + bottomCap) * scale) }}px;"
-                                {% endif %}>
+                                {% endif %}
+                              >
 
                                 {% if isEmpotrado %}
 
@@ -524,7 +553,13 @@
                                         {% set doorIndex = doorIndex + 1 %}
                                       {% endif %}
 
-                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                      {% set key = doorIndex ~ '' %}
+                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
@@ -535,10 +570,6 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
                                             {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
                                             {% if usb %}<span class="badge-mini">USB</span>{% endif %}
                                           </div>
@@ -558,7 +589,13 @@
                                         {% set doorIndex = doorIndex + 1 %}
                                       {% endif %}
 
-                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                      {% set key = doorIndex ~ '' %}
+                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
@@ -569,10 +606,6 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
                                             {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
                                             {% if usb %}<span class="badge-mini">USB</span>{% endif %}
                                           </div>
@@ -592,7 +625,13 @@
                                         {% set doorIndex = doorIndex + 1 %}
                                       {% endif %}
 
-                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
+                                      {% set key = doorIndex ~ '' %}
+                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
+                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                      <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
@@ -603,10 +642,6 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                            {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
                                             {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
                                             {% if usb %}<span class="badge-mini">USB</span>{% endif %}
                                           </div>
@@ -618,12 +653,10 @@
                                 {% endif %}
                               </div>
                             </div>
-
                           </div>
                         {% endfor %}
                       </div>
 
-                      {# ✅ PATAS por GRUPO -> mismas reglas que soporte_suelo final #}
                       {% if isSoporteSuelo and selectedType == 'patas' %}
                         {% set n = groupCols|length %}
 
@@ -634,7 +667,6 @@
                         {% elseif n == 4 %}
                           {% set legPositions = [1, 3, 4] %}
                         {% else %}
-                          {# n == 5 (o más) #}
                           {% set legPositions = [1, 3, 5] %}
                         {% endif %}
 
@@ -650,7 +682,6 @@
 
                     </div>
                   </div>
-
                 {% endfor %}
               {% endif %}
 
@@ -662,7 +693,6 @@
              style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
       </div>
 
-      {# DERECHA #}
       <div class="card">
         <h3>Configuración</h3>
 
@@ -673,8 +703,6 @@
           <div class="kv"><div class="k">Material</div><div class="v">{{ material }}</div></div>
           <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
           <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
-
-          {# ✅ ahora cuenta todas las columnas (de todos los grupos) #}
           <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
         </div>
 
@@ -697,7 +725,6 @@
         {% set sizeCounts = {} %}
         {% set totalDoors = 0 %}
 
-        {# ✅ IMPORTANTE: recorremos columnsAll (todas las columnas de todos los grupos) #}
         {% for col in columnsAll %}
           {% if col.single is defined and col.single is not empty %}
 
@@ -770,13 +797,17 @@
         {% set totalSocket = 0 %}
         {% set totalUsb = 0 %}
         {% set totalBoth = 0 %}
+        {% set totalMethacrylate = 0 %}
 
         {% for doorNum, sel in addons %}
           {% set socket = (sel is iterable and (sel.socket ?? false)) ? 1 : 0 %}
-          {% set usb    = (sel is iterable and (sel.usb ?? false)) ? 1 : 0 %}
+          {% set usb = (sel is iterable and (sel.usb ?? false)) ? 1 : 0 %}
+          {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? 1 : 0 %}
 
           {% set totalSocket = totalSocket + socket %}
-          {% set totalUsb    = totalUsb + usb %}
+          {% set totalUsb = totalUsb + usb %}
+          {% set totalMethacrylate = totalMethacrylate + methacrylate %}
+
           {% if socket and usb %}
             {% set totalBoth = totalBoth + 1 %}
           {% endif %}
@@ -795,6 +826,10 @@
             <div class="k">Puertas con ambos</div>
             <div class="v">{{ totalBoth }}</div>
           </div>
+          <div class="kv">
+            <div class="k">Puertas con metacrilato</div>
+            <div class="v">{{ totalMethacrylate }}</div>
+          </div>
         </div>
 
         <h3 style="margin-top:14px;">Detalle (solo puertas con complementos)</h3>
@@ -802,8 +837,9 @@
         {% set anyAddon = false %}
         {% for doorNum, sel in addons %}
           {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-          {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-          {% if socket or usb %}
+          {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+          {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+          {% if socket or usb or methacrylate %}
             {% set anyAddon = true %}
           {% endif %}
         {% endfor %}
@@ -821,17 +857,25 @@
             <tbody>
               {% for doorNum, sel in addons|sort %}
                 {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                {% set usb    = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
+                {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
 
-                {% if socket or usb %}
-                  {% set label = socket and usb
-                    ? 'Enchufe + USB'
-                    : (socket ? 'Enchufe' : 'USB')
-                  %}
+                {% if socket or usb or methacrylate %}
+                  {% set labels = [] %}
+
+                  {% if methacrylate %}
+                    {% set labels = labels|merge(['Metacrilato']) %}
+                  {% endif %}
+                  {% if socket %}
+                    {% set labels = labels|merge(['Enchufe']) %}
+                  {% endif %}
+                  {% if usb %}
+                    {% set labels = labels|merge(['USB']) %}
+                  {% endif %}
 
                   <tr>
                     <td><b>{{ doorNum }}</b></td>
-                    <td>{{ label }}</td>
+                    <td>{{ labels|join(' + ') }}</td>
                   </tr>
                 {% endif %}
               {% endfor %}

@@ -215,14 +215,14 @@
 
     /* ✅ CLAVE: wrapper INLINE del grupo (brazos/patas se posicionan aquí) */
     .mini-support-wrap{
-      --armW: 38px;
+      --armW: 48px;
       --armOverlap: 14px;
       --colW: 80px;
       position:relative;
-      display:inline-block;            /* 👈 ancho = solo lo que ocupan las columnas */
+      display:inline-block;
       padding-left:  calc(var(--armW) - var(--armOverlap));
       padding-right: calc(var(--armW) - var(--armOverlap));
-      padding-bottom: 44px;            /* espacio para patas */
+      padding-bottom: 44px;
     }
 
     /* Centrar el wrapper dentro del grupo */
@@ -292,6 +292,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      overflow:hidden;
     }
     .door.last{ border-bottom:1px solid rgba(44,62,80,.7); }
 
@@ -306,6 +307,7 @@
       border-radius:999px;
       padding:1px 5px;
       line-height:1.2;
+      z-index:2;
     }
 
     .door.screen{ padding:3px; }
@@ -315,6 +317,17 @@
       object-fit:contain;
       pointer-events:none;
       user-select:none;
+    }
+
+    /* ✅ Metacrilato en miniatura */
+    .door.methacrylate::after{
+      content:"";
+      position:absolute;
+      inset:6px;
+      background:rgba(0,0,0,.38);
+      border-radius:3px;
+      pointer-events:none;
+      z-index:1;
     }
 
     .badge{
@@ -342,8 +355,8 @@
     }
 
     .mini-leg-img{
-      width:80px;      /* mismo ancho que .col-card/.col-shell */
-      height:95px;     /* ajusta si quieres más largas */
+      width:80px;
+      height:95px;
       object-fit:contain;
       justify-self:center;
     }
@@ -351,15 +364,15 @@
     /* brazos posicionados respecto al WRAPPER */
     .mini-arm{
       position:absolute;
-      top:64px;
+      top:54px;
       width: var(--armW);
-      height:180px;
+      height:140px;
       object-fit:contain;
       pointer-events:none;
       z-index:1;
     }
-    .mini-arm.left{ left: calc(-0.2 * var(--armOverlap)); transform:scaleX(-1); }
-    .mini-arm.right{ right: calc(-0.2 * var(--armOverlap)); }
+    .mini-arm.left{ left: calc(-0.01 * var(--armOverlap)); transform:scaleX(-1); }
+    .mini-arm.right{ right: calc( 0.05 * var(--armOverlap)); }
 
     /* ===== Modal (simple) ===== */
     .modalx{
@@ -496,11 +509,11 @@
         <div class="info-k">Ubicación</div>
         <div class="info-v">{{ project.city ?: '—' }} - {{ project.address }}</div>
       </div>
-      
+
     </div>
 
     <div class="info-item">
-      
+
       <div class="info-ico" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1A19.5 19.5 0 0 1 3.2 10.8 19.8 19.8 0 0 1 .1 2.2 2 2 0 0 1 2.1 0h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L6 8a16 16 0 0 0 10 10l1.5-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6A2 2 0 0 1 22 16.9Z" stroke="#0b76d8" stroke-width="2" stroke-linejoin="round"/>
@@ -525,7 +538,6 @@
     </div>
   </div>
 
-  {# ✅ CAMBIO: Modal Bootstrap fuera -> ModalX #}
   <div class="modalx" id="editClientModal" aria-hidden="true">
     <div class="modalx__backdrop" data-close="1"></div>
 
@@ -622,7 +634,6 @@
       {% set p = it.payload %}
       {% if p is not iterable %}{% set p = {} %}{% endif %}
 
-      {# ==== GRUPOS (fallback a columns) ==== #}
       {% set groups = p.groups ?? [] %}
       {% if groups is not iterable %}{% set groups = [] %}{% endif %}
 
@@ -633,7 +644,6 @@
         {% set groups = [columnsFlat] %}
       {% endif %}
 
-      {# columnas totales para contadores #}
       {% set columnsAll = [] %}
       {% for g in groups %}
         {% if g is iterable %}
@@ -645,11 +655,11 @@
       {% set doorColorRal = p.colorDoorRal ?? p.colorDoor ?? '#3a9efc' %}
       {% set bodyColor = p.colorBody ?? '#000' %}
       {% set bodyColorRal = p.colorBodyRal ?? p.colorBody ?? '#000' %}
+      {% set addons = p.addons ?? {} %}
 
       {% set type = p.type ?? '—' %}
       {% set instalacion = p.instalacion ?? '' %}
 
-      {# soporte_suelo #}
       {% set selectedType  = p.bracketType ?? '' %}
       {% set selectedColor = p.bracketColor ?? '' %}
       {% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
@@ -701,7 +711,7 @@
               </a>
             {% endif %}
 
-            {% if project.status == 0 and app.user.id == user.id%}
+            {% if project.status == 0 and app.user.id == user.id %}
               <a class="btn icon" href="{{ path('configuration_copy', { id: c.id }) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -719,7 +729,7 @@
               Resumen
             </a>
 
-            {% if c.status == 0 and project.status == 0 and app.user.id == user.id%}
+            {% if c.status == 0 and project.status == 0 and app.user.id == user.id %}
               <a class="btn primary icon" href="{{ path('configuration_columns', { project_id: project.id, config_id: c.id }) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -794,7 +804,6 @@
                         <div class="mini-support-center">
                           <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};">
 
-                            {# ✅ BRAZOS: ahora relativos al wrapper del grupo #}
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                               <img class="mini-arm left"  src="{{ armSrc }}" alt="Brazo izq">
                               <img class="mini-arm right" src="{{ armSrc }}" alt="Brazo der">
@@ -822,7 +831,11 @@
                                             {% set btype = blk.type|default('door') %}
                                             {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
@@ -839,7 +852,11 @@
                                             {% set btype = blk.type|default('door') %}
                                             {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
@@ -858,7 +875,11 @@
                                             {% set btype = blk.type|default('door') %}
                                             {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {% if loop.last %}last{% endif %}"
+                                            {% set key = doorIndex ~ '' %}
+                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+
+                                            <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
@@ -877,7 +898,6 @@
                               {% endfor %}
                             </div>
 
-                            {# ✅ PATAS por GRUPO -> misma regla que Resumen, pero en mini #}
                             {% if isSoporteSuelo and selectedType == 'patas' %}
                               {% set n = colsToShow|length %}
 
@@ -888,11 +908,9 @@
                               {% elseif n == 4 %}
                                 {% set legPositions = [1, 3, 4] %}
                               {% else %}
-                                {# n == 5 (o más) #}
                                 {% set legPositions = [1, 3, 5] %}
                               {% endif %}
 
-                              {# ✅ imagen según color #}
                               {% set legSrc =
                                 selectedColor == 'blanco' ? asset('assets/pie_blanco.jpg') :
                                 (selectedColor == 'plata' ? asset('assets/pie_plata.jpg') : asset('assets/pie_negro.jpg'))
