@@ -20,7 +20,7 @@
     }
 
     .page-wrap{
-      max-width: 1200px;
+      max-width: 1600px;
       margin: 22px auto 50px;
       padding: 0 14px;
     }
@@ -65,7 +65,7 @@
 
     .grid{
       display:grid;
-      grid-template-columns: 1.35fr .65fr;
+      grid-template-columns: 1.25fr .75fr;
       gap:14px;
       align-items:start;
     }
@@ -124,7 +124,7 @@
     /* ===== INFO GRID ===== */
     .kvs{
       display:grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.25fr 0.75fr;
       gap:10px;
     }
 
@@ -137,23 +137,56 @@
     .kv .k{ font-size:12px; color:var(--muted); font-weight:900; }
     .kv .v{ font-size:14px; font-weight:900; margin-top:4px; color:var(--ink); }
 
-    /* ===== PREVIEW (igual que Resumen) ===== */
+    /* ===== PREVIEW ===== */
     .preview-wrap{
       border:1px solid rgba(15,23,42,.10);
       border-radius:16px;
-      background:#fbfcfe;
       padding:12px;
+      background: #fff;
+    }
+
+    .preview-stage{
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      width:100%;
+      padding-bottom: 80px;
+    }
+
+    .groups-stage{
+      display:flex;
+      flex-direction:column;
+      gap:70px;
+      align-items:center;
+      width:100%;
+    }
+
+    .group-block{
+      width:100%;
+    }
+
+    .group-label{
+      font-weight:900;
+      color:#0b1220;
+      font-size:14px;
+      margin:6px 0 12px;
+      text-align:center;
     }
 
     .cols{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), 160px);
       justify-content:center;
       margin-top:10px;
     }
 
-    .col-shell{ width:180px; display:flex; flex-direction:column; gap:6px; }
+    .col-shell{
+      width:160px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
     .col-topbar{
       padding:7px 10px;
       border-radius:12px;
@@ -165,7 +198,7 @@
     }
 
     .col-card{
-      width:180px;
+      width:160px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:4px;
@@ -175,7 +208,6 @@
       border-radius:12px;
       overflow:hidden;
       background:#f7f7f7;
-      box-shadow: var(--shadow);
     }
 
     .col-body{
@@ -192,7 +224,9 @@
       overflow:hidden;
     }
 
-    .half-sep{ border-top:2px dashed rgba(0,0,0,.28); }
+    .half-sep{
+      border-top:2px dashed rgba(0,0,0,.28);
+    }
 
     .door{
       width:100%;
@@ -204,7 +238,11 @@
       justify-content:center;
     }
 
-    .door.screen{ padding:6px; background:var(--door-color, #3a9efc); }
+    .door.screen{
+      padding:6px;
+      background:var(--door-color, #3a9efc);
+    }
+
     .door.screen img{
       width:125%;
       height:125%;
@@ -233,6 +271,7 @@
       display:flex;
       gap:4px;
     }
+
     .badge-mini{
       font-size:11px;
       font-weight:900;
@@ -243,7 +282,7 @@
     }
 
     /* ===== TABLES ===== */
-    .addons-table{
+    .addons-table{a
       width:100%;
       border-collapse:separate;
       border-spacing:0;
@@ -253,6 +292,7 @@
       overflow:hidden;
       background:#fff;
     }
+
     .addons-table th,
     .addons-table td{
       padding:10px 12px;
@@ -260,13 +300,67 @@
       font-size:14px;
       text-align:left;
     }
+
     .addons-table th{
       background:#fbfcfe;
       font-weight:900;
       color:#334155;
       font-size:12px;
     }
-    .addons-table tr:last-child td{ border-bottom:0; }
+
+    .addons-table tr:last-child td{
+      border-bottom:0;
+    }
+
+    .support-wrap{
+      --armW: 65px;
+      --armOverlap: 14px;
+      --colW: 160px;
+      padding-bottom:155px;
+      position: relative;
+      display: inline-block;
+      padding-left: calc(var(--armW) - var(--armOverlap));
+      padding-right: calc(var(--armW) - var(--armOverlap));
+    }
+
+    .arm-img{
+      position:absolute;
+      top: 50px;
+      width: var(--armW);
+      height: calc(90px * var(--hscale) + 16px);
+      object-fit: contain;
+      z-index: 1;
+      pointer-events:none;
+      user-select:none;
+      padding-bottom: 40px;
+    }
+
+    .arm-img.left{
+      left: calc(-0.55 * var(--armOverlap));
+      transform: scaleX(-1);
+    }
+
+    .arm-img.right{
+      right: calc(-0.56* var(--armOverlap));
+    }
+
+    .legs-under{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
+      pointer-events:none;
+      user-select:none;
+      z-index:1;
+      padding: 0 18px;
+    }
+
+    .leg-img{
+      width:160px;
+      height:175px;
+      object-fit:contain;
+      justify-self:center;
+    }
 
     /* ===== BUTTONS ===== */
     .btn{
@@ -283,16 +377,33 @@
       color:#0b1220;
       transition:.15s;
     }
-    .btn:hover{ background: rgba(2,6,23,.03); }
+
+    .btn:hover{
+      background: rgba(2,6,23,.03);
+    }
+
     .btn.primary{
       background:#0b76d8;
       border-color:#0b76d8;
       color:#fff;
       box-shadow: 0 10px 18px rgba(11,118,216,.18);
     }
-    .btn.primary:hover{ filter:brightness(.98); transform: translateY(-1px); }
 
-    .muted{ color:var(--muted); font-size:15px; }
+    .btn.primary:hover{
+      filter:brightness(.98);
+      transform: translateY(-1px);
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    @media (max-width: 1100px){
+      .cols{
+        grid-template-columns: repeat(auto-fit, minmax(180px, 180px));
+      }
+    }
   </style>
 {% endblock %}
 
@@ -313,7 +424,6 @@
 
   <div id="msg" class="warn" style="display:none;"></div>
 
-  {# ===== Resultado AJAX (mismo layout que Resumen) ===== #}
   <div id="result" style="display:none;">
     <div class="page-sub" style="margin: 6px 0 14px;">
       <span class="id-pill">ID configuración: <span id="confId">—</span></span>
@@ -321,19 +431,19 @@
     </div>
 
     <div class="grid">
-      {# IZQUIERDA #}
       <div class="card">
         <h3>Vista previa</h3>
 
         <div class="preview-wrap">
-          <div id="previewCols" class="cols" style="--door-color:#3a9efc; --col-border:#000;"></div>
+          <div class="preview-stage">
+            <div id="previewGroups" class="groups-stage" style="--door-color:#3a9efc; --col-border:#000;"></div>
+          </div>
         </div>
 
         <img id="resultadoIA"
              style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
       </div>
 
-      {# DERECHA #}
       <div class="card">
         <h3>Configuración</h3>
 
@@ -365,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const msg = document.getElementById('msg');
 
   const result = document.getElementById('result');
-  const previewCols = document.getElementById('previewCols');
+  const previewGroups = document.getElementById('previewGroups');
   const infoBox = document.getElementById('infoBox');
   const doorsTable = document.getElementById('doorsTable');
   const addonsTotals = document.getElementById('addonsTotals');
@@ -378,7 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const SCALE = 4.16;
 
   function safeParse(jsonStr){
-    try { return JSON.parse(jsonStr); } catch(e) { return null; }
+    try {
+      return JSON.parse(jsonStr);
+    } catch(e) {
+      return null;
+    }
   }
 
   function showMsg(text){
@@ -394,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
     projPill.style.display = 'none';
     projName.textContent = '—';
 
-    previewCols.innerHTML = '';
+    previewGroups.innerHTML = '';
     infoBox.innerHTML = '';
     doorsTable.innerHTML = '';
     addonsTotals.innerHTML = '';
@@ -447,6 +561,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return b;
   }
 
+  function normalizeGroups(payload){
+    let groups = Array.isArray(payload?.groups) ? payload.groups : [];
+    const columnsFlat = Array.isArray(payload?.columns) ? payload.columns : [];
+
+    if (!groups.length && columnsFlat.length) {
+      groups = [columnsFlat];
+    }
+
+    return groups.filter(g => Array.isArray(g) && g.length);
+  }
+
   function buildColumn(col, doorHex, bodyHex, addons, counterRef, payload){
     const type = (payload?.type || '').trim();
     const instalacion = (payload?.instalacion || '').trim();
@@ -459,9 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const shell = document.createElement('div');
     shell.className = 'col-shell';
 
-    const topbar = document.createElement('div');
-    topbar.className = 'col-topbar';
-    topbar.textContent = `Col ${counterRef.colIndex}`;
+    //const topbar = document.createElement('div');
+    //topbar.className = 'col-topbar';
+    //topbar.textContent = `Col ${counterRef.colIndex}`;
 
     const card = document.createElement('div');
     card.className = 'col-card';
@@ -470,18 +595,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.createElement('div');
     body.className = 'col-body';
 
-    // ✅ Ajuste altura contenedor según tipo
     if (isEmpotrado){
       body.style.height = (singleCap * SCALE) + 'px';
     } else if (type === 'home' && instalacion === 'zocalo'){
       body.style.height = ((topCap + bottomCap) * SCALE) + 'px';
-    } // si no, usa la CSS (180*scale)
+    }
 
     function half(blocks, capH){
       const halfEl = document.createElement('div');
       halfEl.className = 'col-half';
 
-      // ✅ Ajuste altura mitad cuando hay caps variables
       if (typeof capH === 'number' && capH > 0){
         halfEl.style.height = (capH * SCALE) + 'px';
       }
@@ -540,10 +663,123 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     card.appendChild(body);
-    shell.appendChild(topbar);
+    //shell.appendChild(topbar);
     shell.appendChild(card);
 
     return shell;
+  }
+
+  function isSoporteSuelo(payload){
+    return (payload?.instalacion || '').trim() === 'soporte_suelo';
+  }
+
+  function getBracketType(payload){
+    return (payload?.bracketType || '').trim();
+  }
+
+  function getBracketColor(payload){
+    return (payload?.bracketColor || '').trim();
+  }
+
+  function getArmSrc(color){
+    if (color === 'blanco') return "{{ asset('assets/brazo_blanco.jpg') }}";
+    if (color === 'plata') return "{{ asset('assets/brazo_plata.jpg') }}";
+    return "{{ asset('assets/brazo_negro.jpg') }}";
+  }
+
+  function getLegSrc(color){
+    if (color === 'blanco') return "{{ asset('assets/pie_blanco.jpg') }}";
+    if (color === 'plata') return "{{ asset('assets/pie_plata.jpg') }}";
+    return "{{ asset('assets/pie_negro.jpg') }}";
+  }
+
+  function getLegPositions(n){
+    if (n <= 0) return [];
+    if (n === 1) return [1];
+    if (n <= 3) return [1, n];
+    if (n === 4) return [1, 3, 4];
+    return [1, 3, 5];
+  }
+
+  function renderGroups(groups, doorHex, bodyHex, addons, payload){
+    previewGroups.innerHTML = '';
+    previewGroups.style.setProperty('--door-color', doorHex || '#3a9efc');
+    previewGroups.style.setProperty('--col-border', bodyHex || '#000');
+
+    if (!groups.length){
+      const div = document.createElement('div');
+      div.className = 'muted';
+      div.textContent = 'No hay columnas en esta configuración.';
+      previewGroups.appendChild(div);
+      return;
+    }
+
+    const counterRef = { value: 0, colIndex: 0 };
+    const soporteSuelo = isSoporteSuelo(payload);
+    const bracketType = getBracketType(payload);
+    const bracketColor = getBracketColor(payload);
+
+    groups.forEach((groupCols, groupIndex) => {
+      const groupBlock = document.createElement('div');
+      groupBlock.className = 'group-block';
+
+      const label = document.createElement('div');
+      label.className = 'group-label';
+      label.textContent = `Agrupación ${groupIndex + 1} (${groupCols.length} columnas)`;
+
+      const supportWrap = document.createElement('div');
+      supportWrap.className = 'support-wrap';
+      supportWrap.style.setProperty('--colsN', groupCols.length);
+
+      if (soporteSuelo && bracketType === 'brazos' && bracketColor){
+        const armLeft = document.createElement('img');
+        armLeft.className = 'arm-img left';
+        armLeft.src = getArmSrc(bracketColor);
+        armLeft.alt = 'Brazo izquierdo';
+
+        const armRight = document.createElement('img');
+        armRight.className = 'arm-img right';
+        armRight.src = getArmSrc(bracketColor);
+        armRight.alt = 'Brazo derecho';
+
+        supportWrap.appendChild(armLeft);
+        supportWrap.appendChild(armRight);
+      }
+
+      const cols = document.createElement('div');
+      cols.className = 'cols';
+      cols.style.setProperty('--colsN', groupCols.length);
+
+      groupCols.forEach((col) => {
+        counterRef.colIndex += 1;
+        cols.appendChild(buildColumn(col, doorHex, bodyHex, addons, counterRef, payload));
+      });
+
+      supportWrap.appendChild(cols);
+
+      if (soporteSuelo && bracketType === 'patas'){
+        const legPositions = getLegPositions(groupCols.length);
+
+        const legs = document.createElement('div');
+        legs.className = 'legs-under';
+        legs.style.setProperty('--colsN', groupCols.length);
+
+        legPositions.forEach((pos) => {
+          const img = document.createElement('img');
+          img.className = 'leg-img';
+          img.src = getLegSrc(bracketColor);
+          img.alt = 'Pata';
+          img.style.gridColumn = String(pos);
+          legs.appendChild(img);
+        });
+
+        supportWrap.appendChild(legs);
+      }
+
+      groupBlock.appendChild(label);
+      groupBlock.appendChild(supportWrap);
+      previewGroups.appendChild(groupBlock);
+    });
   }
 
   function computeDoorCounts(columns){
@@ -577,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sizes = Object.keys(counts)
       .map(n => parseInt(n, 10))
       .filter(n => counts[n] > 0)
-      .sort((a,b) => a - b);
+      .sort((a, b) => a - b);
 
     if (!sizes.length){
       const div = document.createElement('div');
@@ -623,7 +859,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalSocket = 0, totalUsb = 0, totalBoth = 0;
     const detail = [];
 
-    if (!addons || typeof addons !== 'object') return { totalSocket, totalUsb, totalBoth, detail };
+    if (!addons || typeof addons !== 'object') {
+      return { totalSocket, totalUsb, totalBoth, detail };
+    }
 
     Object.keys(addons).forEach(k => {
       const sel = addons[k];
@@ -642,7 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    detail.sort((a,b) => (parseInt(a.door,10) || 0) - (parseInt(b.door,10) || 0));
+    detail.sort((a, b) => (parseInt(a.door, 10) || 0) - (parseInt(b.door, 10) || 0));
     return { totalSocket, totalUsb, totalBoth, detail };
   }
 
@@ -665,6 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </thead>
       <tbody></tbody>
     `;
+
     const tbody = table.querySelector('tbody');
 
     detail.forEach(row => {
@@ -680,6 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await fetch(`/api/configurations/search?id=${encodeURIComponent(id)}`, {
       headers: { 'Accept': 'application/json' }
     });
+
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
   }
@@ -688,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearUI();
 
     const id = (input.value || '').trim();
-    if (!id || !/^\d+$/.test(id) || parseInt(id,10) <= 0){
+    if (!id || !/^\d+$/.test(id) || parseInt(id, 10) <= 0){
       showMsg('Introduce un ID válido.');
       return;
     }
@@ -710,7 +950,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const columns = payload.columns || [];
+      const groups = normalizeGroups(payload);
+      const columns = groups.flat();
       const addons = payload.addons || {};
 
       const doorColor = payload.colorDoor || '#3a9efc';
@@ -719,7 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const doorColorRal = payload.colorDoorRal || payload.colorDoorRAL || null;
       const bodyColorRal = payload.colorBodyRal || payload.colorBodyRAL || null;
 
-      // Header pills
       confId.textContent = item.id ?? id;
 
       if (item.projectName){
@@ -727,12 +967,15 @@ document.addEventListener('DOMContentLoaded', () => {
         projName.textContent = item.projectName;
       }
 
-      // INFO
       infoBox.innerHTML = '';
       infoBox.appendChild(kv('ID', item.id));
       infoBox.appendChild(kv('Proyecto', item.projectName || '—'));
       infoBox.appendChild(kv('Tipo', payload.type || '—'));
-      if (payload.instalacion) infoBox.appendChild(kv('Instalación', payload.instalacion));
+
+      if (payload.instalacion) {
+        infoBox.appendChild(kv('Instalación', payload.instalacion));
+      }
+
       infoBox.appendChild(kv('Fondo', labelBg(payload.fondo)));
       infoBox.appendChild(kv('Ubicación', labelPlacement(payload.placement)));
       infoBox.appendChild(kv('Material', payload.material || '—'));
@@ -740,29 +983,11 @@ document.addEventListener('DOMContentLoaded', () => {
       infoBox.appendChild(kv('Color cuerpo', bodyColorRal || bodyColor));
       infoBox.appendChild(kv('Columnas', Array.isArray(columns) ? columns.length : 0));
 
-      // PREVIEW
-      previewCols.innerHTML = '';
-      previewCols.style.setProperty('--door-color', doorColor);
-      previewCols.style.setProperty('--col-border', bodyColor);
+      renderGroups(groups, doorColor, bodyColor, addons, payload);
 
-      if (!columns.length){
-        const div = document.createElement('div');
-        div.className = 'muted';
-        div.textContent = 'No hay columnas en esta configuración.';
-        previewCols.appendChild(div);
-      } else {
-        const counterRef = { value: 0, colIndex: 0 };
-        columns.forEach((col) => {
-          counterRef.colIndex += 1;
-          previewCols.appendChild(buildColumn(col, doorColor, bodyColor, addons, counterRef, payload));
-        });
-      }
-
-      // TABLA PUERTAS
       doorsTable.innerHTML = '';
       doorsTable.appendChild(renderCountsTable(columns));
 
-      // COMPLEMENTOS
       const a = computeAddons(addons);
 
       addonsTotals.innerHTML = '';
