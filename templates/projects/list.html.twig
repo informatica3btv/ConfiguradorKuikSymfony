@@ -45,7 +45,6 @@
   }
 
   .btn-primary{
-    
     display:inline-flex;
     align-items:center;
     gap:10px;
@@ -61,8 +60,10 @@
   }
 
   .btn-primary:hover{ transform: translateY(-1px); }
+
   .btn-primary .plus{
-    width:28px; height:28px;
+    width:28px;
+    height:28px;
     border-radius:10px;
     background: rgba(255,255,255,.18);
     display:inline-flex;
@@ -81,8 +82,8 @@
   }
 
   .search{
-    flex: 1 1 520px;
-    min-width: 280px;
+    flex:1 1 520px;
+    min-width:280px;
     position:relative;
   }
 
@@ -95,6 +96,7 @@
     outline:none;
     font-size:14px;
   }
+
   .search input:focus{
     box-shadow:0 0 0 4px rgba(17,135,230,.12);
     border-color: rgba(17,135,230,.35);
@@ -102,7 +104,8 @@
 
   .search .icon{
     position:absolute;
-    left:14px; top:50%;
+    left:14px;
+    top:50%;
     transform: translateY(-50%);
     color: var(--muted);
     font-size:16px;
@@ -115,8 +118,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap:18px;
   }
+
   @media (max-width: 900px){
-    .grid{ grid-template-columns: 1fr; }
+    .grid{
+      grid-template-columns: 1fr;
+    }
   }
 
   .p-card{
@@ -127,27 +133,16 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .p-top{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    align-items:flex-start;
-  }
-
   .p-name{
     margin:0;
     font-size:20px;
     font-weight:900;
   }
 
-  .c-name{
-    margin:0;
-    padding: 5px 10px;
-    font-size:18px;
-    font-weight:900;
-  }
-
   .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     font-size:12px;
     font-weight:900;
     color: var(--blue-900);
@@ -159,31 +154,31 @@
   }
 
   .pill-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     font-size:12px;
     font-weight:900;
     color: rgb(30, 102, 2);
     background: rgba(73, 253, 2, 0.21);
-    border:1px solid  rgba(73, 253, 2, 0.21);
+    border:1px solid rgba(73, 253, 2, 0.21);
     padding:5px 10px;
     border-radius:999px;
     white-space:nowrap;
   }
 
   .pill-status-reject{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
     font-size:12px;
     font-weight:900;
     color: rgb(172, 23, 18);
     background: rgba(247, 17, 9, 0.21);
-    border:1px solid  rgba(253, 40, 2, 0.21);
+    border:1px solid rgba(253, 40, 2, 0.21);
     padding:5px 10px;
     border-radius:999px;
     white-space:nowrap;
-  }
-
-  .p-meta{
-    margin-top:10px;
-    display:grid;
-    gap:10px;
   }
 
   .meta-row{
@@ -194,17 +189,17 @@
     font-size:14px;
   }
 
+  .muted{
+    color:#334155;
+  }
+
   .micon{
     width:18px;
     display:inline-flex;
     align-items:center;
     justify-content:center;
     color: var(--muted);
-  }
-
-  .divider{
-    margin:14px 0;
-    border-top:1px solid rgba(15,23,42,.08);
+    flex:0 0 18px;
   }
 
   .btn-ghost{
@@ -221,6 +216,7 @@
     text-decoration:none;
     color: var(--ink);
   }
+
   .btn-ghost:hover{
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
@@ -233,7 +229,11 @@
     border-radius:18px;
     padding:18px;
   }
-  .empty p{ margin:0 0 12px; color: var(--muted); }
+
+  .empty p{
+    margin:0 0 12px;
+    color: var(--muted);
+  }
 
   .btn-create{
     display:inline-flex;
@@ -247,10 +247,9 @@
     font-weight:900;
   }
 
-  /* pequeño detalle para que “parezca” como en la imagen */
-  .wrap *{ box-sizing:border-box; }
-
-
+  .wrap *{
+    box-sizing:border-box;
+  }
 
   .top-actions{
     display:flex;
@@ -296,6 +295,191 @@
     color:#fff;
     border-color:#fc0000;
   }
+
+  .view-switch{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:6px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .view-btn{
+    border:0;
+    background:transparent;
+    padding:10px 14px;
+    border-radius:10px;
+    font-weight:800;
+    cursor:pointer;
+    color: var(--ink);
+    transition:.2s ease;
+  }
+
+  .view-btn:hover{
+    background: rgba(17,135,230,.08);
+  }
+
+  .view-btn.active{
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+    color:#fff;
+  }
+
+  .project-title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .project-client{
+    margin-top:6px;
+  }
+
+  .project-config-mobile{
+    display:none;
+  }
+
+  .project-config-desktop{
+    display:flex;
+    justify-content:flex-start;
+    margin-bottom:10px;
+  }
+
+  .table-head{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns: 2.2fr 1.4fr 1.4fr 1.6fr auto;
+    gap:16px;
+    padding:0 18px;
+    font-size:13px;
+    font-weight:800;
+    color: var(--muted);
+  }
+
+  /* =========================
+     MODO TARJETAS
+  ========================= */
+  .grid.view-cards{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap:18px;
+  }
+
+  .grid.view-cards .p-card{
+    display:block;
+  }
+
+  .grid.view-cards .col-city,
+  .grid.view-cards .col-date,
+  .grid.view-cards .col-user{
+    margin-top:10px;
+  }
+
+  .grid.view-cards .col-action{
+    margin-top:14px;
+  }
+
+  .grid.view-cards .project-config-desktop{
+    display:none;
+  }
+
+  .grid.view-cards .project-config-mobile{
+    display:block;
+    margin-top:10px;
+  }
+
+  .grid.view-cards .col-action .btn-ghost{
+    width:100%;
+  }
+
+  @media (max-width: 900px){
+    .grid.view-cards{
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* =========================
+     MODO TABLA
+  ========================= */
+  .grid.view-table{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .grid.view-table .p-card{
+    display:grid;
+    grid-template-columns: 2.2fr 1.4fr 1.4fr 1.6fr auto;
+    gap:16px;
+    align-items:center;
+    border-radius:16px;
+    padding:18px;
+  }
+
+  .grid.view-table .col-project,
+  .grid.view-table .col-city,
+  .grid.view-table .col-date,
+  .grid.view-table .col-user,
+  .grid.view-table .col-action{
+    min-width:0;
+  }
+
+  .grid.view-table .col-city,
+  .grid.view-table .col-date,
+  .grid.view-table .col-user{
+    display:flex;
+    align-items:center;
+  }
+
+  .grid.view-table .col-action{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+  }
+
+  .grid.view-table .project-config-mobile{
+    display:none;
+  }
+
+  .grid.view-table .project-config-desktop{
+    display:flex;
+    margin-bottom:10px;
+  }
+
+  .grid.view-table .btn-ghost{
+    width:auto;
+    white-space:nowrap;
+  }
+
+  @media (max-width: 1100px){
+    .table-head{
+      display:none !important;
+    }
+
+    .grid.view-table .p-card{
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    .grid.view-table .col-city,
+    .grid.view-table .col-date,
+    .grid.view-table .col-user{
+      align-items:flex-start;
+    }
+
+    .grid.view-table .btn-ghost{
+      width:100%;
+      min-width:auto;
+    }
+
+    .grid.view-table .project-config-desktop{
+      margin-bottom:0;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -309,19 +493,18 @@
     </div>
 
     <div class="top-actions">
-
       <a class="btn-filter {{ currentStatus == 1 ? 'active-accept' : '' }}"
-        href="{{ path('projects_list', { status: 1 }) }}">
+         href="{{ path('projects_list', { status: 1 }) }}">
         Aceptados
       </a>
 
       <a class="btn-filter {{ currentStatus == 2 ? 'active-reject' : '' }}"
-        href="{{ path('projects_list', { status: 2 }) }}">
+         href="{{ path('projects_list', { status: 2 }) }}">
         Rechazados
       </a>
 
       <a class="btn-filter {{ currentStatus == 0 ? 'active-open' : '' }}"
-        href="{{ path('projects_list', { status: 0 }) }}">
+         href="{{ path('projects_list', { status: 0 }) }}">
         Abiertos
       </a>
 
@@ -330,13 +513,17 @@
         Nuevo Proyecto
       </a>
     </div>
- 
   </div>
 
   <div class="search-row">
     <div class="search">
       <span class="icon">🔍</span>
       <input id="projectSearch" type="text" placeholder="Buscar por nombre, cliente o ciudad..." autocomplete="off">
+    </div>
+
+    <div class="view-switch" id="viewSwitch">
+      <button type="button" class="view-btn active" data-view="cards">🗂 Tarjetas</button>
+      <button type="button" class="view-btn" data-view="table">📋 Tabla</button>
     </div>
   </div>
 
@@ -346,80 +533,96 @@
       <a href="{{ path('configuration_project_new') }}" class="btn-create">Crear primer proyecto</a>
     </div>
   {% else %}
-    <div class="grid" id="projectsGrid">
+
+    <div class="table-head" id="tableHead" style="display:none;">
+      <div>Proyecto</div>
+      <div>Ciudad</div>
+      <div>Fecha</div>
+      <div>Responsable</div>
+      <div>Acción</div>
+    </div>
+
+    <div class="grid view-cards" id="projectsGrid">
       {% for project in projects %}
+        {% set configsCount = project.totalConfigurations|default(0) %}
+
         <div class="p-card"
              data-name="{{ project.projectName|lower }}"
              data-client="{{ project.clientName|lower }}"
              data-city="{{ (project.city ?? '')|lower }}">
-          <div class="p-top">
-            <div>
-              <div style="display:flex; gap: 10px;">
-                <h3 class="p-name">{{ project.projectName }}</h3>
 
-                {% if project.status == 1 %}
-
-                  <div class="pill-status">Aceptado</div>
-
-                {% elseif project.status == 2 %}
-
-                  <div class="pill-status-reject">Rechazado</div>
-
-                {% endif %}
-
+          <div class="col-project">
+            <div class="project-title-row">
+              <h3 class="p-name">{{ project.projectName }}</h3>
+              
+              <div class="project-config-mobile">
+                <div class="pill">{{ configsCount }} config</div>
               </div>
-              <div class="meta-row" style="margin-top:6px;">
-                <span class="micon">👤</span>
-                <span class="muted">{{ project.clientName }}</span>
-              </div>
+              {% if project.status == 1 %}
+                <div class="pill-status">Aceptado</div>
+              {% elseif project.status == 2 %}
+                <div class="pill-status-reject">Rechazado</div>
+              {% endif %}
             </div>
 
-            {# Si no tienes contador de configs, deja 0 (o ponlo si lo tienes en tu entidad/DTO) #}
-            {% set configsCount = project.totalConfigurations|default(0) %}
-            <div class="pill">{{ configsCount }} config</div>
+            <div class="meta-row project-client">
+              <span class="micon">👤</span>
+              <span class="muted">{{ project.clientName }}</span>
+            </div>
+
           </div>
 
-          <div class="p-meta">
+          <div class="col-city">
             <div class="meta-row">
               <span class="micon">📍</span>
               <span class="muted">{{ project.city ?: '—' }}</span>
             </div>
-  
+          </div>
+
+          <div class="col-date">
             <div class="meta-row">
               <span class="micon">📅</span>
               <span class="muted">
                 {% if project.createdAt is defined and project.createdAt %}
                   {{ project.createdAt|format_datetime('none', 'none', locale='es', pattern='d MMMM y') }}
-
                 {% else %}
                   —
                 {% endif %}
               </span>
             </div>
+          </div>
 
-            <div class="meta-row" style="margin-top:6px;">
+          <div class="col-user">
+            <div class="meta-row">
               <span class="micon">💼</span>
               <span class="muted">{{ project.user.name }}</span>
             </div>
-            
           </div>
 
-          <div class="divider"></div>
+          <div class="col-action">
+            <div class="project-config-desktop">
+              <div class="pill">{{ configsCount }} config</div>
+            </div>
 
-          <a class="btn-ghost" href="{{ path('project_configurations', { project_id: project.id }) }}">
-            Ver proyecto <span aria-hidden="true">→</span>
-          </a>
+            <a class="btn-ghost" href="{{ path('project_configurations', { project_id: project.id }) }}">
+              Ver <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
       {% endfor %}
     </div>
 
     <script>
-      // filtro simple (nombre / cliente / ciudad)
       (function(){
         const input = document.getElementById('projectSearch');
+        const grid = document.getElementById('projectsGrid');
         const cards = Array.from(document.querySelectorAll('#projectsGrid .p-card'));
+        const viewButtons = document.querySelectorAll('#viewSwitch .view-btn');
+        const tableHead = document.getElementById('tableHead');
 
-        function norm(s){ return (s || '').toLowerCase().trim(); }
+        function norm(s){
+          return (s || '').toLowerCase().trim();
+        }
 
         input?.addEventListener('input', () => {
           const q = norm(input.value);
@@ -430,12 +633,36 @@
               card.getAttribute('data-client'),
               card.getAttribute('data-city'),
             ].join(' ');
+
             card.style.display = hay.includes(q) ? '' : 'none';
           });
         });
+
+        const savedView = localStorage.getItem('projectsView') || 'cards';
+        setView(savedView);
+
+        viewButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            setView(view);
+            localStorage.setItem('projectsView', view);
+          });
+        });
+
+        function setView(view){
+          grid.classList.remove('view-cards', 'view-table');
+          grid.classList.add(view === 'table' ? 'view-table' : 'view-cards');
+
+          viewButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === view);
+          });
+
+          if (tableHead) {
+            tableHead.style.display = view === 'table' ? 'grid' : 'none';
+          }
+        }
       })();
     </script>
   {% endif %}
-
 </div>
 {% endblock %}
