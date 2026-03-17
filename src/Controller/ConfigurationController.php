@@ -585,7 +585,7 @@ class ConfigurationController extends AbstractController
         ]);
     }
 
-    /**
+/**
  * @Route("/configurations/save-brackets", name="save_brackets", methods={"POST"})
  */
 public function saveBrackets(
@@ -691,10 +691,12 @@ public function saveBrackets(
             ? (json_decode($configuration->getPayload(), true) ?: [])
             : [];
 
+        $payloadPrepared = $this->prepareSummaryPayload($payload);
+
         return $this->render('configurations/summary.html.twig', [
             'project' => $p,
             'configuration' => $configuration,
-            'payload' => $payload,
+            'payload' => $payloadPrepared,
         ]);
     }
 
@@ -905,5 +907,135 @@ public function saveBrackets(
         return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
     
 
+    }
+
+    private function prepareSummaryPayload(array $payload): array
+    {
+        $groups = $payload['groups'] ?? [];
+        $columns = $payload['columns'] ?? [];
+
+        if (empty($groups) && !empty($columns)) {
+            $groups = [$columns];
+        }
+
+        $addons = $payload['addons'] ?? [];
+
+        $globalDoorNumber = 0;
+        $globalPlateNumber = 1;
+
+        $preparedGroups = [];
+
+        foreach ($groups as $groupIndex => $groupCols) {
+            if (!is_array($groupCols)) {
+                $groupCols = [];
+            }
+
+            $groupDoorCounter = 0;
+            $preparedCols = [];
+
+            foreach ($groupCols as $col) {
+                $preparedCol = $col;
+
+                if (!empty($col['single']['blocks']) && is_array($col['single']['blocks'])) {
+                    $preparedCol['single']['blocks_prepared'] = [];
+
+                    foreach ($col['single']['blocks'] as $blk) {
+                        $preparedBlock = $this->prepareBlock(
+                            $blk,
+                            $addons,
+                            $globalDoorNumber,
+                            $groupDoorCounter,
+                            $globalPlateNumber
+                        );
+
+                        $preparedCol['single']['blocks_prepared'][] = $preparedBlock;
+                    }
+                } else {
+                    $preparedCol['top']['blocks_prepared'] = [];
+                    foreach (($col['top']['blocks'] ?? []) as $blk) {
+                        $preparedBlock = $this->prepareBlock(
+                            $blk,
+                            $addons,
+                            $globalDoorNumber,
+                            $groupDoorCounter,
+                            $globalPlateNumber
+                        );
+
+                        $preparedCol['top']['blocks_prepared'][] = $preparedBlock;
+                    }
+
+                    $preparedCol['bottom']['blocks_prepared'] = [];
+                    foreach (($col['bottom']['blocks'] ?? []) as $blk) {
+                        $preparedBlock = $this->prepareBlock(
+                            $blk,
+                            $addons,
+                            $globalDoorNumber,
+                            $groupDoorCounter,
+                            $globalPlateNumber
+                        );
+
+                        $preparedCol['bottom']['blocks_prepared'][] = $preparedBlock;
+                    }
+                }
+
+                $preparedCols[] = $preparedCol;
+            }
+
+            $platesUsedByGroup = max(1, (int) ceil($groupDoorCounter / 16));
+            $globalPlateNumber += $platesUsedByGroup;
+
+            $preparedGroups[] = $preparedCols;
+        }
+
+        $payload['groups'] = $preparedGroups;
+
+        return $payload;
+    }
+    
+
+    private function prepareBlock(
+        $blk,
+        array $addons,
+        int &$globalDoorNumber,
+        int &$groupDoorCounter,
+        int $globalPlateNumber
+    ): array {
+        if (is_array($blk)) {
+            $height = $blk['h'] ?? 0;
+            $type = $blk['type'] ?? 'door';
+        } else {
+            $height = (int) $blk;
+            $type = 'door';
+            $blk = ['h' => $height, 'type' => $type];
+        }
+
+        $isScreen = ($type === 'screen');
+
+        if ($isScreen) {
+            $blk['doorNumber'] = null;
+            $blk['plateNumber'] = null;
+            $blk['socket'] = false;
+            $blk['usb'] = false;
+            $blk['methacrylate'] = false;
+            $blk['isScreen'] = true;
+
+            return $blk;
+        }
+
+        $globalDoorNumber++;
+        $groupDoorCounter++;
+
+        $plateNumber = $globalPlateNumber + intdiv($groupDoorCounter - 1, 16);
+
+        $sel = $addons[(string) $globalDoorNumber] ?? $addons[$globalDoorNumber] ?? null;
+
+        $blk['doorNumber'] = $globalDoorNumber;
+        $blk['plateNumber'] = $plateNumber;
+        $blk['socket'] = is_array($sel) ? !empty($sel['socket']) : false;
+        $blk['usb'] = is_array($sel) ? !empty($sel['usb']) : false;
+        $blk['methacrylate'] = is_array($sel) ? !empty($sel['methacrylate']) : false;
+        $blk['isScreen'] = false;
+
+        return $blk;
     }
 }

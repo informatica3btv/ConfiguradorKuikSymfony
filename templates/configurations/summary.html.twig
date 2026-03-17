@@ -3,20 +3,16 @@
 {% set p = payload ?? {} %}
 {% if p is not iterable %}{% set p = {} %}{% endif %}
 
-{# ✅ NUEVO: groups (si existe) #}
 {% set groups = p.groups ?? [] %}
 {% if groups is not iterable %}{% set groups = [] %}{% endif %}
 
-{# ✅ fallback antiguo: columns #}
 {% set columnsFlat = p.columns ?? [] %}
 {% if columnsFlat is not iterable %}{% set columnsFlat = [] %}{% endif %}
 
-{# ✅ si no hay groups, creamos 1 grupo con columns #}
 {% if groups is empty and columnsFlat is not empty %}
   {% set groups = [columnsFlat] %}
 {% endif %}
 
-{# ✅ lista plana real para contadores/tablas (todas las columnas de todos los grupos) #}
 {% set columnsAll = [] %}
 {% for g in groups %}
   {% if g is iterable %}
@@ -45,7 +41,6 @@
 {% set bottomCap = isZocalo ? 70 : 90 %}
 {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
 
-{# soporte suelo #}
 {% set selectedType  = p.bracketType ?? '' %}
 {% set selectedColor = p.bracketColor ?? '' %}
 {% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
@@ -206,15 +201,6 @@
       gap:6px;
     }
 
-    .col-topbar{
-      padding:7px 10px;
-      border-radius:12px;
-      background: linear-gradient(135deg, var(--kuik-blue-900), #005fae);
-      color:#fff;
-      font-weight:900;
-      box-shadow: var(--shadow-sm);
-    }
-
     .col-card{
       width:135px;
       border-style:solid;
@@ -262,7 +248,6 @@
     .door.screen{
       padding:0;
       overflow:hidden;
-      background:#c5303e; /* o quítalo si quieres */
     }
 
     .door.screen img{
@@ -516,8 +501,6 @@
               {% if groups is empty %}
                 <div class="muted">No hay columnas en esta configuración.</div>
               {% else %}
-                {% set doorIndex = 0 %}
-
                 {% for groupCols in groups %}
                   {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
 
@@ -548,19 +531,14 @@
                                 {% if isEmpotrado %}
 
                                   <div class="col-half" style="height: {{ singleCap * scale }}px;">
-                                    {% for blk in (col.single.blocks ?? []) %}
+                                    {% for blk in (col.single.blocks_prepared ?? col.single.blocks ?? []) %}
                                       {% set hh = blk.h|default(blk) %}
                                       {% set btype = blk.type|default('door') %}
-
-                                      {% if btype != 'screen' %}
-                                        {% set doorIndex = doorIndex + 1 %}
-                                      {% endif %}
-
-                                      {% set key = doorIndex ~ '' %}
-                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                      {% set socket = blk.socket ?? false %}
+                                      {% set usb = blk.usb ?? false %}
+                                      {% set methacrylate = blk.methacrylate ?? false %}
+                                      {% set plateNumber = blk.plateNumber ?? null %}
+                                      {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
@@ -569,7 +547,7 @@
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
                                           <div class="num">
-                                            {{ (doorIndex - 1) // 16 }} , {{ doorIndex }}
+                                            {{ plateNumber }},{{ doorNumber }}
                                           </div>
 
                                           <div class="badges">
@@ -584,19 +562,14 @@
                                 {% else %}
 
                                   <div class="col-half" style="height: {{ topCap * scale }}px;">
-                                    {% for blk in (col.top.blocks ?? []) %}
+                                    {% for blk in (col.top.blocks_prepared ?? col.top.blocks ?? []) %}
                                       {% set hh = blk.h|default(blk) %}
                                       {% set btype = blk.type|default('door') %}
-
-                                      {% if btype != 'screen' %}
-                                        {% set doorIndex = doorIndex + 1 %}
-                                      {% endif %}
-
-                                      {% set key = doorIndex ~ '' %}
-                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                      {% set socket = blk.socket ?? false %}
+                                      {% set usb = blk.usb ?? false %}
+                                      {% set methacrylate = blk.methacrylate ?? false %}
+                                      {% set plateNumber = blk.plateNumber ?? null %}
+                                      {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
@@ -605,7 +578,7 @@
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
                                           <div class="num">
-                                            {{ (doorIndex - 1) // 16 }} , {{ doorIndex }}
+                                            {{ plateNumber }},{{ doorNumber }}
                                           </div>
 
                                           <div class="badges">
@@ -620,19 +593,14 @@
                                   <div class="half-sep"></div>
 
                                   <div class="col-half" style="height: {{ bottomCap * scale }}px;">
-                                    {% for blk in (col.bottom.blocks ?? []) %}
+                                    {% for blk in (col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
                                       {% set hh = blk.h|default(blk) %}
                                       {% set btype = blk.type|default('door') %}
-
-                                      {% if btype != 'screen' %}
-                                        {% set doorIndex = doorIndex + 1 %}
-                                      {% endif %}
-
-                                      {% set key = doorIndex ~ '' %}
-                                      {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                      {% set socket = (sel is iterable and (sel.socket ?? false)) ? true : false %}
-                                      {% set usb = (sel is iterable and (sel.usb ?? false)) ? true : false %}
-                                      {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                      {% set socket = blk.socket ?? false %}
+                                      {% set usb = blk.usb ?? false %}
+                                      {% set methacrylate = blk.methacrylate ?? false %}
+                                      {% set plateNumber = blk.plateNumber ?? null %}
+                                      {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
                                            style="height: {{ hh * scale }}px;">
@@ -641,7 +609,7 @@
                                           <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                         {% else %}
                                           <div class="num">
-                                            {{ (doorIndex - 1) // 16 }} , {{ doorIndex }}
+                                            {{ plateNumber }},{{ doorNumber }}
                                           </div>
 
                                           <div class="badges">
@@ -731,7 +699,7 @@
         {% for col in columnsAll %}
           {% if col.single is defined and col.single is not empty %}
 
-            {% for blk in (col.single.blocks ?? []) %}
+            {% for blk in (col.single.blocks_prepared ?? col.single.blocks ?? []) %}
               {% set btype = blk.type|default('door') %}
               {% if btype != 'screen' %}
                 {% set hh = blk.h|default(blk) %}
@@ -743,7 +711,7 @@
 
           {% else %}
 
-            {% for blk in (col.top.blocks ?? []) %}
+            {% for blk in (col.top.blocks_prepared ?? col.top.blocks ?? []) %}
               {% set btype = blk.type|default('door') %}
               {% if btype != 'screen' %}
                 {% set hh = blk.h|default(blk) %}
@@ -753,7 +721,7 @@
               {% endif %}
             {% endfor %}
 
-            {% for blk in (col.bottom.blocks ?? []) %}
+            {% for blk in (col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
               {% set btype = blk.type|default('door') %}
               {% if btype != 'screen' %}
                 {% set hh = blk.h|default(blk) %}
