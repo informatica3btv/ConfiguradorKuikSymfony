@@ -219,12 +219,13 @@
       color:#fff;
       font-weight:900;
       box-shadow: 0 6px 14px rgba(2,20,60,.10);
+      font-size:14px;
     }
 
-    .col-actions{ display:flex; gap:8px; }
+    .col-actions{ display:flex; gap:6px; }
     .icon-btn{
-      width:28px;
-      height:28px;
+      width:26px;
+      height:26px;
       border-radius:999px;
       border:0;
       cursor:pointer;
@@ -235,8 +236,16 @@
       justify-content:center;
       box-shadow: 0 6px 12px rgba(0,0,0,.10);
     }
+
+    .icon-btn img{
+      width:16px;
+      height:16px;
+      pointer-events:none;
+    }
+
     .icon-plus{ background:var(--success); color:#fff; }
     .icon-del{ background:var(--danger); color:#fff; }
+    .icon-copy{ background:#f1c40f; color:#000; }
 
     .col-card{
       width:190px;
@@ -1053,10 +1062,74 @@ document.addEventListener('DOMContentLoaded', () => {
         topBar.className = 'col-toolbar-top';
 
         const title = document.createElement('div');
-        title.textContent = `Columna ${globalIdx + 1}`;
+        title.textContent = `Col ${globalIdx + 1}`;
 
         const actions = document.createElement('div');
         actions.className = 'col-actions';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'icon-btn icon-copy';
+        copyBtn.innerHTML = '<img src="/assets/icon-copy.png" alt="copiar" />';
+        copyBtn.title = 'Copiar columna al grupo activo';
+
+        copyBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+
+        copyBtn.addEventListener('click', () => {
+          ensureActiveGroup();
+
+          const targetGroup = state.groups.find(g => g.id === state.activeGroupId);
+          if (!targetGroup) return;
+
+          const max = getGroupMax();
+
+          if (targetGroup.columns.length >= max) {
+            builderMsg.textContent = 'El grupo activo ya está lleno.';
+            return;
+          }
+
+          // 🚫 evitar más de una pantalla al copiar
+          const colHasScreen = (layout.mode === 'home_empotrado')
+            ? col.single.blocks.some(b => normalizeBlock(b).type === 'screen')
+            : (
+                col.top.blocks.some(b => normalizeBlock(b).type === 'screen') ||
+                col.bottom.blocks.some(b => normalizeBlock(b).type === 'screen')
+              );
+
+          if (colHasScreen && hasAnyScreen()) {
+            builderMsg.textContent = 'Solo se puede añadir 1 pantalla en toda la configuración.';
+            return;
+          }
+          // 🔁 CLON PROFUNDO DE LA COLUMNA
+          let newCol;
+
+          if (layout.mode === 'home_empotrado') {
+            newCol = {
+              id: uid(),
+              single: {
+                blocks: col.single.blocks.map(b => ({ ...b })),
+                sum: col.single.sum
+              }
+            };
+          } else {
+            newCol = {
+              id: uid(),
+              top: {
+                blocks: col.top.blocks.map(b => ({ ...b })),
+                sum: col.top.sum
+              },
+              bottom: {
+                blocks: col.bottom.blocks.map(b => ({ ...b })),
+                sum: col.bottom.sum
+              }
+            };
+          }
+
+          targetGroup.columns.push(newCol);
+          rebuildFlatColumnsFromGroups();
+          builderMsg.textContent = '';
+          render();
+        });
 
         const plus = document.createElement('button');
         plus.type = 'button';
@@ -1141,6 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
           render();
         });
 
+        actions.appendChild(copyBtn);
         actions.appendChild(plus);
         actions.appendChild(del);
 
