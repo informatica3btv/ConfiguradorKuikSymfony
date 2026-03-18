@@ -829,11 +829,15 @@
                                           {% for blk in (col.single.blocks ?? []) %}
                                             {% set hh = blk.h|default(blk) %}
                                             {% set btype = blk.type|default('door') %}
-                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% if btype != 'screen' %}
+                                              {% set doorIndex = doorIndex + 1 %}
+                                              {% set key = doorIndex ~ '' %}
+                                              {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                              {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% else %}
+                                              {% set methacrylate = false %}
+                                            {% endif %}
 
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
@@ -850,11 +854,15 @@
                                           {% for blk in (col.top.blocks ?? []) %}
                                             {% set hh = blk.h|default(blk) %}
                                             {% set btype = blk.type|default('door') %}
-                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% if btype != 'screen' %}
+                                              {% set doorIndex = doorIndex + 1 %}
+                                              {% set key = doorIndex ~ '' %}
+                                              {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                              {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% else %}
+                                              {% set methacrylate = false %}
+                                            {% endif %}
 
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
@@ -871,13 +879,18 @@
 
                                         <div class="col-half" style="height: calc({{ bottomCap }}px * var(--hscale));">
                                           {% for blk in (col.bottom.blocks ?? []) %}
+                                          
                                             {% set hh = blk.h|default(blk) %}
                                             {% set btype = blk.type|default('door') %}
-                                            {% if btype != 'screen' %}{% set doorIndex = doorIndex + 1 %}{% endif %}
 
-                                            {% set key = doorIndex ~ '' %}
-                                            {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
-                                            {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% if btype != 'screen' %}
+                                              {% set doorIndex = doorIndex + 1 %}
+                                              {% set key = doorIndex ~ '' %}
+                                              {% set sel = addons[key] ?? addons[doorIndex] ?? null %}
+                                              {% set methacrylate = (sel is iterable and (sel.methacrylate ?? false)) ? true : false %}
+                                            {% else %}
+                                              {% set methacrylate = false %}
+                                            {% endif %}
 
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                  style="height: calc({{ hh }}px * var(--hscale));">
