@@ -700,6 +700,16 @@
 
           <div class="actions">
 
+            {% if c.status == 2 and is_granted('ROLE_TECNICO') %}
+              <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
+                 onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                Bajar detalles técnicos
+              </a>
+            {% endif %}
             {% if project.status == 0 and app.user.id == user.id %}
               <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
                  onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">

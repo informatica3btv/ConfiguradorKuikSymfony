@@ -26,6 +26,7 @@ class AdminUserType extends AbstractType
                 'label' => 'Roles',
                 'choices' => [
                     'Admin'   => 'ROLE_ADMIN',
+                    'Tecnico' => 'ROLE_TECNICO'
                 ],
                 'expanded' => true,  // checkboxes
                 'multiple' => true,
