@@ -518,10 +518,12 @@ class ConfigurationController extends AbstractController
         
 
         if(isset($payloadArr['instalacion']) && ($payloadArr['instalacion'] == 'empotrado' || $payloadArr['instalacion'] == 'zocalo' )){
+
+            $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
             return $this->render('configurations/summary.html.twig', [
                 'project' => $project,
                 'configuration' => $config,
-                'payload' => $payloadArr,
+                'payload' => $payloadPrepared ,
             ]);
         }
 
@@ -992,7 +994,6 @@ public function saveBrackets(
         return $payload;
     }
     
-
     private function prepareBlock(
         $blk,
         array $addons,
@@ -1001,7 +1002,7 @@ public function saveBrackets(
         int $globalPlateNumber
     ): array {
         if (is_array($blk)) {
-            $height = $blk['h'] ?? 0;
+            $height = (int) ($blk['h'] ?? 0);
             $type = $blk['type'] ?? 'door';
         } else {
             $height = (int) $blk;
@@ -1010,31 +1011,43 @@ public function saveBrackets(
         }
 
         $isScreen = ($type === 'screen');
+        $isMailbox = ($type === 'mailbox');
+        $isSpecial = $isScreen || $isMailbox;
 
-        if ($isScreen) {
+        // Pantalla y buzón NO cuentan como puerta
+        if ($isSpecial) {
             $blk['doorNumber'] = null;
             $blk['plateNumber'] = null;
             $blk['socket'] = false;
             $blk['usb'] = false;
             $blk['methacrylate'] = false;
-            $blk['isScreen'] = true;
+            $blk['isScreen'] = $isScreen;
+            $blk['isMailbox'] = $isMailbox;
 
             return $blk;
         }
 
+        // Solo las puertas normales cuentan
         $globalDoorNumber++;
         $groupDoorCounter++;
 
+        // Cada 16 puertas cambia de placa dentro de la agrupación
         $plateNumber = $globalPlateNumber + intdiv($groupDoorCounter - 1, 16);
 
+        // Los addons siguen referenciando la puerta global real
         $sel = $addons[(string) $globalDoorNumber] ?? $addons[$globalDoorNumber] ?? null;
 
-        $blk['doorNumber'] = $globalDoorNumber;
+        // IMPORTANTE:
+        // doorNumber = contador dentro de la agrupación, ignorando buzones y pantallas
+        $blk['doorNumber'] = $groupDoorCounter;
         $blk['plateNumber'] = $plateNumber;
+
         $blk['socket'] = is_array($sel) ? !empty($sel['socket']) : false;
         $blk['usb'] = is_array($sel) ? !empty($sel['usb']) : false;
         $blk['methacrylate'] = is_array($sel) ? !empty($sel['methacrylate']) : false;
+
         $blk['isScreen'] = false;
+        $blk['isMailbox'] = false;
 
         return $blk;
     }
