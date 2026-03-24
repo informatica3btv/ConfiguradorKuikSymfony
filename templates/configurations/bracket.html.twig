@@ -348,6 +348,19 @@
       .legs-under{ padding:0 14px; }
       .leg-img{ width:42px; height:42px; }
     }
+
+    .door.mailbox{
+      padding:0;
+    }
+
+    .door.mailbox img{
+      width:100%;
+      height:100%;
+      object-fit:fill;
+      pointer-events:none;
+      user-select:none;
+      display:block;
+    }
   </style>
 {% endblock %}
 
@@ -467,21 +480,23 @@
                               <div class="col-body" style="height: {{ (singleCap * scale) }}px;">
                                 <div class="col-half" style="height: {{ (singleCap * scale) }}px;">
 
-                                  {% set blocks = (col.single.blocks ?? col.blocks ?? []) %}
+                                  {% set blocks = (col.single.blocks_prepared ?? col.single.blocks ?? col.blocks_prepared ?? col.blocks ?? []) %}
                                   {% if blocks is not iterable %}{% set blocks = [] %}{% endif %}
 
                                   {% for blk in blocks %}
                                     {% set hh = blk.h|default(blk) %}
                                     {% set btype = blk.type|default('door') %}
 
-                                    {% if btype != 'screen' %}
+                                    {% if btype != 'screen' and btype != 'mailbox' %}
                                       {% set doorIndex = doorIndex + 1 %}
                                     {% endif %}
 
-                                    <div class="door {{ btype == 'screen' ? 'screen' : '' }}"
-                                         style="height: {{ (hh * scale) }}px;">
+                                    <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }}"
+                                        style="height: {{ (hh * scale) }}px;">
                                       {% if btype == 'screen' %}
                                         <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                      {% elseif btype == 'mailbox' %}
+                                        <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
                                       {% else %}
                                         <div class="num">{{ doorIndex }}</div>
                                       {% endif %}

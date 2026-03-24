@@ -662,10 +662,11 @@ public function saveBrackets(
 
     $em->flush();
 
+    $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
     return $this->render('configurations/summary.html.twig', [
         'project' => $project,
         'configuration' => $config,
-        'payload' => $payloadArr,
+        'payload' => $payloadPrepared,
     ]);
 }
 
