@@ -22,3 +22,4 @@ services:
             $baseUrl:   '%env(BTV_BASE_URL)%'
             $username:  '%env(BTV_USERNAME)%'
             $password:  '%env(BTV_PASSWORD)%'
+            # $cache and $logger are autowired automatically
