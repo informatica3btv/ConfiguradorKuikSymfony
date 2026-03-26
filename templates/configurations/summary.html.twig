@@ -684,6 +684,10 @@
 
         <img id="resultadoIA"
              style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
+
+        {% block product_table %}
+          <div id="productTableContainer"></div>
+        {% endblock %}
       </div>
 
       <div class="card">
@@ -918,6 +922,17 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      // Load product reference table via AJAX
+      const productContainer = document.getElementById('productTableContainer');
+      if (productContainer) {
+        fetch('{{ path('configuration_product_table', { id: configuration.id }) }}')
+          .then( function (r) { console.log(r); return r.text(); })
+          .then(function (html) { productContainer.innerHTML = html; })
+          .catch(function (e) { console.error('Error cargando referencias de producto:', e); });
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', function () {
       const btn = document.getElementById('btnIA');
       const status = document.getElementById('iaStatus');

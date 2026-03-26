@@ -8,6 +8,7 @@ use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -543,7 +544,6 @@ class ConfigurationController extends AbstractController
         ]);
     }
 
-
     /**
      * @Route("/configuration/{id}/addons/next", name="configuration_addons_next", methods={"POST"})
      */
@@ -587,96 +587,96 @@ class ConfigurationController extends AbstractController
         ]);
     }
 
-/**
- * @Route("/configurations/save-brackets", name="save_brackets", methods={"POST"})
- */
-public function saveBrackets(
-    Request $request,
-    EntityManagerInterface $em,
-    ConfigurationRepository $configRepo,
-    ProjectRepository $projectRepo
-): Response {
-    $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+    /**
+     * @Route("/configurations/save-brackets", name="save_brackets", methods={"POST"})
+     */
+    public function saveBrackets(
+        Request $request,
+        EntityManagerInterface $em,
+        ConfigurationRepository $configRepo,
+        ProjectRepository $projectRepo
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-    $projectId = (int) $request->request->get('project_id', 0);
-    $configId  = (int) $request->request->get('configuration_id', 0);
+        $projectId = (int) $request->request->get('project_id', 0);
+        $configId  = (int) $request->request->get('configuration_id', 0);
 
-    $bracketType  = trim((string) $request->request->get('bracketType', ''));
-    $bracketColor = trim((string) $request->request->get('bracketColor', ''));
+        $bracketType  = trim((string) $request->request->get('bracketType', ''));
+        $bracketColor = trim((string) $request->request->get('bracketColor', ''));
 
-    if ($projectId <= 0 || $configId <= 0) {
-        return $this->json(['error' => 'Missing project_id or configuration_id'], 400);
+        if ($projectId <= 0 || $configId <= 0) {
+            return $this->json(['error' => 'Missing project_id or configuration_id'], 400);
+        }
+
+        if ($bracketType === '' || $bracketColor === '') {
+            return $this->json(['error' => 'Missing bracketType or bracketColor'], 400);
+        }
+
+        // (opcional) validación de valores permitidos
+        $allowedTypes  = ['patas', 'brazos'];
+        $allowedColors = ['blanco', 'negro', 'plata'];
+
+        if (!in_array($bracketType, $allowedTypes, true)) {
+            return $this->json(['error' => 'Invalid bracketType'], 400);
+        }
+        if (!in_array($bracketColor, $allowedColors, true)) {
+            return $this->json(['error' => 'Invalid bracketColor'], 400);
+        }
+
+        $project = $projectRepo->find($projectId);
+        if (!$project) {
+            return $this->json(['error' => 'Project not found'], 404);
+        }
+
+        // seguridad: el proyecto es del usuario logueado
+        if ($project->getUser() !== $this->getUser()) {
+            return $this->json(['error' => 'Not allowed'], 403);
+        }
+
+        $config = $configRepo->find($configId);
+        if (!$config) {
+            return $this->json(['error' => 'Configuration not found'], 404);
+        }
+
+        // seguridad: la config debe pertenecer al proyecto
+        if (!$config->getProject() || $config->getProject()->getId() !== $project->getId()) {
+            return $this->json(['error' => 'Not allowed'], 403);
+        }
+
+        // payload actual
+        $payloadArr = $config->getPayload()
+            ? (json_decode($config->getPayload(), true) ?: [])
+            : [];
+
+        // guardamos selección
+        $payloadArr['bracketType']  = $bracketType;
+        $payloadArr['bracketColor'] = $bracketColor;
+
+        // si quieres, aseguras instalación
+        if (!isset($payloadArr['instalacion'])) {
+            $payloadArr['instalacion'] = 'soporte_suelo';
+        }
+
+        $config->setPayload(json_encode($payloadArr, JSON_UNESCAPED_UNICODE));
+        $config->setUpdatedAt(new \DateTimeImmutable());
+
+        $em->flush();
+
+        $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
+        return $this->render('configurations/summary.html.twig', [
+            'project' => $project,
+            'configuration' => $config,
+            'payload' => $payloadPrepared,
+        ]);
     }
-
-    if ($bracketType === '' || $bracketColor === '') {
-        return $this->json(['error' => 'Missing bracketType or bracketColor'], 400);
-    }
-
-    // (opcional) validación de valores permitidos
-    $allowedTypes  = ['patas', 'brazos'];
-    $allowedColors = ['blanco', 'negro', 'plata'];
-
-    if (!in_array($bracketType, $allowedTypes, true)) {
-        return $this->json(['error' => 'Invalid bracketType'], 400);
-    }
-    if (!in_array($bracketColor, $allowedColors, true)) {
-        return $this->json(['error' => 'Invalid bracketColor'], 400);
-    }
-
-    $project = $projectRepo->find($projectId);
-    if (!$project) {
-        return $this->json(['error' => 'Project not found'], 404);
-    }
-
-    // seguridad: el proyecto es del usuario logueado
-    if ($project->getUser() !== $this->getUser()) {
-        return $this->json(['error' => 'Not allowed'], 403);
-    }
-
-    $config = $configRepo->find($configId);
-    if (!$config) {
-        return $this->json(['error' => 'Configuration not found'], 404);
-    }
-
-    // seguridad: la config debe pertenecer al proyecto
-    if (!$config->getProject() || $config->getProject()->getId() !== $project->getId()) {
-        return $this->json(['error' => 'Not allowed'], 403);
-    }
-
-    // payload actual
-    $payloadArr = $config->getPayload()
-        ? (json_decode($config->getPayload(), true) ?: [])
-        : [];
-
-    // guardamos selección
-    $payloadArr['bracketType']  = $bracketType;
-    $payloadArr['bracketColor'] = $bracketColor;
-
-    // si quieres, aseguras instalación
-    if (!isset($payloadArr['instalacion'])) {
-        $payloadArr['instalacion'] = 'soporte_suelo';
-    }
-
-    $config->setPayload(json_encode($payloadArr, JSON_UNESCAPED_UNICODE));
-    $config->setUpdatedAt(new \DateTimeImmutable());
-
-    $em->flush();
-
-    $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
-    return $this->render('configurations/summary.html.twig', [
-        'project' => $project,
-        'configuration' => $config,
-        'payload' => $payloadPrepared,
-    ]);
-}
-
 
     /**
      * @Route("/configuration/{id}/summary", name="configuration_summary", methods={"GET"})
      */
     public function summary(
         int $id,
-        ConfigurationRepository $repo
+        ConfigurationRepository $repo,
+        ProductRepository $prodRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -700,6 +700,61 @@ public function saveBrackets(
             'project' => $p,
             'configuration' => $configuration,
             'payload' => $payloadPrepared,
+        ]);
+    }
+
+    /**
+     * @Route("/configuration/{id}/product-table", name="configuration_product_table", methods={"GET"})
+     */
+    public function productTable(
+        int $id,
+        ConfigurationRepository $repo,
+        ProductRepository $prodRepo,
+        \App\Service\BtvApiService $btvApi
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
+        $payload = $configuration->getPayload()
+            ? (json_decode($configuration->getPayload(), true) ?: [])
+            : [];
+
+        $serie     = $payload['fondo'] ?? '';
+        $placement = $payload['placement'] ?? '';
+
+        // Count doors per size (exclude screens and mailboxes)
+        $sizeCounts = [];
+        foreach ($payload['columns'] ?? [] as $col) {
+            foreach (['top', 'bottom', 'single'] as $part) {
+                foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                    $btype = $blk['type'] ?? 'door';
+                    if ($btype !== 'screen' && $btype !== 'mailbox') {
+                        $size = (string)($blk['h'] ?? '');
+                        $sizeCounts[$size] = ($sizeCounts[$size] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+        ksort($sizeCounts);
+
+        $products    = [];
+        $productInfo = [];
+        foreach ($sizeCounts as $size => $count) {
+            $product = $prodRepo->findOneBySerieAndPlaceAndSize($serie, $placement, $size);
+            $products[$size] = $product;
+            if ($product) {
+                $productInfo[$size] = $btvApi->getProductInfo($product->getReference(), $count);
+            }
+        }
+
+        return $this->render('configurations/ajax.html.twig', [
+            'products'    => $products,
+            'productInfo' => $productInfo,
+            'sizeCounts'  => $sizeCounts,
         ]);
     }
 

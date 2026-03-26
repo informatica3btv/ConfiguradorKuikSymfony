@@ -8,7 +8,7 @@ use App\Repository\ProjectRepository;
 use App\Repository\ConfigurationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class FichaProductPdfGenerator
+class ProjectService
 {
     public function __construct(
       
