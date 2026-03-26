@@ -704,6 +704,18 @@ class ConfigurationController extends AbstractController
     }
 
     /**
+     * @Route("/btv-debug", name="btv_debug", methods={"GET"})
+     */
+    public function btvDebug(\App\Service\BtvApiService $btvApi): JsonResponse
+    {
+        $result = $btvApi->getProductInfo('05828', 1);
+        return new JsonResponse([
+            'result' => $result,
+            'error'  => $result === null ? 'getProductInfo returned null — check var/log/prod.log' : null,
+        ]);
+    }
+
+    /**
      * @Route("/configuration/{id}/product-table", name="configuration_product_table", methods={"GET"})
      */
     public function productTable(
