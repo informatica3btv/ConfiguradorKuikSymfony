@@ -16,3 +16,9 @@ services:
     App\Service\GeminiImageService:
         arguments:
             $geminiApiKey: '%gemini.api_key%'
+
+    App\Service\BtvApiService:
+        arguments:
+            $baseUrl:   '%env(BTV_BASE_URL)%'
+            $username:  '%env(BTV_USERNAME)%'
+            $password:  '%env(BTV_PASSWORD)%'
