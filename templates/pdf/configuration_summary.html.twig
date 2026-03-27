@@ -9,13 +9,31 @@
    ✅ NUEVO: dibujar metacrilato en preview PDF
    ============================================================ #}
 
-{% set pxPerH = 2.2 %}
+{% set pxPerH = 1.6 %}
+
+{# Detect max columns in any group to decide orientation #}
+{% set maxGroupSize = 0 %}
+{% set groupsForSize = payload.groups ?? [] %}
+{% if groupsForSize is empty %}
+  {% set groupsForSize = [payload.columns ?? []] %}
+{% endif %}
+{% for g in groupsForSize %}
+  {% if g|length > maxGroupSize %}{% set maxGroupSize = g|length %}{% endif %}
+{% endfor %}
+{% set useLandscape = maxGroupSize > 9 %}
+
+{# Available content width: landscape ~1079px, portrait ~750px (A4 minus 44px padding) #}
+{% set pageContentW = useLandscape ? 1079 : 750 %}
+{% set colGap = 5 %}
+{% set colWCalc = maxGroupSize > 0 ? ((pageContentW - (maxGroupSize - 1) * colGap) / maxGroupSize)|round(0, 'floor') : 75 %}
+{% set colW = colWCalc < 75 ? colWCalc : 75 %}
 
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <style>
+    @page { size: A4 portrait; margin: 0; }
     body{ font-family: DejaVu Sans, Arial, sans-serif; font-size:12px; color:#0b1220; }
     .page{ padding: 18px 22px; }
 
@@ -88,7 +106,7 @@
     .cols-wrap{ font-size:0; margin-top: 6px; display:inline-block; }
 
     .col-shell{
-      width:75px;
+      width:60px;
       display:inline-block;
       padding: 0px;
       vertical-align: top;
@@ -100,7 +118,7 @@
     .col-shell:last-child{ margin-right:0; }
 
     .col-card{
-      width:75px;
+      width:60px;
       border-style:solid;
       border-left-width:4px;
       border-right-width:4px;
@@ -157,7 +175,7 @@
       top:50%;
       left:50%;
       transform:translate(-50%,-50%);
-      width:95%;
+      width:90%;
       height:105%;
       display:block;
     }
@@ -430,9 +448,30 @@
         {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
 
         {% set n = groupCols|length %}
-        {% set groupW = n > 0 ? (n * 75 + (n - 1) * 10) : 0 %}
+        {% set groupW = n > 0 ? (n * 60 + (n - 1) * 5) : 0 %}
+        {% set groupNeedRotate = n > 11 %}
+        {#
+          Estimated rendered height of the support-wrap block:
+            col-card borders (top+bottom 12px) + col-body height + padding-bottom:100px + margin:20px + legs/arms ~48px
+        #}
+        {% set estGroupH = previewHeightPx|round + 260 %}
+        {#
+          After rotate(-90deg) around center:
+            visual width  = estGroupH  (original height)
+            visual height = groupW     (original width)
+          Element must be centered inside the outer box (estGroupH × groupW).
+          offset = (groupW - estGroupH) / 2  →  left = -offset, top = offset
+        #}
+        {% set rotMargin = 60 %}
+        {% set rotOffset = ((groupW - estGroupH) / 2)|round + rotMargin %}
 
+        {% if groupNeedRotate %}
+        {# Outer: width=estGroupH, height=groupW+rotMargin (extra room for top/bottom margin) #}
+        <div style="position: relative; width: {{ estGroupH }}px; height: {{ groupW + rotMargin }}px; overflow: visible; margin: 10px auto 20px;">
+          <div style="position: absolute; width: {{ groupW }}px; height: {{ estGroupH }}px; left: {{ 0 - rotOffset + rotMargin }}px; top: {{ rotOffset }}px; transform: rotate(-90deg); transform-origin: center center;">
+        {% else %}
         <div class="group-cell" style="margin-bottom: 55px; text-align:center;">
+        {% endif %}
           <div class="support-wrap" style="width: {{ groupW }}px;">
 
             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
@@ -456,7 +495,7 @@
                       {% if col.single is defined and col.single is not empty %}
 
                         <div class="col-half" style="height: {{ singleCap * pxPerH }}px;">
-                          {% for blk in (col.single.blocks ?? []) %}
+                          {% for blk in (col.single.blocks_prepared ?? col.single.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
 
@@ -465,10 +504,17 @@
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 <img class="screen-img" src="{{ screen_base64 }}" alt="Pantalla">
                               </div>
+                            {% elseif bType == 'mailbox' %}
+                              <div class="door {% if loop.last %}last{% endif %}"
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }}; padding:0; overflow:hidden;">
+                                {% if buzon_base64 %}
+                                  <img src="{{ buzon_base64 }}" style="width:100%; height:100%; object-fit:fill; display:block;">
+                                {% endif %}
+                              </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                              {% set hasMethacrylate = sel and sel.methacrylate %}
+                              {% set hasMethacrylate = (sel and sel.methacrylate) or blk.methacrylate ?? false %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 {% if hasMethacrylate %}
@@ -482,7 +528,7 @@
                       {% else %}
 
                         <div class="col-half" style="height: {{ topCap * pxPerH }}px;">
-                          {% for blk in (col.top.blocks ?? []) %}
+                          {% for blk in (col.top.blocks_prepared ?? col.top.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
 
@@ -491,10 +537,17 @@
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 <img class="screen-img" src="{{ screen_base64 }}" alt="Pantalla">
                               </div>
+                            {% elseif bType == 'mailbox' %}
+                              <div class="door {% if loop.last %}last{% endif %}"
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }}; padding:0; overflow:hidden;">
+                                {% if buzon_base64 %}
+                                  <img src="{{ buzon_base64 }}" style="width:100%; height:100%; object-fit:fill; display:block;">
+                                {% endif %}
+                              </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                              {% set hasMethacrylate = sel and sel.methacrylate %}
+                              {% set hasMethacrylate = (sel and sel.methacrylate) or blk.methacrylate ?? false %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 {% if hasMethacrylate %}
@@ -506,7 +559,7 @@
                         </div>
 
                         <div class="col-half" style="height: {{ bottomCap * pxPerH }}px;">
-                          {% for blk in (col.bottom.blocks ?? []) %}
+                          {% for blk in (col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
 
@@ -515,10 +568,17 @@
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 <img class="screen-img" src="{{ screen_base64 }}" alt="Pantalla">
                               </div>
+                            {% elseif bType == 'mailbox' %}
+                              <div class="door {% if loop.last %}last{% endif %}"
+                                   style="height: {{ h * pxPerH }}px; background: {{ doorColor }}; padding:0; overflow:hidden;">
+                                {% if buzon_base64 %}
+                                  <img src="{{ buzon_base64 }}" style="width:100%; height:100%; object-fit:fill; display:block;">
+                                {% endif %}
+                              </div>
                             {% else %}
                               {% set doorIndex = doorIndex + 1 %}
                               {% set sel = addons[doorIndex ~ ''] ?? addons[doorIndex] ?? null %}
-                              {% set hasMethacrylate = sel and sel.methacrylate %}
+                              {% set hasMethacrylate = (sel and sel.methacrylate) or blk.methacrylate ?? false %}
                               <div class="door {% if loop.last %}last{% endif %}"
                                    style="height: {{ h * pxPerH }}px; background: {{ doorColor }};">
                                 {% if hasMethacrylate %}
@@ -534,20 +594,40 @@
                     </div>
                   </div>
 
-                  {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
-                    <table class="legs-under">
-                      <tr>
-                        <td><span class="leg {{ legClass }}"></span></td>
-                        <td class="right"><span class="leg {{ legClass }}"></span></td>
-                      </tr>
-                    </table>
-                  {% endif %}
-
                 </div>
               {% endfor %}
             </div>
+
+            {# Patas como imágenes, igual que en summary, con legPositions #}
+            {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
+              {% set legN = groupCols|length %}
+              {% if legN == 1 %}
+                {% set legPositions = [1] %}
+              {% elseif legN <= 3 %}
+                {% set legPositions = [1, legN] %}
+              {% elseif legN == 4 %}
+                {% set legPositions = [1, 3, 4] %}
+              {% else %}
+                {% set legPositions = [1, 3, 5] %}
+              {% endif %}
+              <table style="width: {{ groupW }}px; border-collapse: collapse; margin-top: -9px;">
+                <tr>
+                  {% for i in 1..legN %}
+                    <td style="width: 75px; border:0; padding:0; text-align:center; vertical-align:top;">
+                      {% if i in legPositions and leg_base64 %}
+                        <img src="{{ leg_base64 }}" style="width:34px; height:90px; object-fit:fill; display:block; margin:0 auto;">
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              </table>
+            {% endif %}
+
           </div>
-        </div>
+        {% if groupNeedRotate %}
+          </div>{# /inner absolute div #}
+        {% endif %}
+        </div>{# /group-cell or outer rotation container #}
       {% endfor %}
 
     {% endif %}
