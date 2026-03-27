@@ -882,6 +882,18 @@ class ConfigurationController extends AbstractController
             $armNegro = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armNegroPath));
         }
 
+        $buzonBase64 = null;
+        $buzonPath = $this->getParameter('kernel.project_dir') . '/public/assets/buzon_kuik.png';
+        if (file_exists($buzonPath)) {
+            $buzonBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($buzonPath));
+        }
+
+        $legBase64 = null;
+        $legPath = $this->getParameter('kernel.project_dir') . '/public/assets/pie_negro.jpg';
+        if (file_exists($legPath)) {
+            $legBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($legPath));
+        }
+
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project' => $project,
             'configuration' => $configuration,
@@ -891,6 +903,8 @@ class ConfigurationController extends AbstractController
             'arm_blanco' => $armBlanco,
             'arm_plata' => $armPlata,
             'arm_negro' => $armNegro,
+            'buzon_base64' => $buzonBase64,
+            'leg_base64' => $legBase64,
         ]);
 
         $options = new Options();
