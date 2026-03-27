@@ -139,7 +139,7 @@
     .config-body{
       margin-top:14px;
       display:grid;
-      grid-template-columns: 1fr 1.25fr;
+      grid-template-columns: 1fr 1.65fr;
       gap:14px;
       align-items:stretch;
     }
@@ -184,6 +184,8 @@
       border-radius:14px;
       padding:14px;
       background:#f8fafc;
+      min-width: 0;
+      overflow: hidden;
     }
     .mini-title{
       font-weight:900;
@@ -203,7 +205,8 @@
       background: rgba(255,255,255,.55);
       border:1px dashed rgba(15,23,42,.14);
       padding:10px;
-      overflow: visible;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .mini-group-label{
@@ -217,7 +220,7 @@
     .mini-support-wrap{
       --armW: 48px;
       --armOverlap: 14px;
-      --colW: 80px;
+      --colW: 75px;
       position:relative;
       display:inline-block;
       padding-left:  calc(var(--armW) - var(--armOverlap));
@@ -230,6 +233,11 @@
       overflow-x: auto;
       padding-bottom: 6px;
       text-align:center;
+      cursor: grab;
+      user-select: none;
+    }
+    .mini-support-center.is-dragging{
+      cursor: grabbing;
     }
 
     .cols{
@@ -244,7 +252,7 @@
       margin-top:6px;
     }
 
-    .col-shell{ width:80px; display:flex; flex-direction:column; gap:5px; }
+    .col-shell{ width:75px; display:flex; flex-direction:column; gap:5px; }
     .col-topbar{
       padding:5px 7px;
       border-radius:8px;
@@ -256,7 +264,7 @@
     }
 
     .col-card{
-      width:80px;
+      width:75px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:3px;
@@ -359,7 +367,7 @@
     }
 
     .mini-leg-img{
-      width:80px;
+      width:75px;
       height:95px;
       object-fit:contain;
       justify-self:center;
@@ -1004,6 +1012,27 @@
   {{ parent() }}
   <script>
     window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.mini-support-center').forEach(function(scroll) {
+        var isDragging = false, startX, scrollLeft;
+        scroll.addEventListener('mousedown', function(e) {
+          isDragging = true;
+          scroll.classList.add('is-dragging');
+          startX     = e.pageX - scroll.getBoundingClientRect().left;
+          scrollLeft = scroll.scrollLeft;
+          e.preventDefault();
+        });
+        document.addEventListener('mouseup', function() {
+          isDragging = false;
+          scroll.classList.remove('is-dragging');
+        });
+        scroll.addEventListener('mousemove', function(e) {
+          if (!isDragging) return;
+          var x    = e.pageX - scroll.getBoundingClientRect().left;
+          var walk = (x - startX) * 1.2;
+          scroll.scrollLeft = scrollLeft - walk;
+        });
+      });
+
       const openBtn = document.getElementById('openEditClient');
       const modal = document.getElementById('editClientModal');
 
