@@ -304,78 +304,92 @@
           No hay columnas en esta configuración.
         </div>
       {% else %}
-        <div class="cols-scroll">
-        <div class="cols" id="cols"
-             style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
-          {% set doorIndex = 0 %}
+        {% set doorIndex = 0 %}
+        {% set payloadGroups = payload.groups ?? [] %}
+        {% if payloadGroups is empty %}
+          {% set payloadGroups = [columns] %}
+        {% endif %}
 
-          {% for col in columns %}
-            <div class="col-shell">
-              <div class="col-topbar">Columna {{ loop.index }}</div>
-
-              <div class="col-card">
-                <div class="col-body">
-
-                  <div class="col-half">
-                    {% for blk in col.top.blocks %}
-                      {% set hh = blk.h|default(blk) %}
-                      {% set type = blk.type|default('door') %}
-
-                      {% if type != 'screen' %}
-                        {% set doorIndex = doorIndex + 1 %}
-                      {% endif %}
-
-                      <div class="door {{ type == 'screen' ? 'screen' : '' }}"
-                           style="height: {{ hh * scale }}px;"
-                           {% if type != 'screen' %}
-                             data-door="{{ doorIndex }}"
-                             data-col="{{ loop.parent.loop.index }}"
-                             data-half="top"
-                           {% endif %}>
-                        {% if type == 'screen' %}
-                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                        {% else %}
-                          <div class="num">{{ doorIndex }}</div>
-                          <div class="badges" data-badges></div>
-                        {% endif %}
-                      </div>
-                    {% endfor %}
-                  </div>
-
-                  <div class="half-sep"></div>
-
-                  <div class="col-half">
-                    {% for blk in col.bottom.blocks %}
-                      {% set hh = blk.h|default(blk) %}
-                      {% set type = blk.type|default('door') %}
-
-                      {% if type != 'screen' %}
-                        {% set doorIndex = doorIndex + 1 %}
-                      {% endif %}
-
-                      <div class="door {{ type == 'screen' ? 'screen' : '' }}"
-                           style="height: {{ hh * scale }}px;"
-                           {% if type != 'screen' %}
-                             data-door="{{ doorIndex }}"
-                             data-col="{{ loop.parent.loop.index }}"
-                             data-half="bottom"
-                           {% endif %}>
-                        {% if type == 'screen' %}
-                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
-                        {% else %}
-                          <div class="num">{{ doorIndex }}</div>
-                          <div class="badges" data-badges></div>
-                        {% endif %}
-                      </div>
-                    {% endfor %}
-                  </div>
-
-                </div>
-              </div>
+        {% for groupCols in payloadGroups %}
+          {% if payloadGroups|length > 1 %}
+            <div style="font-weight:900; font-size:13px; color:#334155; margin-top:14px; margin-bottom:4px;">
+              Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)
             </div>
-          {% endfor %}
-        </div>
-        </div>
+          {% endif %}
+
+          <div class="cols-scroll">
+            <div class="cols"
+                 style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
+
+              {% for col in groupCols %}
+                <div class="col-shell">
+                  <div class="col-topbar">Columna {{ loop.index }}</div>
+
+                  <div class="col-card">
+                    <div class="col-body">
+
+                      <div class="col-half">
+                        {% for blk in col.top.blocks %}
+                          {% set hh = blk.h|default(blk) %}
+                          {% set type = blk.type|default('door') %}
+
+                          {% if type != 'screen' %}
+                            {% set doorIndex = doorIndex + 1 %}
+                          {% endif %}
+
+                          <div class="door {{ type == 'screen' ? 'screen' : '' }}"
+                               style="height: {{ hh * scale }}px;"
+                               {% if type != 'screen' %}
+                                 data-door="{{ doorIndex }}"
+                                 data-col="{{ loop.parent.loop.index }}"
+                                 data-half="top"
+                               {% endif %}>
+                            {% if type == 'screen' %}
+                              <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                            {% else %}
+                              <div class="num">{{ doorIndex }}</div>
+                              <div class="badges" data-badges></div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+
+                      <div class="half-sep"></div>
+
+                      <div class="col-half">
+                        {% for blk in col.bottom.blocks %}
+                          {% set hh = blk.h|default(blk) %}
+                          {% set type = blk.type|default('door') %}
+
+                          {% if type != 'screen' %}
+                            {% set doorIndex = doorIndex + 1 %}
+                          {% endif %}
+
+                          <div class="door {{ type == 'screen' ? 'screen' : '' }}"
+                               style="height: {{ hh * scale }}px;"
+                               {% if type != 'screen' %}
+                                 data-door="{{ doorIndex }}"
+                                 data-col="{{ loop.parent.loop.index }}"
+                                 data-half="bottom"
+                               {% endif %}>
+                            {% if type == 'screen' %}
+                              <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                            {% else %}
+                              <div class="num">{{ doorIndex }}</div>
+                              <div class="badges" data-badges></div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+
+            </div>
+          </div>
+        {% endfor %}
       {% endif %}
 
       <form method="post"
