@@ -512,6 +512,24 @@ class ConfigurationController extends AbstractController
             $payloadArr['addons'] = $old['addons'];
         }
 
+        // Clean up addons: remove entries for doors that no longer exist or changed size
+        if (isset($payloadArr['addons']) && is_array($payloadArr['addons'])) {
+            $oldSizes = $this->getDoorSizesByNumber($old);
+            $newSizes = $this->getDoorSizesByNumber($payloadArr);
+            $cleanAddons = [];
+            foreach ($newSizes as $doorNum => $size) {
+                if (!isset($payloadArr['addons'][$doorNum])) {
+                    continue;
+                }
+                // Keep addon only if the door size hasn't changed
+                if (isset($oldSizes[$doorNum]) && $oldSizes[$doorNum] !== $size) {
+                    continue;
+                }
+                $cleanAddons[$doorNum] = $payloadArr['addons'][$doorNum];
+            }
+            $payloadArr['addons'] = $cleanAddons;
+        }
+
         $config->setPayload(json_encode($payloadArr, JSON_UNESCAPED_UNICODE));
         $config->setUpdatedAt(new \DateTimeImmutable());
 
@@ -977,6 +995,48 @@ class ConfigurationController extends AbstractController
         return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
     
 
+    }
+
+    /**
+     * Returns a map of door_number (string) => size (string) for all real doors in the payload.
+     * Screens and mailboxes are excluded (they don't get door numbers).
+     */
+    private function getDoorSizesByNumber(array $payload): array
+    {
+        $groups  = $payload['groups'] ?? [];
+        $columns = $payload['columns'] ?? [];
+
+        if (empty($groups) && !empty($columns)) {
+            $groups = [$columns];
+        }
+
+        $sizes   = [];
+        $doorNum = 0;
+
+        foreach ($groups as $groupCols) {
+            if (!is_array($groupCols)) {
+                continue;
+            }
+            foreach ($groupCols as $col) {
+                foreach (['top', 'bottom', 'single'] as $part) {
+                    foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                        $type = is_array($blk) ? ($blk['type'] ?? 'door') : 'door';
+                        if ($type !== 'screen' && $type !== 'mailbox') {
+                            $doorNum++;
+                            $h = is_array($blk) ? (string)($blk['h'] ?? 0) : (string)$blk;
+                            $sizes[(string) $doorNum] = $h;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $sizes;
+    }
+
+    private function countDoorsInPayload(array $payload): int
+    {
+        return count($this->getDoorSizesByNumber($payload));
     }
 
     private function prepareSummaryPayload(array $payload): array
