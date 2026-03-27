@@ -166,6 +166,12 @@
     .preview-scroll{
       overflow-x: auto;
       padding-bottom: 8px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .preview-scroll.is-dragging{
+      cursor: grabbing;
     }
 
     .preview-stage{
@@ -934,6 +940,34 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      // Drag-to-scroll on preview
+      var scroll = document.querySelector('.preview-scroll');
+      if (scroll) {
+        var isDragging = false, startX, scrollLeft;
+
+        scroll.addEventListener('mousedown', function (e) {
+          isDragging = true;
+          scroll.classList.add('is-dragging');
+          startX    = e.pageX - scroll.getBoundingClientRect().left;
+          scrollLeft = scroll.scrollLeft;
+          e.preventDefault();
+        });
+
+        document.addEventListener('mouseup', function () {
+          isDragging = false;
+          scroll.classList.remove('is-dragging');
+        });
+
+        document.addEventListener('mousemove', function (e) {
+          if (!isDragging) return;
+          var x    = e.pageX - scroll.getBoundingClientRect().left;
+          var walk = (x - startX) * 1.2;
+          scroll.scrollLeft = scrollLeft - walk;
+        });
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', function () {
       // Load product reference table via AJAX
       const productContainer = document.getElementById('productTableContainer');
