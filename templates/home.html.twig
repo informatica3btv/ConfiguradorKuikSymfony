@@ -38,7 +38,7 @@
     }
 
     .page-wrap{
-      max-width: 1100px;
+      max-width: 1500px;
       margin: 26px auto 60px;
       padding: 0 14px;
     }
@@ -379,7 +379,7 @@
     .warn{ color: #e74c3c !important; font-weight:900; }
 
     .config-form{
-      max-width: 1100px;
+      max-width: 1500px;
       margin: 0;
       padding: 0;
       font-size:16px;
@@ -444,11 +444,19 @@
       color:var(--muted);
     }
 
+    .group-cols-scroll{
+      overflow-x: auto;
+      padding-bottom: 8px;
+      min-width: 0;
+    }
+
     .group-cols{
       display:flex;
       gap:12px;
-      flex-wrap:wrap;
+      flex-wrap:nowrap;
       align-items:flex-start;
+      width: max-content;
+      min-width: 100%;
     }
 
 
@@ -848,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // AGRUPACIÓN VARIABLE + ACTIVO
   // =========================
   function getGroupMax() {
-    if (layout.mode === 'professional') return 5;
+    if (layout.mode === 'professional') return 9;
     if (layout.mode === 'home_zocalo') return 3;
     if (layout.mode === 'home_empotrado') return 5;
     return 1;
@@ -998,8 +1006,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const groupRow = document.createElement('div');
       groupRow.className = 'group-cols';
 
+      const groupScroll = document.createElement('div');
+      groupScroll.className = 'group-cols-scroll';
+      groupScroll.appendChild(groupRow);
+
       groupShell.appendChild(head);
-      groupShell.appendChild(groupRow);
+      groupShell.appendChild(groupScroll);
 
       groupCols.forEach((col) => {
         const globalList = state.groups.flatMap(g => g.columns);

@@ -10,7 +10,7 @@
     }
 
     .page-layout{
-      max-width: 1500px;
+      max-width: 1700px;
       margin: 18px auto;
       padding: 0 14px;
       display:grid;
@@ -93,17 +93,26 @@
       border:1px solid rgba(15,23,42,.12);
       border-radius:16px;
       padding:14px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .cols-scroll{
+      overflow-x: auto;
+      margin-top:12px;
+      padding-bottom: 8px;
     }
 
     .cols{
       display:flex;
       gap:12px;
-      flex-wrap:wrap;
-      margin-top:12px;
+      flex-wrap:nowrap;
+      width:max-content;
+      min-width:100%;
     }
 
     .col-shell{
-      width:190px;
+      width:170px;
       display:flex;
       flex-direction:column;
       gap:6px;
@@ -118,7 +127,7 @@
     }
 
     .col-card{
-      width:190px;
+      width:170px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:4px;
@@ -295,6 +304,7 @@
           No hay columnas en esta configuración.
         </div>
       {% else %}
+        <div class="cols-scroll">
         <div class="cols" id="cols"
              style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
           {% set doorIndex = 0 %}
@@ -364,6 +374,7 @@
               </div>
             </div>
           {% endfor %}
+        </div>
         </div>
       {% endif %}
 
