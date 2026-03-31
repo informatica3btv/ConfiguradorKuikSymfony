@@ -47,6 +47,6 @@ class Door
     public function setSerie(string $v): self { $this->serie = $v; return $this; }
 
     public function getPlace(): ?string { return $this->place; }
-    public function setPlace(string $v): self { $this->palce = $v; return $this; }
+    public function setPlace(string $v): self { $this->place = $v; return $this; }
 
 }

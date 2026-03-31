@@ -472,6 +472,7 @@
         {% else %}
         <div class="group-cell" style="margin-bottom: 55px; text-align:center;">
         {% endif %}
+
           <div class="support-wrap" style="width: {{ groupW }}px;">
 
             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
@@ -483,7 +484,7 @@
               {% for col in groupCols %}
                 <div class="col-shell">
 
-                  <div class="col-card" style="border-color: {{ bodyColor }};">
+                  <div class="col-card" style="border-color: {{ bodyColor }}; {{ not isHome ? 'border-top-width: 18px; border-radius: 0 0 8px 8px;' : '' }}">
                     <div class="col-body" style="
                       {% if col.single is defined and col.single is not empty %}
                         height: {{ singleCap * pxPerH }}px;
