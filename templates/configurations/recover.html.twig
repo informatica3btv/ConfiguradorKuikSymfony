@@ -5,7 +5,7 @@
   {{ parent() }}
   <style>
     :root{
-      --hscale: 4.16;
+      --hscale: 3.76;
 
       --bg:#f6f9fc;
       --ink:#0b1220;
@@ -65,7 +65,7 @@
 
     .grid{
       display:grid;
-      grid-template-columns: 1.25fr .75fr;
+      grid-template-columns: 1.50fr .50fr;
       gap:14px;
       align-items:start;
     }
@@ -79,6 +79,7 @@
       border-radius:16px;
       padding:16px;
       box-shadow: 0 1px 0 rgba(15,23,42,.04);
+      min-width: 0;
     }
 
     .card h3{
@@ -145,11 +146,23 @@
       background: #fff;
     }
 
+    .preview-scroll{
+      overflow-x: auto;
+      padding-bottom: 8px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .preview-scroll.is-dragging{
+      cursor: grabbing;
+    }
+
     .preview-stage{
       display:flex;
-      justify-content:center;
+      justify-content:flex-start;
       align-items:flex-start;
-      width:100%;
+      width: max-content;
+      min-width: 100%;
       padding-bottom: 80px;
     }
 
@@ -175,13 +188,13 @@
 
     .cols{
       display:grid;
-      grid-template-columns: repeat(var(--colsN), 160px);
+      grid-template-columns: repeat(var(--colsN), 140px);
       justify-content:center;
       margin-top:10px;
     }
 
     .col-shell{
-      width:160px;
+      width:140px;
       display:flex;
       flex-direction:column;
       gap:6px;
@@ -198,7 +211,7 @@
     }
 
     .col-card{
-      width:160px;
+      width:140px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:4px;
@@ -315,7 +328,7 @@
     .support-wrap{
       --armW: 65px;
       --armOverlap: 14px;
-      --colW: 160px;
+      --colW: 140px;
       padding-bottom:155px;
       position: relative;
       display: inline-block;
@@ -356,7 +369,7 @@
     }
 
     .leg-img{
-      width:160px;
+      width:140px;
       height:175px;
       object-fit:contain;
       justify-self:center;
@@ -435,8 +448,10 @@
         <h3>Vista previa</h3>
 
         <div class="preview-wrap">
-          <div class="preview-stage">
-            <div id="previewGroups" class="groups-stage" style="--door-color:#3a9efc; --col-border:#000;"></div>
+          <div class="preview-scroll">
+            <div class="preview-stage">
+              <div id="previewGroups" class="groups-stage" style="--door-color:#3a9efc; --col-border:#000;"></div>
+            </div>
           </div>
         </div>
 
@@ -1020,6 +1035,32 @@ document.addEventListener('DOMContentLoaded', () => {
     input.value = '';
     clearUI();
   });
+
+  // Drag-to-scroll on preview
+  var scroll = document.querySelector('.preview-scroll');
+  if (scroll) {
+    var isDragging = false, startX, scrollLeft;
+
+    scroll.addEventListener('mousedown', function (e) {
+      isDragging = true;
+      scroll.classList.add('is-dragging');
+      startX     = e.pageX - scroll.getBoundingClientRect().left;
+      scrollLeft = scroll.scrollLeft;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mouseup', function () {
+      isDragging = false;
+      scroll.classList.remove('is-dragging');
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!isDragging) return;
+      var x    = e.pageX - scroll.getBoundingClientRect().left;
+      var walk = (x - startX) * 1.2;
+      scroll.scrollLeft = scrollLeft - walk;
+    });
+  }
 });
 </script>
 {% endblock %}
