@@ -2,19 +2,19 @@
 
 namespace App\Repository;
 
-use App\Entity\Product;
+use App\Entity\Door;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class ProductRepository extends ServiceEntityRepository
+class DoorRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Product::class);
+        parent::__construct($registry, Door::class);
     }
 
 
-    public function findOneBySerieAndPlace(int $serie, string $place): ?Product
+    public function findOneBySerieAndPlace(int $serie, string $place): ?Door
     {
         return $this->createQueryBuilder('p')
             ->andWhere('p.serie = :serie')
@@ -25,7 +25,7 @@ class ProductRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function findOneBySerieAndPlaceAndSize(string $serie, string $place, string $size): ?Product
+    public function findOneDoorBySerieAndPlaceAndSize(string $serie, string $place, string $size): ?Door
     {
         return $this->createQueryBuilder('p')
             ->andWhere('p.serie = :serie')
@@ -37,4 +37,5 @@ class ProductRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
 }

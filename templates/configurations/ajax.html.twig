@@ -21,13 +21,21 @@
         {% set isLast = loop.last %}
         {% set border = not isLast ? 'border-bottom:1px solid rgba(15,23,42,.08);' %}
         <tr>
-          <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">H{{ size }}</td>
+          <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">
+            {% if size == 'lateral' %}
+              Par de laterales
+            {% elseif size starts with 'tejado_' %}
+              Tejado {{ size|replace({'tejado_': ''}) }} col.
+            {% else %}
+              H{{ size }}
+            {% endif %}
+          </td>
           {% if product %}
             <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">{{ product.reference }}</td>
             <td style="padding:10px 12px; font-size:14px; color:#6b7280; {{ border }}">—</td>
             <td style="padding:10px 12px; font-size:14px; text-align:right; {{ border }}">{{ count }}</td>
             {% if info %}
-              {% set priceStr = info.PrecioVenta|replace({',': '.'}) %}
+              {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}
               {% set lineTotal = priceStr * count %}
               {% set grandTotal = grandTotal + lineTotal %}
               <td style="padding:10px 12px; font-size:14px; text-align:right; {{ border }}">{{ info.PrecioVenta }} €</td>

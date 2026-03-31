@@ -8,7 +8,9 @@ use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use App\Repository\ProjectRepository;
-use App\Repository\ProductRepository;
+use App\Repository\DoorRepository;
+use App\Repository\RoofRepository;
+use App\Repository\SideRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -693,8 +695,7 @@ class ConfigurationController extends AbstractController
      */
     public function summary(
         int $id,
-        ConfigurationRepository $repo,
-        ProductRepository $prodRepo
+        ConfigurationRepository $repo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -739,7 +740,9 @@ class ConfigurationController extends AbstractController
     public function productTable(
         int $id,
         ConfigurationRepository $repo,
-        ProductRepository $prodRepo,
+        DoorRepository $doorRepo,
+        SideRepository $sideRepo,
+        RoofRepository $roofRepo,
         \App\Service\BtvApiService $btvApi
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -774,10 +777,54 @@ class ConfigurationController extends AbstractController
         $products    = [];
         $productInfo = [];
         foreach ($sizeCounts as $size => $count) {
-            $product = $prodRepo->findOneBySerieAndPlaceAndSize($serie, $placement, $size);
+            $product = $doorRepo->findOneDoorBySerieAndPlaceAndSize($serie, $placement, $size);
             $products[$size] = $product;
             if ($product) {
                 $productInfo[$size] = $btvApi->getProductInfo($product->getReference(), $count);
+            }
+        }
+
+        // Count groups: each group needs 1 left side + 1 right side
+        $groups     = $payload['groups'] ?? [];
+        $groupCount = !empty($groups) ? count($groups) : 1;
+
+        $side = $sideRepo->findOneSideBySerieAndPlace($serie,$placement);
+        $sizeCounts['lateral'] = $groupCount;
+        $products['lateral']   = $side;
+
+        if ($side) {
+            $productInfo['lateral'] = $btvApi->getProductInfo($side->getReference(), $groupCount);
+        }
+
+        // Calculate roof needs per group:
+        // - Each group of N columns needs floor(N/2) roofs of 2 columns + (N%2) roofs of 1 column
+        $roofGroups = !empty($groups) ? $groups : (!empty($payload['columns']) ? [$payload['columns']] : []);
+        $roofCounts = []; // [numColumns => totalCount]
+
+        foreach ($roofGroups as $groupCols) {
+            if (!is_array($groupCols)) {
+                continue;
+            }
+            $numCols = count($groupCols);
+            $pairs   = intdiv($numCols, 2);
+            $singles = $numCols % 2;
+
+            if ($pairs > 0) {
+                $roofCounts[2] = ($roofCounts[2] ?? 0) + $pairs;
+            }
+            if ($singles > 0) {
+                $roofCounts[1] = ($roofCounts[1] ?? 0) + $singles;
+            }
+        }
+
+        foreach ($roofCounts as $numCols => $count) {
+            $key  = 'tejado_' . $numCols;
+            $roof = $roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $placement, (string) $numCols);
+            $sizeCounts[$key] = $count;
+            $products[$key]   = $roof;
+
+            if ($roof) {
+                $productInfo[$key] = $btvApi->getProductInfo($roof->getReference(), $count);
             }
         }
 

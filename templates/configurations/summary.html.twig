@@ -468,6 +468,21 @@
       object-fit:contain;
       justify-self:center;
     }
+
+    .group-roof {
+      width: calc(var(--colsN) * 135px);
+      height: 26px;
+      background: var(--col-border, #000);
+      border-radius: 6px 6px 0 0;
+      display: block;
+      margin: 10px auto -10px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .group-roof + .cols {
+      margin-top: 0;
+    }
   </style>
 {% endblock %}
 
@@ -542,6 +557,10 @@
                       {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                         <img class="arm-img left" src="{{ armSrc }}" alt="Brazo izquierdo">
                         <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho">
+                      {% endif %}
+
+                      {% if not isHome %}
+                        <div class="group-roof"></div>
                       {% endif %}
 
                       <div class="cols" id="previewCols">
