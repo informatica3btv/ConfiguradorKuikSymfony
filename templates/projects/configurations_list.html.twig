@@ -240,6 +240,17 @@
       cursor: grabbing;
     }
 
+    .group-roof{
+      width: calc(var(--colsN) * 75px);
+      height: 14px;
+      background: var(--col-border, #000);
+      border-radius: 6px 6px 0 0;
+      display: block;
+      margin: 10px auto -6px;
+      position: relative;
+      z-index: 3;
+    }
+
     .cols{
       position:relative;
       z-index:2;
@@ -250,6 +261,10 @@
       width: max-content;
       min-width: 100%;
       margin-top:6px;
+    }
+
+    .group-roof + .cols{
+      margin-top: 0;
     }
 
     .col-shell{ width:75px; display:flex; flex-direction:column; gap:5px; }
@@ -844,12 +859,16 @@
                               <img class="mini-arm right" src="{{ armSrc }}" alt="Brazo der">
                             {% endif %}
 
+                            {% if not isHome %}
+                              <div class="group-roof"></div>
+                            {% endif %}
+
                             <div class="cols">
                               {% for col in colsToShow %}
                                 {% set isEmpotrado = (col.single is defined and col.single is not empty) %}
 
                                 <div class="col-shell">
-                                  <div class="col-topbar">Col {{ shown + loop.index }}</div>
+                                  {% if isHome %}<div class="col-topbar">Col {{ shown + loop.index }}</div>{% endif %}
 
                                   <div class="col-card">
                                     <div class="col-body"
