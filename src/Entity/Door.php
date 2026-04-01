@@ -30,6 +30,9 @@ class Door
     /** @ORM\Column(type="string", length=255) */
     private $place;
 
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $methacrylate = false;
+
     public function __construct()
     {
 
@@ -48,5 +51,8 @@ class Door
 
     public function getPlace(): ?string { return $this->place; }
     public function setPlace(string $v): self { $this->place = $v; return $this; }
+
+    public function getMethacrylate(): bool { return $this->methacrylate ?? false; }
+    public function setMethacrylate(bool $v): self { $this->methacrylate = $v; return $this; }
 
 }

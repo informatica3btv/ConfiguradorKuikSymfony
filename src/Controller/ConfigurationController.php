@@ -759,15 +759,34 @@ class ConfigurationController extends AbstractController
         $serie     = $payload['fondo'] ?? '';
         $placement = $payload['placement'] ?? '';
 
-        // Count doors per size (exclude screens and mailboxes)
+        // Count doors per [size, methacrylate] (exclude screens and mailboxes)
+        $addons    = $payload['addons'] ?? [];
+        $doorIndex = 0;
         $sizeCounts = [];
-        foreach ($payload['columns'] ?? [] as $col) {
+
+        $allCols = [];
+        $groups  = $payload['groups'] ?? [];
+        if (!empty($groups)) {
+            foreach ($groups as $g) {
+                if (is_array($g)) {
+                    foreach ($g as $c) { $allCols[] = $c; }
+                }
+            }
+        } else {
+            $allCols = $payload['columns'] ?? [];
+        }
+
+        foreach ($allCols as $col) {
             foreach (['top', 'bottom', 'single'] as $part) {
                 foreach ($col[$part]['blocks'] ?? [] as $blk) {
                     $btype = $blk['type'] ?? 'door';
                     if ($btype !== 'screen' && $btype !== 'mailbox') {
+                        $doorIndex++;
                         $size = (string)($blk['h'] ?? '');
-                        $sizeCounts[$size] = ($sizeCounts[$size] ?? 0) + 1;
+                        $sel  = $addons[(string)$doorIndex] ?? $addons[$doorIndex] ?? null;
+                        $meth = (bool)(is_array($sel) ? ($sel['methacrylate'] ?? false) : false);
+                        $key  = $size . ($meth ? '_meth' : '');
+                        $sizeCounts[$key] = ($sizeCounts[$key] ?? 0) + 1;
                     }
                 }
             }
@@ -776,11 +795,13 @@ class ConfigurationController extends AbstractController
 
         $products    = [];
         $productInfo = [];
-        foreach ($sizeCounts as $size => $count) {
-            $product = $doorRepo->findOneDoorBySerieAndPlaceAndSize($serie, $placement, $size);
-            $products[$size] = $product;
+        foreach ($sizeCounts as $key => $count) {
+            $meth = str_ends_with($key, '_meth');
+            $size = $meth ? substr($key, 0, -5) : $key;
+            $product = $doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $placement, $size, $meth);
+            $products[$key] = $product;
             if ($product) {
-                $productInfo[$size] = $btvApi->getProductInfo($product->getReference(), $count);
+                $productInfo[$key] = $btvApi->getProductInfo($product->getReference(), $count);
             }
         }
 

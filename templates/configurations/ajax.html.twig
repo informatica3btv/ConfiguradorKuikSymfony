@@ -26,6 +26,8 @@
               Par de laterales
             {% elseif size starts with 'tejado_' %}
               Tejado {{ size|replace({'tejado_': ''}) }} col.
+            {% elseif size ends with '_meth' %}
+              H{{ size|replace({'_meth': ''}) }} + Metacrilato
             {% else %}
               H{{ size }}
             {% endif %}

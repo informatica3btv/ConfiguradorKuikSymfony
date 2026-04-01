@@ -38,4 +38,19 @@ class DoorRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function findOneDoorBySerieAndPlaceAndSizeAndMethacrylate(string $serie, string $place, string $size, bool $methacrylate): ?Door
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.serie = :serie')
+            ->andWhere('p.place = :place')
+            ->andWhere('p.size = :size')
+            ->andWhere('p.methacrylate = :methacrylate')
+            ->setParameter('serie', $serie)
+            ->setParameter('place', $place)
+            ->setParameter('size', $size)
+            ->setParameter('methacrylate', $methacrylate)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 }
