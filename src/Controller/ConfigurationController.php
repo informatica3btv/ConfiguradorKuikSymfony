@@ -849,6 +849,29 @@ class ConfigurationController extends AbstractController
             }
         }
 
+        // Count total plates: ceil(doorsInGroup / 16) per group
+        $totalPlates = 0;
+        foreach ($roofGroups as $groupCols) {
+            if (!is_array($groupCols)) continue;
+            $doorsInGroup = 0;
+            foreach ($groupCols as $col) {
+                foreach (['top', 'bottom', 'single'] as $part) {
+                    foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                        $btype = $blk['type'] ?? 'door';
+                        if ($btype !== 'screen' && $btype !== 'mailbox') {
+                            $doorsInGroup++;
+                        }
+                    }
+                }
+            }
+            $totalPlates += max(1, (int) ceil($doorsInGroup / 16));
+        }
+
+        $placaReference = $this->getParameter('placa.reference');
+        $sizeCounts['placa'] = $totalPlates;
+        $products['placa']   = $placaReference;
+        $productInfo['placa'] = $btvApi->getProductInfo($placaReference, $totalPlates);
+
         return $this->render('configurations/ajax.html.twig', [
             'products'    => $products,
             'productInfo' => $productInfo,
