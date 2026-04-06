@@ -8,9 +8,7 @@ use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use App\Repository\ProjectRepository;
-use App\Repository\DoorRepository;
-use App\Repository\RoofRepository;
-use App\Repository\SideRepository;
+use App\Service\ConfigurationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +21,13 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class ConfigurationController extends AbstractController
 {
+    private ConfigurationService $configService;
+
+    public function __construct(ConfigurationService $configService)
+    {
+        $this->configService = $configService;
+    }
+
     /**
      * Devuelve (o crea) la configuración asociada a un proyecto.
      * Asumimos 1 Configuration por Project.
@@ -58,6 +63,10 @@ class ConfigurationController extends AbstractController
     public function createProject(Request $request, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        if (!$this->isCsrfTokenValid('create_project', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
 
         $projectName = trim((string) $request->request->get('project_name'));
         $clientName  = trim((string) $request->request->get('client_name'));
@@ -132,9 +141,7 @@ class ConfigurationController extends AbstractController
             $em->flush();
         }
 
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $payload = $configuration->getDecodedPayload();
 
         return $this->render('configurations/type.html.twig', [
             'project' => $project,
@@ -237,9 +244,7 @@ class ConfigurationController extends AbstractController
         /*
         * Payload actual
         */
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $payload = $configuration->getDecodedPayload();
 
         /*
         * TYPE: siempre manda el payload en editar,
@@ -413,6 +418,36 @@ class ConfigurationController extends AbstractController
     }
 
     /**
+     * API pública: buscar configuración por ID para la pantalla de recover.
+     * Solo devuelve id, projectName y payload. Sin datos de contacto del cliente.
+     * @Route("/api/configurations/public-recover", name="api_configurations_public_recover", methods={"GET"})
+     */
+    public function publicRecover(
+        Request $request,
+        ConfigurationRepository $repo
+    ): JsonResponse {
+        $id = $request->query->getInt('id');
+
+        if ($id <= 0) {
+            return $this->json(['error' => 'ID inválido'], 400);
+        }
+
+        $config = $repo->find($id);
+
+        if (!$config) {
+            return $this->json(['items' => []]);
+        }
+
+        $p = $config->getProject();
+
+        return $this->json(['items' => [[
+            'id'          => $config->getId(),
+            'projectName' => $p ? $p->getProjectName() : null,
+            'payload'     => $config->getPayload(),
+        ]]]);
+    }
+
+    /**
      * API: listar configuraciones del usuario logueado (sin pasar user_id por query)
      * @Route("/api/configurations", name="api_configurations_list", methods={"GET"})
      */
@@ -454,6 +489,10 @@ class ConfigurationController extends AbstractController
         $data = json_decode($request->getContent(), true);
         if (!is_array($data)) {
             $data = $request->request->all();
+        }
+
+        if (!$this->isCsrfTokenValid('save_configuration', $data['_token'] ?? null)) {
+            return $this->json(['error' => 'Token CSRF inválido'], 403);
         }
 
         if (!is_array($data) || empty($data)) {
@@ -509,28 +548,12 @@ class ConfigurationController extends AbstractController
             : (is_array($payloadRaw) ? $payloadRaw : []);
 
         // ✅ si quieres mantener addons previos si no vienen en el nuevo payload
-        $old = $config->getPayload() ? (json_decode($config->getPayload(), true) ?: []) : [];
+        $old = $config->getDecodedPayload();
         if (isset($old['addons']) && !isset($payloadArr['addons'])) {
             $payloadArr['addons'] = $old['addons'];
         }
 
-        // Clean up addons: remove entries for doors that no longer exist or changed size
-        if (isset($payloadArr['addons']) && is_array($payloadArr['addons'])) {
-            $oldSizes = $this->getDoorSizesByNumber($old);
-            $newSizes = $this->getDoorSizesByNumber($payloadArr);
-            $cleanAddons = [];
-            foreach ($newSizes as $doorNum => $size) {
-                if (!isset($payloadArr['addons'][$doorNum])) {
-                    continue;
-                }
-                // Keep addon only if the door size hasn't changed
-                if (isset($oldSizes[$doorNum]) && $oldSizes[$doorNum] !== $size) {
-                    continue;
-                }
-                $cleanAddons[$doorNum] = $payloadArr['addons'][$doorNum];
-            }
-            $payloadArr['addons'] = $cleanAddons;
-        }
+        $payloadArr = $this->configService->cleanAddons($payloadArr, $old);
 
         $config->setPayload(json_encode($payloadArr, JSON_UNESCAPED_UNICODE));
         $config->setUpdatedAt(new \DateTimeImmutable());
@@ -540,7 +563,7 @@ class ConfigurationController extends AbstractController
 
         if(isset($payloadArr['instalacion']) && ($payloadArr['instalacion'] == 'empotrado' || $payloadArr['instalacion'] == 'zocalo' )){
 
-            $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
+            $payloadPrepared = $this->configService->prepareSummaryPayload($payloadArr);
             return $this->render('configurations/summary.html.twig', [
                 'project' => $project,
                 'configuration' => $config,
@@ -575,6 +598,10 @@ class ConfigurationController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+        if (!$this->isCsrfTokenValid('addons_next', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
         $configuration = $repo->find($id);
         if (!$configuration) {
             throw $this->createNotFoundException('Configuration not found');
@@ -592,9 +619,7 @@ class ConfigurationController extends AbstractController
             $addons = [];
         }
 
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $payload = $configuration->getDecodedPayload();
 
         $payload['addons'] = $addons;
 
@@ -617,6 +642,10 @@ class ConfigurationController extends AbstractController
         ProjectRepository $projectRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        if (!$this->isCsrfTokenValid('save_brackets', $request->request->get('_token'))) {
+            return $this->json(['error' => 'Token CSRF inválido'], 403);
+        }
 
         $projectId = (int) $request->request->get('project_id', 0);
         $configId  = (int) $request->request->get('configuration_id', 0);
@@ -664,9 +693,7 @@ class ConfigurationController extends AbstractController
         }
 
         // payload actual
-        $payloadArr = $config->getPayload()
-            ? (json_decode($config->getPayload(), true) ?: [])
-            : [];
+        $payloadArr = $config->getDecodedPayload();
 
         // guardamos selección
         $payloadArr['bracketType']  = $bracketType;
@@ -682,7 +709,7 @@ class ConfigurationController extends AbstractController
 
         $em->flush();
 
-        $payloadPrepared = $this->prepareSummaryPayload($payloadArr);
+        $payloadPrepared = $this->configService->prepareSummaryPayload($payloadArr);
         return $this->render('configurations/summary.html.twig', [
             'project' => $project,
             'configuration' => $config,
@@ -709,11 +736,9 @@ class ConfigurationController extends AbstractController
             throw $this->createAccessDeniedException();
         }*/
 
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $payload = $configuration->getDecodedPayload();
 
-        $payloadPrepared = $this->prepareSummaryPayload($payload);
+        $payloadPrepared = $this->configService->prepareSummaryPayload($payload);
 
         return $this->render('configurations/summary.html.twig', [
             'project' => $p,
@@ -739,11 +764,7 @@ class ConfigurationController extends AbstractController
      */
     public function productTable(
         int $id,
-        ConfigurationRepository $repo,
-        DoorRepository $doorRepo,
-        SideRepository $sideRepo,
-        RoofRepository $roofRepo,
-        \App\Service\BtvApiService $btvApi
+        ConfigurationRepository $repo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -752,131 +773,9 @@ class ConfigurationController extends AbstractController
             throw $this->createNotFoundException('Configuration not found');
         }
 
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $table = $this->configService->buildProductTable($configuration->getDecodedPayload());
 
-        $serie     = $payload['fondo'] ?? '';
-        $placement = $payload['placement'] ?? '';
-
-        // Count doors per [size, methacrylate] (exclude screens and mailboxes)
-        $addons    = $payload['addons'] ?? [];
-        $doorIndex = 0;
-        $sizeCounts = [];
-
-        $allCols = [];
-        $groups  = $payload['groups'] ?? [];
-        if (!empty($groups)) {
-            foreach ($groups as $g) {
-                if (is_array($g)) {
-                    foreach ($g as $c) { $allCols[] = $c; }
-                }
-            }
-        } else {
-            $allCols = $payload['columns'] ?? [];
-        }
-
-        foreach ($allCols as $col) {
-            foreach (['top', 'bottom', 'single'] as $part) {
-                foreach ($col[$part]['blocks'] ?? [] as $blk) {
-                    $btype = $blk['type'] ?? 'door';
-                    if ($btype !== 'screen' && $btype !== 'mailbox') {
-                        $doorIndex++;
-                        $size = (string)($blk['h'] ?? '');
-                        $sel  = $addons[(string)$doorIndex] ?? $addons[$doorIndex] ?? null;
-                        $meth = (bool)(is_array($sel) ? ($sel['methacrylate'] ?? false) : false);
-                        $key  = $size . ($meth ? '_meth' : '');
-                        $sizeCounts[$key] = ($sizeCounts[$key] ?? 0) + 1;
-                    }
-                }
-            }
-        }
-        ksort($sizeCounts);
-
-        $products    = [];
-        $productInfo = [];
-        foreach ($sizeCounts as $key => $count) {
-            $meth = str_ends_with($key, '_meth');
-            $size = $meth ? substr($key, 0, -5) : $key;
-            $product = $doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $placement, $size, $meth);
-            $products[$key] = $product;
-            if ($product) {
-                $productInfo[$key] = $btvApi->getProductInfo($product->getReference(), $count);
-            }
-        }
-
-        // Count groups: each group needs 1 left side + 1 right side
-        $groups     = $payload['groups'] ?? [];
-        $groupCount = !empty($groups) ? count($groups) : 1;
-
-        $side = $sideRepo->findOneSideBySerieAndPlace($serie,$placement);
-        $sizeCounts['lateral'] = $groupCount;
-        $products['lateral']   = $side;
-
-        if ($side) {
-            $productInfo['lateral'] = $btvApi->getProductInfo($side->getReference(), $groupCount);
-        }
-
-        // Calculate roof needs per group:
-        // - Each group of N columns needs floor(N/2) roofs of 2 columns + (N%2) roofs of 1 column
-        $roofGroups = !empty($groups) ? $groups : (!empty($payload['columns']) ? [$payload['columns']] : []);
-        $roofCounts = []; // [numColumns => totalCount]
-
-        foreach ($roofGroups as $groupCols) {
-            if (!is_array($groupCols)) {
-                continue;
-            }
-            $numCols = count($groupCols);
-            $pairs   = intdiv($numCols, 2);
-            $singles = $numCols % 2;
-
-            if ($pairs > 0) {
-                $roofCounts[2] = ($roofCounts[2] ?? 0) + $pairs;
-            }
-            if ($singles > 0) {
-                $roofCounts[1] = ($roofCounts[1] ?? 0) + $singles;
-            }
-        }
-
-        foreach ($roofCounts as $numCols => $count) {
-            $key  = 'tejado_' . $numCols;
-            $roof = $roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $placement, (string) $numCols);
-            $sizeCounts[$key] = $count;
-            $products[$key]   = $roof;
-
-            if ($roof) {
-                $productInfo[$key] = $btvApi->getProductInfo($roof->getReference(), $count);
-            }
-        }
-
-        // Count total plates: ceil(doorsInGroup / 16) per group
-        $totalPlates = 0;
-        foreach ($roofGroups as $groupCols) {
-            if (!is_array($groupCols)) continue;
-            $doorsInGroup = 0;
-            foreach ($groupCols as $col) {
-                foreach (['top', 'bottom', 'single'] as $part) {
-                    foreach ($col[$part]['blocks'] ?? [] as $blk) {
-                        $btype = $blk['type'] ?? 'door';
-                        if ($btype !== 'screen' && $btype !== 'mailbox') {
-                            $doorsInGroup++;
-                        }
-                    }
-                }
-            }
-            $totalPlates += max(1, (int) ceil($doorsInGroup / 16));
-        }
-
-        $placaReference = $this->getParameter('placa.reference');
-        $sizeCounts['placa'] = $totalPlates;
-        $products['placa']   = $placaReference;
-        $productInfo['placa'] = $btvApi->getProductInfo($placaReference, $totalPlates);
-
-        return $this->render('configurations/ajax.html.twig', [
-            'products'    => $products,
-            'productInfo' => $productInfo,
-            'sizeCounts'  => $sizeCounts,
-        ]);
+        return $this->render('configurations/ajax.html.twig', $table);
     }
 
     /**
@@ -942,9 +841,7 @@ class ConfigurationController extends AbstractController
         $em->persist($configuration);
         $em->flush();
 
-        $payload = $configuration->getPayload()
-            ? (json_decode($configuration->getPayload(), true) ?: [])
-            : [];
+        $payload = $configuration->getDecodedPayload();
 
         $screenPath = $this->getParameter('kernel.project_dir') . '/public/assets/pantalla.png';
         $screenBase64 = null;
@@ -985,6 +882,8 @@ class ConfigurationController extends AbstractController
             $legBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($legPath));
         }
 
+        $productTable = $this->configService->buildProductTable($payload);
+
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project' => $project,
             'configuration' => $configuration,
@@ -996,6 +895,9 @@ class ConfigurationController extends AbstractController
             'arm_negro' => $armNegro,
             'buzon_base64' => $buzonBase64,
             'leg_base64' => $legBase64,
+            'products'    => $productTable['products'],
+            'productInfo' => $productTable['productInfo'],
+            'sizeCounts'  => $productTable['sizeCounts'],
         ]);
 
         $options = new Options();
@@ -1102,186 +1004,4 @@ class ConfigurationController extends AbstractController
 
     }
 
-    /**
-     * Returns a map of door_number (string) => size (string) for all real doors in the payload.
-     * Screens and mailboxes are excluded (they don't get door numbers).
-     */
-    private function getDoorSizesByNumber(array $payload): array
-    {
-        $groups  = $payload['groups'] ?? [];
-        $columns = $payload['columns'] ?? [];
-
-        if (empty($groups) && !empty($columns)) {
-            $groups = [$columns];
-        }
-
-        $sizes   = [];
-        $doorNum = 0;
-
-        foreach ($groups as $groupCols) {
-            if (!is_array($groupCols)) {
-                continue;
-            }
-            foreach ($groupCols as $col) {
-                foreach (['top', 'bottom', 'single'] as $part) {
-                    foreach ($col[$part]['blocks'] ?? [] as $blk) {
-                        $type = is_array($blk) ? ($blk['type'] ?? 'door') : 'door';
-                        if ($type !== 'screen' && $type !== 'mailbox') {
-                            $doorNum++;
-                            $h = is_array($blk) ? (string)($blk['h'] ?? 0) : (string)$blk;
-                            $sizes[(string) $doorNum] = $h;
-                        }
-                    }
-                }
-            }
-        }
-
-        return $sizes;
-    }
-
-    private function countDoorsInPayload(array $payload): int
-    {
-        return count($this->getDoorSizesByNumber($payload));
-    }
-
-    private function prepareSummaryPayload(array $payload): array
-    {
-        $groups = $payload['groups'] ?? [];
-        $columns = $payload['columns'] ?? [];
-
-        if (empty($groups) && !empty($columns)) {
-            $groups = [$columns];
-        }
-
-        $addons = $payload['addons'] ?? [];
-
-        $globalDoorNumber = 0;
-        $globalPlateNumber = 1;
-
-        $preparedGroups = [];
-
-        foreach ($groups as $groupIndex => $groupCols) {
-            if (!is_array($groupCols)) {
-                $groupCols = [];
-            }
-
-            $groupDoorCounter = 0;
-            $preparedCols = [];
-
-            foreach ($groupCols as $col) {
-                $preparedCol = $col;
-
-                if (!empty($col['single']['blocks']) && is_array($col['single']['blocks'])) {
-                    $preparedCol['single']['blocks_prepared'] = [];
-
-                    foreach ($col['single']['blocks'] as $blk) {
-                        $preparedBlock = $this->prepareBlock(
-                            $blk,
-                            $addons,
-                            $globalDoorNumber,
-                            $groupDoorCounter,
-                            $globalPlateNumber
-                        );
-
-                        $preparedCol['single']['blocks_prepared'][] = $preparedBlock;
-                    }
-                } else {
-                    $preparedCol['top']['blocks_prepared'] = [];
-                    foreach (($col['top']['blocks'] ?? []) as $blk) {
-                        $preparedBlock = $this->prepareBlock(
-                            $blk,
-                            $addons,
-                            $globalDoorNumber,
-                            $groupDoorCounter,
-                            $globalPlateNumber
-                        );
-
-                        $preparedCol['top']['blocks_prepared'][] = $preparedBlock;
-                    }
-
-                    $preparedCol['bottom']['blocks_prepared'] = [];
-                    foreach (($col['bottom']['blocks'] ?? []) as $blk) {
-                        $preparedBlock = $this->prepareBlock(
-                            $blk,
-                            $addons,
-                            $globalDoorNumber,
-                            $groupDoorCounter,
-                            $globalPlateNumber
-                        );
-
-                        $preparedCol['bottom']['blocks_prepared'][] = $preparedBlock;
-                    }
-                }
-
-                $preparedCols[] = $preparedCol;
-            }
-
-            $platesUsedByGroup = max(1, (int) ceil($groupDoorCounter / 16));
-            $globalPlateNumber += $platesUsedByGroup;
-
-            $preparedGroups[] = $preparedCols;
-        }
-
-        $payload['groups'] = $preparedGroups;
-
-        return $payload;
-    }
-    
-    private function prepareBlock(
-        $blk,
-        array $addons,
-        int &$globalDoorNumber,
-        int &$groupDoorCounter,
-        int $globalPlateNumber
-    ): array {
-        if (is_array($blk)) {
-            $height = (int) ($blk['h'] ?? 0);
-            $type = $blk['type'] ?? 'door';
-        } else {
-            $height = (int) $blk;
-            $type = 'door';
-            $blk = ['h' => $height, 'type' => $type];
-        }
-
-        $isScreen = ($type === 'screen');
-        $isMailbox = ($type === 'mailbox');
-        $isSpecial = $isScreen || $isMailbox;
-
-        // Pantalla y buzón NO cuentan como puerta
-        if ($isSpecial) {
-            $blk['doorNumber'] = null;
-            $blk['plateNumber'] = null;
-            $blk['socket'] = false;
-            $blk['usb'] = false;
-            $blk['methacrylate'] = false;
-            $blk['isScreen'] = $isScreen;
-            $blk['isMailbox'] = $isMailbox;
-
-            return $blk;
-        }
-
-        // Solo las puertas normales cuentan
-        $globalDoorNumber++;
-        $groupDoorCounter++;
-
-        // Cada 16 puertas cambia de placa dentro de la agrupación
-        $plateNumber = $globalPlateNumber + intdiv($groupDoorCounter - 1, 16);
-
-        // Los addons siguen referenciando la puerta global real
-        $sel = $addons[(string) $globalDoorNumber] ?? $addons[$globalDoorNumber] ?? null;
-
-        // IMPORTANTE:
-        // doorNumber = contador dentro de la agrupación, ignorando buzones y pantallas
-        $blk['doorNumber'] = $groupDoorCounter;
-        $blk['plateNumber'] = $plateNumber;
-
-        $blk['socket'] = is_array($sel) ? !empty($sel['socket']) : false;
-        $blk['usb'] = is_array($sel) ? !empty($sel['usb']) : false;
-        $blk['methacrylate'] = is_array($sel) ? !empty($sel['methacrylate']) : false;
-
-        $blk['isScreen'] = false;
-        $blk['isMailbox'] = false;
-
-        return $blk;
-    }
 }
