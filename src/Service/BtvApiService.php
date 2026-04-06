@@ -20,8 +20,8 @@ class BtvApiService
     // Shared HTTP options for all BTV calls
     private $httpOptions = [
         'timeout'     => 8,
-        'verify_peer' => false,
-        'verify_host' => false,
+        'verify_peer' => true,
+        'verify_host' => true,
     ];
 
     public function __construct(

@@ -93,6 +93,11 @@ class Configuration
         return $this->payload;
     }
 
+    public function getDecodedPayload(): array
+    {
+        return json_decode($this->payload, true) ?: [];
+    }
+
     public function setPayload(string $payload): self
     {
         $this->payload = $payload;
