@@ -92,9 +92,18 @@
       <div class="preview-row">
         <div>
           <div style="font-weight:900;">Vista previa</div>
-          <div style="font-size:12px; color:var(--muted); margin-top:4px;">Se actualiza al escribir el HEX</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:4px;">Escribe el HEX o usa el selector</div>
         </div>
-        <div id="hexPreview" style="width:64px; height:44px; border-radius:14px; border:1px solid rgba(0,0,0,.12);"></div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label for="colorPicker" style="cursor:pointer; position:relative; display:block;">
+            <input type="color" id="colorPicker"
+                   style="opacity:0; position:absolute; inset:0; width:100%; height:100%; cursor:pointer; border:none; padding:0;">
+            <div id="hexPreview"
+                 style="width:48px; height:48px; border-radius:999px; border:3px solid rgba(0,0,0,.15); box-shadow:0 2px 8px rgba(0,0,0,.15); cursor:pointer;"></div>
+          </label>
+          <div id="hexPreviewRect"
+               style="width:80px; height:44px; border-radius:14px; border:1px solid rgba(0,0,0,.12);"></div>
+        </div>
       </div>
 
       <div class="actions">
@@ -111,24 +120,42 @@
 {{ parent() }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const hexInput = document.getElementById('admin_color_hex');
-  const preview = document.getElementById('hexPreview');
+  const hexInput   = document.getElementById('admin_color_hex');
+  const picker     = document.getElementById('colorPicker');
+  const circle     = document.getElementById('hexPreview');
+  const rect       = document.getElementById('hexPreviewRect');
 
   function normalize(v){
     v = (v || '').trim();
     if (!v) return '';
-    if (v[0] !== '#') v = '#'+v;
+    if (v[0] !== '#') v = '#' + v;
     return v;
   }
 
-  function paint(){
-    const v = normalize(hexInput ? hexInput.value : '');
-    preview.style.background = v || 'transparent';
+  function isValidHex(v){
+    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v);
   }
 
+  function paint(hex){
+    const valid = isValidHex(hex);
+    circle.style.background = valid ? hex : 'transparent';
+    rect.style.background   = valid ? hex : 'transparent';
+    if (valid) picker.value = hex;
+  }
+
+  // Texto hex → picker + preview
   if (hexInput) {
-    hexInput.addEventListener('input', paint);
-    paint();
+    hexInput.addEventListener('input', () => paint(normalize(hexInput.value)));
+    paint(normalize(hexInput.value));
+  }
+
+  // Picker → texto hex + preview
+  if (picker) {
+    picker.addEventListener('input', () => {
+      const hex = picker.value;
+      if (hexInput) hexInput.value = hex;
+      paint(hex);
+    });
   }
 });
 </script>
