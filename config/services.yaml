@@ -24,3 +24,7 @@ services:
             $username:  '%env(BTV_USERNAME)%'
             $password:  '%env(BTV_PASSWORD)%'
             # $cache and $logger are autowired automatically
+
+    App\Service\ConfigurationService:
+        arguments:
+            $placaReference: '%placa.reference%'
