@@ -882,6 +882,12 @@ class ConfigurationController extends AbstractController
             $legBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($legPath));
         }
 
+        $logoBase64 = null;
+        $logoPath = $this->getParameter('kernel.project_dir') . '/public/assets/Kuik Smart Lockers Azul.png';
+        if (file_exists($logoPath)) {
+            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
         $productTable = $this->configService->buildProductTable($payload);
 
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
@@ -895,6 +901,7 @@ class ConfigurationController extends AbstractController
             'arm_negro' => $armNegro,
             'buzon_base64' => $buzonBase64,
             'leg_base64' => $legBase64,
+            'logo_base64' => $logoBase64,
             'products'    => $productTable['products'],
             'productInfo' => $productTable['productInfo'],
             'sizeCounts'  => $productTable['sizeCounts'],

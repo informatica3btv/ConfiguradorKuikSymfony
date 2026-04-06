@@ -392,7 +392,11 @@
   <div class="head">
     <div class="row" style="margin-top:0;">
       <div class="col col-50">
-        <p class="brand">Kuik</p>
+        {% if logo_base64 %}
+          <img src="{{ logo_base64 }}" style="height:54px; width:auto;" alt="Kuik Smart Lockers">
+        {% else %}
+          <p class="brand">Kuik</p>
+        {% endif %}
         <p class="muted" style="margin:2px 0 0;">
         </p>
       </div>
