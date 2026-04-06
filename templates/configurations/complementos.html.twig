@@ -396,6 +396,7 @@
             action="{{ path('configuration_addons_next', { id: configuration.id }) }}"
             id="addonsForm"
             class="bottom-actions">
+        <input type="hidden" name="_token" value="{{ csrf_token('addons_next') }}">
         <input type="hidden" name="configuration_id" value="{{ configuration.id }}">
         <input type="hidden" name="addons_payload" id="addons_payload" value="{}">
 

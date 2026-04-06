@@ -112,6 +112,7 @@
         action="{{ path('configuration_project_create') }}"
         id="projectForm"
         novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('create_project') }}">
 
     <input type="hidden" name="config_id" value="{{ config_id ?? '' }}">
 

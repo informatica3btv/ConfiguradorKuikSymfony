@@ -492,6 +492,7 @@
   </div>
 
   <form method="post" action="{{ path('api_configurations_create') }}" id="configForm" class="config-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('save_configuration') }}">
     <input type="hidden" name="placement" id="placement" value="">
     <input type="hidden" name="configuration_id" id="configuration_id" value="{{ configuration.id }}">
     <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
