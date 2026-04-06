@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchById(id){
-    const res = await fetch(`/api/configurations/search?id=${encodeURIComponent(id)}`, {
+    const res = await fetch(`/api/configurations/public-recover?id=${encodeURIComponent(id)}`, {
       headers: { 'Accept': 'application/json' }
     });
 
