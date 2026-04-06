@@ -225,8 +225,8 @@
 
     /* ✅ PATAS (PDF reliable): TABLE */
     .legs-under{
-      width:75px;
-      margin-top:-6px;
+      width:60px;
+      margin-top:-7px;
       border-collapse:collapse;
       font-size:0;
     }
@@ -614,7 +614,7 @@
               <table style="width: {{ groupW }}px; border-collapse: collapse; margin-top: -9px;">
                 <tr>
                   {% for i in 1..legN %}
-                    <td style="width: 75px; border:0; padding:0; text-align:center; vertical-align:top;">
+                    <td style="width: 66px; border:0; padding:0; text-align:center; vertical-align:top;">
                       {% if i in legPositions and leg_base64 %}
                         <img src="{{ leg_base64 }}" style="width:34px; height:90px; object-fit:fill; display:block; margin:0 auto;">
                       {% endif %}
@@ -693,6 +693,60 @@
       </div>
     </div>
   </div>
+
+  {% if products is defined and products is not empty %}
+  <div class="card" style="margin-top:10px; page-break-inside:avoid;">
+    <h3>Referencias de producto</h3>
+    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <thead>
+        <tr>
+          <th style="background:#f3f4f6; padding:7px 8px; text-align:left; border:1px solid #e5e7eb;">Concepto</th>
+          <th style="background:#f3f4f6; padding:7px 8px; text-align:left; border:1px solid #e5e7eb;">Referencia</th>
+          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Uds.</th>
+          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Precio ud.</th>
+          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set grandTotal = 0 %}
+        {% for size, product in products %}
+          {% set info  = productInfo[size] ?? null %}
+          {% set count = sizeCounts[size] ?? 0 %}
+          <tr>
+            <td style="padding:6px 8px; border:1px solid #e5e7eb;">
+              {% if size == 'lateral' %}Par de laterales
+              {% elseif size == 'placa' %}Placa
+              {% elseif size starts with 'tejado_' %}Tejado {{ size|replace({'tejado_': ''}) }} col.
+              {% elseif size ends with '_meth' %}H{{ size|replace({'_meth': ''}) }} + Metacrilato
+              {% else %}H{{ size }}{% endif %}
+            </td>
+            {% if product %}
+              <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">{{ size == 'placa' ? product : product.reference }}</td>
+              <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right;">{{ count }}</td>
+              {% if info and info.PrecioVenta is defined and info.PrecioVenta is not iterable %}
+                {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}
+                {% set lineTotal = priceStr * count %}
+                {% set grandTotal = grandTotal + lineTotal %}
+                <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right;">{{ info.PrecioVenta }} €</td>
+                <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right; font-weight:900;">{{ lineTotal|number_format(2, ',', '.') }} €</td>
+              {% else %}
+                <td colspan="2" style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right; color:#6b7280;">—</td>
+              {% endif %}
+            {% else %}
+              <td colspan="4" style="padding:6px 8px; border:1px solid #e5e7eb; color:#6b7280;">Sin referencia</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ grandTotal|number_format(2, ',', '.') }} €</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% endif %}
 
   <div class="footer">
 
