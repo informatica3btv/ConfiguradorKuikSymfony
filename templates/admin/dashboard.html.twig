@@ -157,6 +157,39 @@
         <div class="admin-pill">Ver</div>
       </a>
 
+      <a href="{{ path('admin_references_index') }}" class="admin-action-card">
+        <div class="admin-action-left">
+          <div class="admin-ico">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="#0b1220" stroke-width="2" stroke-linecap="round"/>
+              <rect x="9" y="3" width="6" height="4" rx="1" stroke="#0b1220" stroke-width="2"/>
+              <path d="M9 12h6M9 16h4" stroke="#0b1220" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="admin-action-title">Referencias</div>
+            <div class="admin-action-sub">Puertas, laterales y tejados</div>
+          </div>
+        </div>
+        <div class="admin-pill">Ver</div>
+      </a>
+
+      <a href="{{ path('admin_import_index') }}" class="admin-action-card">
+        <div class="admin-action-left">
+          <div class="admin-ico">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#0b1220" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 3v13M8 7l4-4 4 4" stroke="#0b1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="admin-action-title">Importar Excel</div>
+            <div class="admin-action-sub">Puertas, laterales y tejados</div>
+          </div>
+        </div>
+        <div class="admin-pill">Importar</div>
+      </a>
+
       {% for t in types %}
         <a href="{{ path('admin_attributes_types_edit', {id: t.id}) }}" class="admin-action-card">
           <div class="admin-action-left">

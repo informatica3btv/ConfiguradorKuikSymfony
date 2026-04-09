@@ -1,0 +1,569 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Referencias{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    .ref-wrap { max-width: 960px; margin: 32px auto 70px; padding: 0 14px; }
+    .ref-title { font-size: 32px; font-weight: 900; margin: 0 0 6px; }
+    .ref-sub   { color: #6b7280; font-size: 15px; margin-bottom: 24px; }
+
+    .flash-success { background: #d1fae5; color: #065f46; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-weight: 600; }
+    .flash-error   { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-weight: 600; }
+
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(15,23,42,.10); margin-bottom: 24px; }
+    .tab-btn {
+      padding: 10px 22px; font-size: 15px; font-weight: 700;
+      border: none; background: none; cursor: pointer; color: #6b7280;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      border-radius: 8px 8px 0 0; transition: .15s;
+    }
+    .tab-btn:hover { color: #0b1220; background: rgba(15,23,42,.04); }
+    .tab-btn.active { color: #0b76d8; border-bottom-color: #0b76d8; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .ref-card {
+      background: #fff; border: 1px solid rgba(15,23,42,.10);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(2,20,60,.06);
+    }
+
+    .bulk-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; background: #f6f9fc;
+      border-bottom: 1px solid rgba(15,23,42,.08); min-height: 44px;
+    }
+    .bulk-bar-left { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #6b7280; }
+    .selected-count { font-weight: 700; color: #0b1220; }
+
+    .btn-bulk-delete {
+      padding: 7px 16px; background: #fee2e2; color: #991b1b;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: .15s; display: none;
+    }
+    .btn-bulk-delete:hover { background: #fca5a5; }
+    .btn-bulk-delete.visible { display: inline-block; }
+
+    .ref-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ref-table th {
+      background: #f6f9fc; padding: 11px 16px; text-align: left;
+      font-weight: 700; font-size: 13px; color: #374151;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .ref-table th:first-child, .ref-table td:first-child { width: 40px; text-align: center; }
+    .ref-table td { padding: 10px 16px; border-bottom: 1px solid rgba(15,23,42,.05); color: #0b1220; }
+    .ref-table tr:last-child td { border-bottom: none; }
+    .ref-table tr:hover td { background: #f9fafb; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .badge-yes { background: #d1fae5; color: #065f46; }
+    .badge-no  { background: #f3f4f6; color: #6b7280; }
+
+    .btn-delete {
+      padding: 5px 12px; background: #fee2e2; color: #991b1b;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: .15s;
+    }
+    .btn-delete:hover { background: #fca5a5; }
+
+    .empty-msg { padding: 32px; text-align: center; color: #6b7280; font-size: 15px; }
+    .count-badge {
+      display: inline-block; background: rgba(11,118,216,.12); color: #0b76d8;
+      font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-left: 6px;
+    }
+    input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0b76d8; }
+
+    .filter-bar {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 12px 16px; border-bottom: 1px solid rgba(15,23,42,.08);
+      background: #fafafa;
+    }
+    .filter-bar input, .filter-bar select {
+      padding: 6px 10px; border: 1px solid rgba(15,23,42,.15);
+      border-radius: 8px; font-size: 13px; color: #0b1220;
+      background: #fff; min-width: 120px;
+    }
+    .filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: #0b76d8; }
+    .filter-count { font-size: 13px; color: #6b7280; align-self: center; margin-left: auto; }
+
+    .btn-new {
+      padding: 7px 16px; background: #0b76d8; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: .15s;
+    }
+    .btn-new:hover { background: #0960b0; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 18px; padding: 28px 32px;
+      width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal h3 { margin: 0 0 20px; font-size: 20px; font-weight: 900; }
+    .modal label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #374151; }
+    .modal input, .modal select {
+      width: 100%; padding: 9px 12px; border: 1px solid rgba(15,23,42,.2);
+      border-radius: 8px; font-size: 14px; margin-bottom: 14px; box-sizing: border-box;
+    }
+    .modal input:focus, .modal select:focus { outline: none; border-color: #0b76d8; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+    .btn-cancel {
+      padding: 9px 18px; background: #f3f4f6; color: #374151;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-save {
+      padding: 9px 18px; background: #0b76d8; color: #fff;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-save:hover { background: #0960b0; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="ref-wrap">
+
+  <a href="{{ path('admin_dashboard') }}" style="display:inline-flex;align-items:center;gap:6px;color:#6b7280;font-size:14px;text-decoration:none;margin-bottom:18px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Volver al panel
+  </a>
+
+  <div class="ref-title">Referencias</div>
+  <div class="ref-sub">Consulta y elimina referencias de puertas, laterales y tejados.</div>
+
+  {% for msg in app.flashes('success') %}
+    <div class="flash-success">{{ msg }}</div>
+  {% endfor %}
+  {% for msg in app.flashes('error') %}
+    <div class="flash-error">{{ msg }}</div>
+  {% endfor %}
+
+  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna'] ? app.request.query.get('tab') : 'door' %}
+
+  <div class="tabs">
+    <button class="tab-btn {{ activeTab == 'door' ? 'active' : '' }}" onclick="switchTab('door', this)">
+      Puertas <span class="count-badge">{{ doors|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'side' ? 'active' : '' }}" onclick="switchTab('side', this)">
+      Laterales <span class="count-badge">{{ sides|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'roof' ? 'active' : '' }}" onclick="switchTab('roof', this)">
+      Tejados <span class="count-badge">{{ roofs|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'columna' ? 'active' : '' }}" onclick="switchTab('columna', this)">
+      Columnas <span class="count-badge">{{ columnas|length }}</span>
+    </button>
+  </div>
+
+  {# ── TAB DOOR ── #}
+  <div class="tab-panel {{ activeTab == 'door' ? 'active' : '' }}" id="tab-door">
+    <div class="ref-card">
+      {# Formulario bulk — solo checkboxes y botón, sin formularios anidados #}
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-door"
+            onsubmit="return confirmBulk('door')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="door">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-door" onchange="toggleAll('door', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-door"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('door')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-door">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if doors is not empty %}
+          <div class="filter-bar">
+            <input type="text"   placeholder="Referencia"  oninput="filterTable('door')" data-col="1" id="f-door-ref">
+            <input type="text"   placeholder="Serie"       oninput="filterTable('door')" data-col="2" id="f-door-serie">
+            <input type="text"   placeholder="Lugar"       oninput="filterTable('door')" data-col="3" id="f-door-place">
+            <input type="text"   placeholder="Talla"       oninput="filterTable('door')" data-col="4" id="f-door-size">
+            <select onchange="filterTable('door')" id="f-door-meth">
+              <option value="">Metacrilato: todos</option>
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+            </select>
+            <span class="filter-count" id="fc-door"></span>
+          </div>
+        {% endif %}
+        {% if doors is empty %}
+          <div class="empty-msg">No hay puertas registradas.</div>
+        {% else %}
+          <table class="ref-table" id="table-door">
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th></th></tr></thead>
+            <tbody>
+              {% for door in doors %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ door.id }}" class="row-check check-door" onchange="updateCount('door')"></td>
+                  <td><strong>{{ door.reference }}</strong></td>
+                  <td>{{ door.serie }}</td>
+                  <td>{{ door.place }}</td>
+                  <td>{{ door.size }}</td>
+                  <td>{% if door.methacrylate %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>
+                    {# El botón apunta al formulario individual por id (fuera del bulk form) #}
+                    <button type="submit" form="del-door-{{ door.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB SIDE ── #}
+  <div class="tab-panel {{ activeTab == 'side' ? 'active' : '' }}" id="tab-side">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-side"
+            onsubmit="return confirmBulk('side')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="side">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-side" onchange="toggleAll('side', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-side"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('side')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-side">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if sides is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('side')" id="f-side-ref">
+            <input type="text" placeholder="Serie"      oninput="filterTable('side')" id="f-side-serie">
+            <input type="text" placeholder="Lugar"      oninput="filterTable('side')" id="f-side-place">
+            <span class="filter-count" id="fc-side"></span>
+          </div>
+        {% endif %}
+        {% if sides is empty %}
+          <div class="empty-msg">No hay laterales registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-side">
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th></th></tr></thead>
+            <tbody>
+              {% for side in sides %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ side.id }}" class="row-check check-side" onchange="updateCount('side')"></td>
+                  <td><strong>{{ side.reference }}</strong></td>
+                  <td>{{ side.serie }}</td>
+                  <td>{{ side.place }}</td>
+                  <td>
+                    <button type="submit" form="del-side-{{ side.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB ROOF ── #}
+  <div class="tab-panel {{ activeTab == 'roof' ? 'active' : '' }}" id="tab-roof">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-roof"
+            onsubmit="return confirmBulk('roof')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="roof">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-roof" onchange="toggleAll('roof', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-roof"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('roof')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-roof">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if roofs is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('roof')" id="f-roof-ref">
+            <input type="text" placeholder="Serie"      oninput="filterTable('roof')" id="f-roof-serie">
+            <input type="text" placeholder="Lugar"      oninput="filterTable('roof')" id="f-roof-place">
+            <input type="text" placeholder="Columnas"   oninput="filterTable('roof')" id="f-roof-cols">
+            <span class="filter-count" id="fc-roof"></span>
+          </div>
+        {% endif %}
+        {% if roofs is empty %}
+          <div class="empty-msg">No hay tejados registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-roof">
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Columnas</th><th></th></tr></thead>
+            <tbody>
+              {% for roof in roofs %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ roof.id }}" class="row-check check-roof" onchange="updateCount('roof')"></td>
+                  <td><strong>{{ roof.reference }}</strong></td>
+                  <td>{{ roof.serie }}</td>
+                  <td>{{ roof.place }}</td>
+                  <td>{{ roof.columns }}</td>
+                  <td>
+                    <button type="submit" form="del-roof-{{ roof.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB COLUMNA ── #}
+  <div class="tab-panel {{ activeTab == 'columna' ? 'active' : '' }}" id="tab-columna">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-columna"
+            onsubmit="return confirmBulk('columna')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="columna">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-columna" onchange="toggleAll('columna', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-columna"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('columna')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-columna">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if columnas is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('columna')" id="f-columna-ref">
+            <input type="text" placeholder="Serie"      oninput="filterTable('columna')" id="f-columna-serie">
+            <input type="text" placeholder="Lugar"      oninput="filterTable('columna')" id="f-columna-place">
+            <span class="filter-count" id="fc-columna"></span>
+          </div>
+        {% endif %}
+        {% if columnas is empty %}
+          <div class="empty-msg">No hay columnas registradas.</div>
+        {% else %}
+          <table class="ref-table" id="table-columna">
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th></th></tr></thead>
+            <tbody>
+              {% for columna in columnas %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ columna.id }}" class="row-check check-columna" onchange="updateCount('columna')"></td>
+                  <td><strong>{{ columna.reference }}</strong></td>
+                  <td>{{ columna.serie }}</td>
+                  <td>{{ columna.place }}</td>
+                  <td>
+                    <button type="submit" form="del-columna-{{ columna.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── Formularios individuales de borrado (fuera de los bulk forms) ── #}
+  {% for door in doors %}
+    <form id="del-door-{{ door.id }}" method="post" action="{{ path('admin_references_door_delete', {id: door.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ door.id) }}">
+    </form>
+  {% endfor %}
+  {% for side in sides %}
+    <form id="del-side-{{ side.id }}" method="post" action="{{ path('admin_references_side_delete', {id: side.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ side.id) }}">
+    </form>
+  {% endfor %}
+  {% for roof in roofs %}
+    <form id="del-roof-{{ roof.id }}" method="post" action="{{ path('admin_references_roof_delete', {id: roof.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ roof.id) }}">
+    </form>
+  {% endfor %}
+  {% for columna in columnas %}
+    <form id="del-columna-{{ columna.id }}" method="post" action="{{ path('admin_references_columna_delete', {id: columna.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ columna.id) }}">
+    </form>
+  {% endfor %}
+
+</div>
+
+{# ── Modal: Puerta ── #}
+<div class="modal-overlay" id="modal-door">
+  <div class="modal">
+    <h3>Nueva puerta</h3>
+    <form method="post" action="{{ path('admin_references_door_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_door') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required autofocus>
+      <label>Serie</label>
+      <input type="text" name="serie" required>
+      <label>Lugar</label>
+      <input type="text" name="place" required placeholder="interior / exterior">
+      <label>Talla</label>
+      <input type="text" name="size" required>
+      <label>Metacrilato</label>
+      <select name="methacrylate">
+        <option value="0">No</option>
+        <option value="1">Sí</option>
+      </select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('door')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Lateral ── #}
+<div class="modal-overlay" id="modal-side">
+  <div class="modal">
+    <h3>Nuevo lateral</h3>
+    <form method="post" action="{{ path('admin_references_side_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_side') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Serie</label>
+      <input type="text" name="serie" required>
+      <label>Lugar</label>
+      <input type="text" name="place" required placeholder="interior / exterior">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('side')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Tejado ── #}
+<div class="modal-overlay" id="modal-roof">
+  <div class="modal">
+    <h3>Nuevo tejado</h3>
+    <form method="post" action="{{ path('admin_references_roof_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_roof') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Serie</label>
+      <input type="text" name="serie" required>
+      <label>Lugar</label>
+      <input type="text" name="place" required placeholder="interior / exterior">
+      <label>Columnas</label>
+      <input type="number" name="columns" required min="1">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('roof')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Columna ── #}
+<div class="modal-overlay" id="modal-columna">
+  <div class="modal">
+    <h3>Nueva columna</h3>
+    <form method="post" action="{{ path('admin_references_columna_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_columna') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Serie</label>
+      <input type="text" name="serie" required>
+      <label>Lugar</label>
+      <input type="text" name="place" required placeholder="interior / exterior">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('columna')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function updateCount(type) {
+    const checked = document.querySelectorAll('.check-' + type + ':checked').length;
+    const total   = document.querySelectorAll('.check-' + type).length;
+    document.getElementById('count-' + type).textContent = checked > 0 ? checked + ' seleccionado(s)' : '';
+    document.getElementById('bulkBtn-' + type).classList.toggle('visible', checked > 0);
+    const master = document.getElementById('checkAll-' + type);
+    master.indeterminate = checked > 0 && checked < total;
+    master.checked = total > 0 && checked === total;
+  }
+
+  function toggleAll(type, master) {
+    document.querySelectorAll('.check-' + type).forEach(cb => cb.checked = master.checked);
+    updateCount(type);
+  }
+
+  function confirmBulk(type) {
+    const checked = document.querySelectorAll('.check-' + type + ':checked').length;
+    if (checked === 0) return false;
+    return confirm('¿Eliminar ' + checked + ' referencia(s) seleccionada(s)?');
+  }
+
+  const filterConfig = {
+    door:    [['f-door-ref',1],['f-door-serie',2],['f-door-place',3],['f-door-size',4],['f-door-meth',5]],
+    side:    [['f-side-ref',1],['f-side-serie',2],['f-side-place',3]],
+    roof:    [['f-roof-ref',1],['f-roof-serie',2],['f-roof-place',3],['f-roof-cols',4]],
+    columna: [['f-columna-ref',1],['f-columna-serie',2],['f-columna-place',3]],
+  };
+
+  function filterTable(type) {
+    const table   = document.getElementById('table-' + type);
+    const filters = filterConfig[type];
+    if (!table) return;
+
+    const rows    = table.querySelectorAll('tbody tr');
+    let   visible = 0;
+
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      const show  = filters.every(([id, colIdx]) => {
+        const val = document.getElementById(id).value.trim().toLowerCase();
+        if (!val) return true;
+        const cell = cells[colIdx];
+        return cell && cell.textContent.trim().toLowerCase().includes(val);
+      });
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    const fc = document.getElementById('fc-' + type);
+    if (fc) fc.textContent = visible + ' / ' + rows.length;
+  }
+
+  function openModal(type) {
+    document.getElementById('modal-' + type).classList.add('open');
+    const first = document.querySelector('#modal-' + type + ' input[type="text"]');
+    if (first) first.focus();
+  }
+
+  function closeModal(type) {
+    document.getElementById('modal-' + type).classList.remove('open');
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+</script>
+{% endblock %}
