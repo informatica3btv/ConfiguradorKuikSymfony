@@ -4,10 +4,12 @@ namespace App\Controller\Admin;
 
 use App\Entity\Columna;
 use App\Entity\Door;
+use App\Entity\Mailbox;
 use App\Entity\Roof;
 use App\Entity\Side;
 use App\Repository\ColumnaRepository;
 use App\Repository\DoorRepository;
+use App\Repository\MailboxRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,13 +30,15 @@ class ReferencesAdminController extends AbstractController
         DoorRepository $doorRepo,
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
-        ColumnaRepository $columnaRepo
+        ColumnaRepository $columnaRepo,
+        MailboxRepository $mailboxRepo
     ): Response {
         return $this->render('admin/references/index.html.twig', [
             'doors'    => $doorRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'size' => 'ASC']),
             'sides'    => $sideRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
             'roofs'    => $roofRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'columns' => 'ASC']),
             'columnas' => $columnaRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
+            'mailboxes' => $mailboxRepo->findBy([], ['alto' => 'ASC', 'ancho' => 'ASC']),
         ]);
     }
 
@@ -47,7 +51,8 @@ class ReferencesAdminController extends AbstractController
         DoorRepository $doorRepo,
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
-        ColumnaRepository $columnaRepo
+        ColumnaRepository $columnaRepo,
+        MailboxRepository $mailboxRepo
     ): Response {
         if (!$this->isCsrfTokenValid('bulk_delete_refs', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -68,8 +73,9 @@ class ReferencesAdminController extends AbstractController
                 case 'door':    $entity = $doorRepo->find($id); break;
                 case 'side':    $entity = $sideRepo->find($id); break;
                 case 'roof':    $entity = $roofRepo->find($id); break;
-                case 'columna': $entity = $columnaRepo->find($id); break;
-                default:        $entity = null;
+                case 'columna':  $entity = $columnaRepo->find($id); break;
+                case 'mailbox':  $entity = $mailboxRepo->find($id); break;
+                default:         $entity = null;
             }
 
             if ($entity) {
@@ -140,6 +146,57 @@ class ReferencesAdminController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_references_index', ['tab' => 'side']);
+    }
+
+    /**
+     * @Route("/mailbox/{id}/delete", name="mailbox_delete", methods={"POST"})
+     */
+    public function deleteMailbox(int $id, Request $request, MailboxRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Buzón eliminado.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
+    }
+
+    /**
+     * @Route("/mailbox/create", name="mailbox_create", methods={"POST"})
+     */
+    public function createMailbox(Request $request, EntityManagerInterface $em, MailboxRepository $repo): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_mailbox', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference = trim((string) $request->request->get('reference'));
+        $alto      = trim((string) $request->request->get('alto'));
+        $ancho     = trim((string) $request->request->get('ancho'));
+        $fondo     = trim((string) $request->request->get('fondo'));
+
+        if ($reference === '' || $alto === '' || $ancho === '' || $fondo === '') {
+            $this->addFlash('error', 'Todos los campos son obligatorios.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
+        }
+
+        $existing = $repo->findOneMailboxByDimensions($alto, $ancho, $fondo);
+        if ($existing) {
+            $this->addFlash('error', sprintf('Ya existe un buzón con esas dimensiones (ref. %s).', $existing->getReference()));
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
+        }
+
+        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo));
+        $em->flush();
+
+        $this->addFlash('success', 'Buzón añadido correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
     }
 
     /**

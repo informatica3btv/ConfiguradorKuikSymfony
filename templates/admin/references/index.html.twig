@@ -144,7 +144,7 @@
     <div class="flash-error">{{ msg }}</div>
   {% endfor %}
 
-  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna'] ? app.request.query.get('tab') : 'door' %}
+  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox'] ? app.request.query.get('tab') : 'door' %}
 
   <div class="tabs">
     <button class="tab-btn {{ activeTab == 'door' ? 'active' : '' }}" onclick="switchTab('door', this)">
@@ -158,6 +158,9 @@
     </button>
     <button class="tab-btn {{ activeTab == 'columna' ? 'active' : '' }}" onclick="switchTab('columna', this)">
       Columnas <span class="count-badge">{{ columnas|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'mailbox' ? 'active' : '' }}" onclick="switchTab('mailbox', this)">
+      Buzones <span class="count-badge">{{ mailboxes|length }}</span>
     </button>
   </div>
 
@@ -377,6 +380,59 @@
     </div>
   </div>
 
+  {# ── TAB MAILBOX ── #}
+  <div class="tab-panel {{ activeTab == 'mailbox' ? 'active' : '' }}" id="tab-mailbox">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-mailbox"
+            onsubmit="return confirmBulk('mailbox')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="mailbox">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-mailbox" onchange="toggleAll('mailbox', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-mailbox"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('mailbox')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-mailbox">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if mailboxes is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('mailbox')" id="f-mailbox-ref">
+            <input type="text" placeholder="Alto"       oninput="filterTable('mailbox')" id="f-mailbox-alto">
+            <input type="text" placeholder="Ancho"      oninput="filterTable('mailbox')" id="f-mailbox-ancho">
+            <input type="text" placeholder="Fondo"      oninput="filterTable('mailbox')" id="f-mailbox-fondo">
+            <span class="filter-count" id="fc-mailbox"></span>
+          </div>
+        {% endif %}
+        {% if mailboxes is empty %}
+          <div class="empty-msg">No hay buzones registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-mailbox">
+            <thead><tr><th></th><th>Referencia</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th></th></tr></thead>
+            <tbody>
+              {% for mailbox in mailboxes %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ mailbox.id }}" class="row-check check-mailbox" onchange="updateCount('mailbox')"></td>
+                  <td><strong>{{ mailbox.reference }}</strong></td>
+                  <td>{{ mailbox.alto }}</td>
+                  <td>{{ mailbox.ancho }}</td>
+                  <td>{{ mailbox.fondo }}</td>
+                  <td>
+                    <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar este buzón?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
   {# ── Formularios individuales de borrado (fuera de los bulk forms) ── #}
   {% for door in doors %}
     <form id="del-door-{{ door.id }}" method="post" action="{{ path('admin_references_door_delete', {id: door.id}) }}" style="display:none">
@@ -398,8 +454,14 @@
       <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ columna.id) }}">
     </form>
   {% endfor %}
+  {% for mailbox in mailboxes %}
+    <form id="del-mailbox-{{ mailbox.id }}" method="post" action="{{ path('admin_references_mailbox_delete', {id: mailbox.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ mailbox.id) }}">
+    </form>
+  {% endfor %}
 
 </div>
+
 
 {# ── Modal: Puerta ── #}
 <div class="modal-overlay" id="modal-door">
@@ -470,6 +532,28 @@
   </div>
 </div>
 
+{# ── Modal: Buzón ── #}
+<div class="modal-overlay" id="modal-mailbox">
+  <div class="modal">
+    <h3>Nuevo buzón</h3>
+    <form method="post" action="{{ path('admin_references_mailbox_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_mailbox') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Alto</label>
+      <input type="text" name="alto" required>
+      <label>Ancho</label>
+      <input type="text" name="ancho" required>
+      <label>Fondo</label>
+      <input type="text" name="fondo" required>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('mailbox')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {# ── Modal: Columna ── #}
 <div class="modal-overlay" id="modal-columna">
   <div class="modal">
@@ -524,6 +608,7 @@
     side:    [['f-side-ref',1],['f-side-serie',2],['f-side-place',3]],
     roof:    [['f-roof-ref',1],['f-roof-serie',2],['f-roof-place',3],['f-roof-cols',4]],
     columna: [['f-columna-ref',1],['f-columna-serie',2],['f-columna-place',3]],
+    mailbox: [['f-mailbox-ref',1],['f-mailbox-alto',2],['f-mailbox-ancho',3],['f-mailbox-fondo',4]],
   };
 
   function filterTable(type) {

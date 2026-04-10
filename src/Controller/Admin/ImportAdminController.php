@@ -4,10 +4,12 @@ namespace App\Controller\Admin;
 
 use App\Entity\Columna;
 use App\Entity\Door;
+use App\Entity\Mailbox;
 use App\Entity\Roof;
 use App\Entity\Side;
 use App\Repository\ColumnaRepository;
 use App\Repository\DoorRepository;
+use App\Repository\MailboxRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,7 +41,8 @@ class ImportAdminController extends AbstractController
         DoorRepository $doorRepo,
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
-        ColumnaRepository $columnaRepo
+        ColumnaRepository $columnaRepo,
+        MailboxRepository $mailboxRepo
     ): Response {
         if (!$this->isCsrfTokenValid('import_excel', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -67,7 +70,7 @@ class ImportAdminController extends AbstractController
             return $this->redirectToRoute('admin_import_index');
         }
 
-        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0];
+        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0];
         $duplicates = [];
 
         // ── Hoja DOOR ──────────────────────────────────────────────
@@ -193,14 +196,44 @@ class ImportAdminController extends AbstractController
             }
         }
 
+        // ── Hoja MAILBOX ────────────────────────────────────────────
+        // Columnas: reference | alto | ancho | fondo
+        if ($spreadsheet->getSheetByName('mailbox')) {
+            $sheet = $spreadsheet->getSheetByName('mailbox');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
+                [$reference, $alto, $ancho, $fondo] = $cells;
+
+                if (empty($reference) || empty($alto) || empty($ancho) || empty($fondo)) {
+                    continue;
+                }
+
+                $existing = $mailboxRepo->findOneMailboxByDimensions($alto, $ancho, $fondo);
+
+                if ($existing) {
+                    $duplicates[] = sprintf('%s (buzón)', $reference);
+                    continue;
+                }
+
+                $em->persist((new Mailbox())
+                    ->setReference($reference)
+                    ->setAlto($alto)
+                    ->setAncho($ancho)
+                    ->setFondo($fondo));
+
+                $stats['mailbox']++;
+            }
+        }
+
         $em->flush();
 
         $this->addFlash('success', sprintf(
-            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas.',
+            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones.',
             $stats['door'],
             $stats['side'],
             $stats['roof'],
-            $stats['columna']
+            $stats['columna'],
+            $stats['mailbox']
         ));
 
         if (!empty($duplicates)) {
