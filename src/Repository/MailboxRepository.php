@@ -13,8 +13,8 @@ class MailboxRepository extends ServiceEntityRepository
         parent::__construct($registry, Mailbox::class);
     }
 
-    public function findOneMailboxByDimensions(string $alto, string $ancho, string $fondo): ?Mailbox
+    public function findOneMailboxByDimensions(string $alto, string $ancho, string $fondo, ?string $descripcion = null): ?Mailbox
     {
-        return $this->findOneBy(['alto' => $alto, 'ancho' => $ancho, 'fondo' => $fondo]);
+        return $this->findOneBy(['alto' => $alto, 'ancho' => $ancho, 'fondo' => $fondo, 'descripcion' => $descripcion]);
     }
 }

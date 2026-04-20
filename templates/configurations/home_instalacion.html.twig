@@ -75,6 +75,7 @@
 
   {# 👇 lo que eliges aquí #}
   <input type="hidden" name="instalacion" id="instalacion" value="">
+  <input type="hidden" name="agrupacion_combinada" id="agrupacion_combinada" value="">
 
   <div style="margin:16px 0;">
     <h3 style="margin-bottom: 8px; font-size:24px;">Selecciona tipo de instalación</h3>
@@ -85,6 +86,20 @@
           <div class="option-title">{{ opt.name }}</div>
         </button>
       {% endfor %}
+    </div>
+  </div>
+
+  <div id="agrupacion-section" style="margin:24px 0 0;display:none;">
+    <h3 style="margin-bottom: 8px; font-size:24px;">¿Es agrupación combinada?</h3>
+    <p style="color:#6b7280;font-size:14px;margin-bottom:12px;">Indica si esta instalación combina distintos tipos de columnas.</p>
+
+    <div class="option-row" data-group="agrupacion" style="grid-template-columns:repeat(2,1fr);max-width:400px;">
+      <button type="button" class="option-card" data-value="1">
+        <div class="option-title">Sí</div>
+      </button>
+      <button type="button" class="option-card" data-value="0">
+        <div class="option-title">No</div>
+      </button>
     </div>
   </div>
 
@@ -100,15 +115,39 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
     const hidden = document.getElementById('instalacion');
+    const hiddenAgrupacion = document.getElementById('agrupacion_combinada');
     const err = document.getElementById('instalacionError');
+
+    const agrupacionSection = document.getElementById('agrupacion-section');
+    const agrupacionApplies = ['empotrado', 'soporte_suelo'];
 
     document.querySelectorAll('.option-row[data-group="instalacion"] .option-card').forEach(btn => {
         btn.addEventListener('click', () => {
         document.querySelectorAll('.option-row[data-group="instalacion"] .option-card')
             .forEach(b => b.classList.remove('selected'));
-
         btn.classList.add('selected');
         hidden.value = btn.getAttribute('data-value');
+        err.textContent = '';
+
+        // Mostrar/ocultar agrupación combinada
+        if (agrupacionApplies.includes(hidden.value)) {
+            agrupacionSection.style.display = '';
+        } else {
+            agrupacionSection.style.display = 'none';
+            // Limpiar selección previa
+            document.querySelectorAll('.option-row[data-group="agrupacion"] .option-card')
+            .forEach(b => b.classList.remove('selected'));
+            hiddenAgrupacion.value = '';
+        }
+        });
+    });
+
+    document.querySelectorAll('.option-row[data-group="agrupacion"] .option-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+        document.querySelectorAll('.option-row[data-group="agrupacion"] .option-card')
+            .forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        hiddenAgrupacion.value = btn.getAttribute('data-value');
         err.textContent = '';
         });
     });
@@ -117,6 +156,11 @@
         if (!hidden.value) {
         e.preventDefault();
         err.textContent = 'Selecciona un tipo de instalación para continuar.';
+        return;
+        }
+        if (agrupacionApplies.includes(hidden.value) && hiddenAgrupacion.value === '') {
+        e.preventDefault();
+        err.textContent = 'Indica si es agrupación combinada para continuar.';
         }
     });
     });

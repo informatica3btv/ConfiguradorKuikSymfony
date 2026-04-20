@@ -2,13 +2,19 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Bandeja;
 use App\Entity\Columna;
+use App\Entity\Control;
 use App\Entity\Door;
+use App\Entity\Envolvente;
 use App\Entity\Mailbox;
 use App\Entity\Roof;
 use App\Entity\Side;
+use App\Repository\BandejaRepository;
 use App\Repository\ColumnaRepository;
+use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
+use App\Repository\EnvolventeRepository;
 use App\Repository\MailboxRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
@@ -31,14 +37,20 @@ class ReferencesAdminController extends AbstractController
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
         ColumnaRepository $columnaRepo,
-        MailboxRepository $mailboxRepo
+        MailboxRepository $mailboxRepo,
+        EnvolventeRepository $envolventeRepo,
+        ControlRepository $controlRepo,
+        BandejaRepository $bandejaRepo
     ): Response {
         return $this->render('admin/references/index.html.twig', [
-            'doors'    => $doorRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'size' => 'ASC']),
-            'sides'    => $sideRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
-            'roofs'    => $roofRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'columns' => 'ASC']),
-            'columnas' => $columnaRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
-            'mailboxes' => $mailboxRepo->findBy([], ['alto' => 'ASC', 'ancho' => 'ASC']),
+            'doors'       => $doorRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'size' => 'ASC']),
+            'sides'       => $sideRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
+            'roofs'       => $roofRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'columns' => 'ASC']),
+            'columnas'    => $columnaRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC']),
+            'mailboxes'   => $mailboxRepo->findBy([], ['alto' => 'ASC', 'ancho' => 'ASC']),
+            'envolventes' => $envolventeRepo->findBy([], ['tipo' => 'ASC', 'rango' => 'ASC']),
+            'controles'   => $controlRepo->findBy([], ['reference' => 'ASC']),
+            'bandejas'    => $bandejaRepo->findBy([], ['serie' => 'ASC']),
         ]);
     }
 
@@ -52,7 +64,10 @@ class ReferencesAdminController extends AbstractController
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
         ColumnaRepository $columnaRepo,
-        MailboxRepository $mailboxRepo
+        MailboxRepository $mailboxRepo,
+        EnvolventeRepository $envolventeRepo,
+        ControlRepository $controlRepo,
+        BandejaRepository $bandejaRepo
     ): Response {
         if (!$this->isCsrfTokenValid('bulk_delete_refs', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -70,12 +85,15 @@ class ReferencesAdminController extends AbstractController
 
         foreach ($ids as $id) {
             switch ($type) {
-                case 'door':    $entity = $doorRepo->find($id); break;
-                case 'side':    $entity = $sideRepo->find($id); break;
-                case 'roof':    $entity = $roofRepo->find($id); break;
-                case 'columna':  $entity = $columnaRepo->find($id); break;
-                case 'mailbox':  $entity = $mailboxRepo->find($id); break;
-                default:         $entity = null;
+                case 'door':       $entity = $doorRepo->find($id); break;
+                case 'side':       $entity = $sideRepo->find($id); break;
+                case 'roof':       $entity = $roofRepo->find($id); break;
+                case 'columna':    $entity = $columnaRepo->find($id); break;
+                case 'mailbox':    $entity = $mailboxRepo->find($id); break;
+                case 'envolvente': $entity = $envolventeRepo->find($id); break;
+                case 'control':    $entity = $controlRepo->find($id); break;
+                case 'bandeja':    $entity = $bandejaRepo->find($id); break;
+                default:           $entity = null;
             }
 
             if ($entity) {
@@ -176,23 +194,24 @@ class ReferencesAdminController extends AbstractController
             throw $this->createAccessDeniedException('Token CSRF inválido');
         }
 
-        $reference = trim((string) $request->request->get('reference'));
-        $alto      = trim((string) $request->request->get('alto'));
-        $ancho     = trim((string) $request->request->get('ancho'));
-        $fondo     = trim((string) $request->request->get('fondo'));
+        $reference   = trim((string) $request->request->get('reference'));
+        $alto        = trim((string) $request->request->get('alto'));
+        $ancho       = trim((string) $request->request->get('ancho'));
+        $fondo       = trim((string) $request->request->get('fondo'));
+        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
 
         if ($reference === '' || $alto === '' || $ancho === '' || $fondo === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
         }
 
-        $existing = $repo->findOneMailboxByDimensions($alto, $ancho, $fondo);
+        $existing = $repo->findOneMailboxByDimensions($alto, $ancho, $fondo, $descripcion);
         if ($existing) {
             $this->addFlash('error', sprintf('Ya existe un buzón con esas dimensiones (ref. %s).', $existing->getReference()));
             return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
         }
 
-        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo));
+        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion));
         $em->flush();
 
         $this->addFlash('success', 'Buzón añadido correctamente.');
@@ -343,5 +362,143 @@ class ReferencesAdminController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_references_index', ['tab' => 'roof']);
+    }
+
+    /**
+     * @Route("/envolvente/create", name="envolvente_create", methods={"POST"})
+     */
+    public function createEnvolvente(Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_envolvente', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference   = trim((string) $request->request->get('reference'));
+        $tipo        = trim((string) $request->request->get('tipo'));
+        $rango       = trim((string) $request->request->get('rango'));
+        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+
+        if ($reference === '' || $tipo === '' || $rango === '') {
+            $this->addFlash('error', 'Referencia, tipo y rango son obligatorios.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
+        }
+
+        $em->persist((new Envolvente())->setReference($reference)->setTipo($tipo)->setRango($rango)->setDescripcion($descripcion));
+        $em->flush();
+
+        $this->addFlash('success', 'Envolvente añadido correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
+    }
+
+    /**
+     * @Route("/bandeja/create", name="bandeja_create", methods={"POST"})
+     */
+    public function createBandeja(Request $request, EntityManagerInterface $em, BandejaRepository $repo): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_bandeja', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference = trim((string) $request->request->get('reference'));
+        $serie     = trim((string) $request->request->get('serie'));
+
+        if ($reference === '' || $serie === '') {
+            $this->addFlash('error', 'Referencia y serie son obligatorias.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
+        }
+
+        $existing = $repo->findOneBySerie($serie);
+        if ($existing) {
+            $this->addFlash('error', sprintf('Ya existe una bandeja para la serie %s (ref. %s).', $serie, $existing->getReference()));
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
+        }
+
+        $em->persist((new Bandeja())->setReference($reference)->setSerie($serie));
+        $em->flush();
+
+        $this->addFlash('success', 'Bandeja añadida correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
+    }
+
+    /**
+     * @Route("/bandeja/{id}/delete", name="bandeja_delete", methods={"POST"})
+     */
+    public function deleteBandeja(int $id, Request $request, BandejaRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Bandeja eliminada.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
+    }
+
+    /**
+     * @Route("/control/create", name="control_create", methods={"POST"})
+     */
+    public function createControl(Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_control', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference   = trim((string) $request->request->get('reference'));
+        $place       = trim((string) $request->request->get('place'));
+        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+
+        if ($reference === '' || $place === '') {
+            $this->addFlash('error', 'La referencia y el lugar son obligatorios.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
+        }
+
+        $em->persist((new Control())->setReference($reference)->setPlace($place)->setDescripcion($descripcion));
+        $em->flush();
+
+        $this->addFlash('success', 'Control añadido correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
+    }
+
+    /**
+     * @Route("/control/{id}/delete", name="control_delete", methods={"POST"})
+     */
+    public function deleteControl(int $id, Request $request, ControlRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Control eliminado.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
+    }
+
+    /**
+     * @Route("/envolvente/{id}/delete", name="envolvente_delete", methods={"POST"})
+     */
+    public function deleteEnvolvente(int $id, Request $request, EnvolventeRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Envolvente eliminado.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
     }
 }

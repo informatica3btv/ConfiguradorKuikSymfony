@@ -144,7 +144,7 @@
     <div class="flash-error">{{ msg }}</div>
   {% endfor %}
 
-  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox'] ? app.request.query.get('tab') : 'door' %}
+  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox','envolvente','control','bandeja'] ? app.request.query.get('tab') : 'door' %}
 
   <div class="tabs">
     <button class="tab-btn {{ activeTab == 'door' ? 'active' : '' }}" onclick="switchTab('door', this)">
@@ -161,6 +161,15 @@
     </button>
     <button class="tab-btn {{ activeTab == 'mailbox' ? 'active' : '' }}" onclick="switchTab('mailbox', this)">
       Buzones <span class="count-badge">{{ mailboxes|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'envolvente' ? 'active' : '' }}" onclick="switchTab('envolvente', this)">
+      Envolventes <span class="count-badge">{{ envolventes|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'control' ? 'active' : '' }}" onclick="switchTab('control', this)">
+      Controles <span class="count-badge">{{ controles|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'bandeja' ? 'active' : '' }}" onclick="switchTab('bandeja', this)">
+      Bandejas <span class="count-badge">{{ bandejas|length }}</span>
     </button>
   </div>
 
@@ -403,7 +412,8 @@
             <input type="text" placeholder="Referencia" oninput="filterTable('mailbox')" id="f-mailbox-ref">
             <input type="text" placeholder="Alto"       oninput="filterTable('mailbox')" id="f-mailbox-alto">
             <input type="text" placeholder="Ancho"      oninput="filterTable('mailbox')" id="f-mailbox-ancho">
-            <input type="text" placeholder="Fondo"      oninput="filterTable('mailbox')" id="f-mailbox-fondo">
+            <input type="text" placeholder="Fondo"       oninput="filterTable('mailbox')" id="f-mailbox-fondo">
+            <input type="text" placeholder="Descripción" oninput="filterTable('mailbox')" id="f-mailbox-desc">
             <span class="filter-count" id="fc-mailbox"></span>
           </div>
         {% endif %}
@@ -411,18 +421,172 @@
           <div class="empty-msg">No hay buzones registrados.</div>
         {% else %}
           <table class="ref-table" id="table-mailbox">
-            <thead><tr><th></th><th>Referencia</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th></th></tr></thead>
             <tbody>
               {% for mailbox in mailboxes %}
                 <tr>
                   <td><input type="checkbox" name="ids[]" value="{{ mailbox.id }}" class="row-check check-mailbox" onchange="updateCount('mailbox')"></td>
                   <td><strong>{{ mailbox.reference }}</strong></td>
+                  <td>{{ mailbox.descripcion }}</td>
                   <td>{{ mailbox.alto }}</td>
                   <td>{{ mailbox.ancho }}</td>
                   <td>{{ mailbox.fondo }}</td>
                   <td>
                     <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este buzón?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB ENVOLVENTE ── #}
+  <div class="tab-panel {{ activeTab == 'envolvente' ? 'active' : '' }}" id="tab-envolvente">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-envolvente"
+            onsubmit="return confirmBulk('envolvente')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="envolvente">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-envolvente" onchange="toggleAll('envolvente', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-envolvente"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('envolvente')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-envolvente">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if envolventes is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia"  oninput="filterTable('envolvente')" id="f-envolvente-ref">
+            <input type="text" placeholder="Tipo"        oninput="filterTable('envolvente')" id="f-envolvente-tipo">
+            <input type="text" placeholder="Rango"       oninput="filterTable('envolvente')" id="f-envolvente-rango">
+            <input type="text" placeholder="Descripción" oninput="filterTable('envolvente')" id="f-envolvente-desc">
+            <span class="filter-count" id="fc-envolvente"></span>
+          </div>
+        {% endif %}
+        {% if envolventes is empty %}
+          <div class="empty-msg">No hay envolventes registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-envolvente">
+            <thead><tr><th></th><th>Referencia</th><th>Tipo</th><th>Rango</th><th>Descripción</th><th></th></tr></thead>
+            <tbody>
+              {% for env in envolventes %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ env.id }}" class="row-check check-envolvente" onchange="updateCount('envolvente')"></td>
+                  <td><strong>{{ env.reference }}</strong></td>
+                  <td>{{ env.tipo }}</td>
+                  <td>{{ env.rango }}</td>
+                  <td>{{ env.descripcion }}</td>
+                  <td>
+                    <button type="submit" form="del-envolvente-{{ env.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar este envolvente?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB CONTROL ── #}
+  <div class="tab-panel {{ activeTab == 'control' ? 'active' : '' }}" id="tab-control">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-control"
+            onsubmit="return confirmBulk('control')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="control">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-control" onchange="toggleAll('control', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-control"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('control')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-control">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if controles is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia"  oninput="filterTable('control')" id="f-control-ref">
+            <input type="text" placeholder="Lugar"       oninput="filterTable('control')" id="f-control-place">
+            <input type="text" placeholder="Descripción" oninput="filterTable('control')" id="f-control-desc">
+            <span class="filter-count" id="fc-control"></span>
+          </div>
+        {% endif %}
+        {% if controles is empty %}
+          <div class="empty-msg">No hay controles registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-control">
+            <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th></th></tr></thead>
+            <tbody>
+              {% for ctrl in controles %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ ctrl.id }}" class="row-check check-control" onchange="updateCount('control')"></td>
+                  <td><strong>{{ ctrl.reference }}</strong></td>
+                  <td>{{ ctrl.place }}</td>
+                  <td>{{ ctrl.descripcion }}</td>
+                  <td>
+                    <button type="submit" form="del-control-{{ ctrl.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar este control?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB BANDEJA ── #}
+  <div class="tab-panel {{ activeTab == 'bandeja' ? 'active' : '' }}" id="tab-bandeja">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-bandeja"
+            onsubmit="return confirmBulk('bandeja')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="bandeja">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-bandeja" onchange="toggleAll('bandeja', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-bandeja"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('bandeja')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-bandeja">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if bandejas is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('bandeja')" id="f-bandeja-ref">
+            <input type="text" placeholder="Serie"      oninput="filterTable('bandeja')" id="f-bandeja-serie">
+            <span class="filter-count" id="fc-bandeja"></span>
+          </div>
+        {% endif %}
+        {% if bandejas is empty %}
+          <div class="empty-msg">No hay bandejas registradas.</div>
+        {% else %}
+          <table class="ref-table" id="table-bandeja">
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th></th></tr></thead>
+            <tbody>
+              {% for bandeja in bandejas %}
+                <tr>
+                  <td><input type="checkbox" name="ids[]" value="{{ bandeja.id }}" class="row-check check-bandeja" onchange="updateCount('bandeja')"></td>
+                  <td><strong>{{ bandeja.reference }}</strong></td>
+                  <td>{{ bandeja.serie }}</td>
+                  <td>
+                    <button type="submit" form="del-bandeja-{{ bandeja.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta bandeja?')">Eliminar</button>
                   </td>
                 </tr>
               {% endfor %}
@@ -457,6 +621,21 @@
   {% for mailbox in mailboxes %}
     <form id="del-mailbox-{{ mailbox.id }}" method="post" action="{{ path('admin_references_mailbox_delete', {id: mailbox.id}) }}" style="display:none">
       <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ mailbox.id) }}">
+    </form>
+  {% endfor %}
+  {% for env in envolventes %}
+    <form id="del-envolvente-{{ env.id }}" method="post" action="{{ path('admin_references_envolvente_delete', {id: env.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ env.id) }}">
+    </form>
+  {% endfor %}
+  {% for ctrl in controles %}
+    <form id="del-control-{{ ctrl.id }}" method="post" action="{{ path('admin_references_control_delete', {id: ctrl.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ ctrl.id) }}">
+    </form>
+  {% endfor %}
+  {% for bandeja in bandejas %}
+    <form id="del-bandeja-{{ bandeja.id }}" method="post" action="{{ path('admin_references_bandeja_delete', {id: bandeja.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ bandeja.id) }}">
     </form>
   {% endfor %}
 
@@ -532,6 +711,36 @@
   </div>
 </div>
 
+{# ── Modal: Envolvente ── #}
+<div class="modal-overlay" id="modal-envolvente">
+  <div class="modal">
+    <h3>Nuevo envolvente</h3>
+    <form method="post" action="{{ path('admin_references_envolvente_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_envolvente') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Tipo</label>
+      <select name="tipo" required style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="">-- Selecciona --</option>
+        <option value="buzon">Buzón</option>
+        <option value="taquilla">Taquilla</option>
+      </select>
+      <label>Rango</label>
+      <select name="rango" required style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="">-- Selecciona --</option>
+        <option value="pequeño">Pequeño</option>
+        <option value="grande">Grande</option>
+      </select>
+      <label>Descripción</label>
+      <input type="text" name="descripcion">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('envolvente')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {# ── Modal: Buzón ── #}
 <div class="modal-overlay" id="modal-mailbox">
   <div class="modal">
@@ -546,8 +755,52 @@
       <input type="text" name="ancho" required>
       <label>Fondo</label>
       <input type="text" name="fondo" required>
+      <label>Descripción</label>
+      <input type="text" name="descripcion">
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('mailbox')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Bandeja ── #}
+<div class="modal-overlay" id="modal-bandeja">
+  <div class="modal">
+    <h3>Nueva bandeja</h3>
+    <form method="post" action="{{ path('admin_references_bandeja_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_bandeja') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required autofocus>
+      <label>Serie</label>
+      <input type="text" name="serie" required placeholder="300 / 400 / 500">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('bandeja')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Control ── #}
+<div class="modal-overlay" id="modal-control">
+  <div class="modal">
+    <h3>Nuevo control</h3>
+    <form method="post" action="{{ path('admin_references_control_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_control') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Lugar</label>
+      <select name="place" required style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="">-- Selecciona --</option>
+        <option value="interior">Interior</option>
+        <option value="exterior">Exterior</option>
+      </select>
+      <label>Descripción</label>
+      <input type="text" name="descripcion">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('control')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
       </div>
     </form>
@@ -608,7 +861,10 @@
     side:    [['f-side-ref',1],['f-side-serie',2],['f-side-place',3]],
     roof:    [['f-roof-ref',1],['f-roof-serie',2],['f-roof-place',3],['f-roof-cols',4]],
     columna: [['f-columna-ref',1],['f-columna-serie',2],['f-columna-place',3]],
-    mailbox: [['f-mailbox-ref',1],['f-mailbox-alto',2],['f-mailbox-ancho',3],['f-mailbox-fondo',4]],
+    mailbox:    [['f-mailbox-ref',1],['f-mailbox-alto',2],['f-mailbox-ancho',3],['f-mailbox-fondo',4],['f-mailbox-desc',5]],
+    envolvente: [['f-envolvente-ref',1],['f-envolvente-tipo',2],['f-envolvente-rango',3],['f-envolvente-desc',4]],
+    control:    [['f-control-ref',1],['f-control-place',2],['f-control-desc',3]],
+    bandeja:    [['f-bandeja-ref',1],['f-bandeja-serie',2]],
   };
 
   function filterTable(type) {

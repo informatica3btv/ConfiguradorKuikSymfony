@@ -6,7 +6,7 @@
   {{ parent() }}
   <style>
     :root{
-      --hscale: 4.16px;
+      --hscale: {{ kuik.scale }}px;
     }
 
     .page-layout{
@@ -140,14 +140,14 @@
     }
 
     .col-body{
-      height:calc(180 * var(--hscale));
+      height:calc({{ kuik.default_single_cap }} * var(--hscale));
       background:#eaeaea;
       display:flex;
       flex-direction:column;
     }
 
     .col-half{
-      height:calc(90 * var(--hscale));
+      height:calc({{ kuik.default_top_cap }} * var(--hscale));
       display:flex;
       flex-direction:column;
       overflow:hidden;
@@ -270,7 +270,7 @@
 {% block content %}
   {% set doorColor = payload.colorDoor ?? '#3a9efc' %}
   {% set bodyColor = payload.colorBody ?? '#000' %}
-  {% set scale = 4.16 %}
+  {% set scale = kuik.scale %}
 
   <div class="page-layout">
 
@@ -345,7 +345,7 @@
                                  data-half="top"
                                {% endif %}>
                             {% if type == 'screen' %}
-                              <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                              <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                             {% else %}
                               <div class="num">{{ doorIndex }}</div>
                               <div class="badges" data-badges></div>
@@ -373,7 +373,7 @@
                                  data-half="bottom"
                                {% endif %}>
                             {% if type == 'screen' %}
-                              <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                              <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                             {% else %}
                               <div class="num">{{ doorIndex }}</div>
                               <div class="badges" data-badges></div>

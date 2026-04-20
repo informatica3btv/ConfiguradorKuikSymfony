@@ -391,7 +391,7 @@
     /* brazos posicionados respecto al WRAPPER */
     .mini-arm{
       position:absolute;
-      top:54px;
+      top: var(--armTop, 14px);
       width: var(--armW);
       height:140px;
       object-fit:contain;
@@ -699,6 +699,8 @@
 
       {% set type = p.type ?? '—' %}
       {% set instalacion = p.instalacion ?? '' %}
+      {% set agrupacionCombinada = p.agrupacion_combinada ?? false %}
+      {% set mailboxGroup = p.mailboxGroup ?? null %}
 
       {% set selectedType  = p.bracketType ?? '' %}
       {% set selectedColor = p.bracketColor ?? '' %}
@@ -829,14 +831,26 @@
               {% set isHome = (type == 'home') %}
               {% set isZocalo = (isHome and instalacion == 'zocalo') %}
               {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
-              {% set topCap = isZocalo ? (p.topCap|default(90)) : 90 %}
-              {% set bottomCap = isZocalo ? 70 : 90 %}
-              {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
+              {% set topCap = isZocalo ? (p.topCap|default(kuik.default_top_cap)) : kuik.default_top_cap %}
+              {% set bottomCap = isZocalo ? kuik.bottom_cap_zocalo : kuik.default_bottom_cap %}
+              {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : kuik.default_single_cap %}
 
               {% set maxCols = 40 %}
               {% set shown = 0 %}
               {% set totalCols = columnsAll|length %}
               {% set doorIndex = 0 %}
+
+              {# Variables del bloque de buzones — se renderizan dentro del último grupo #}
+              {% set mbSide  = mailboxGroup.side ?? 'right' %}
+              {% set mbRows  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.rows ?? 0) : 0 %}
+              {% set mbCols  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cols ?? 0) : 0 %}
+              {% set mbCells = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cells ?? []) : [] %}
+              {# Dimensiones del bloque de buzones para la escala mini #}
+              {% set mbLockerPx = singleCap * kuik.scale_list %}
+              {% set mbCellW    = mbRows > 0 ? ((mbLockerPx / mbRows) * 2.2)|round : 44 %}
+              {# Ancho total del bloque (para offset de patas): cols * cellW + 8px bordes #}
+              {% set mbBlockPx  = (mbRows > 0 and mbCols > 0) ? (mbCols * mbCellW + 8) : 0 %}
+              {% set lastGroupIdx = groups|length %}
 
               <div class="mini-groups" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
@@ -847,12 +861,16 @@
                     {% set colsToShow = groupCols|slice(0, left) %}
 
                     {% if colsToShow is not empty %}
+                      {% set isLastGroup = loop.index == lastGroupIdx %}
+                      {% set firstCol = colsToShow|first %}
+                      {% set firstColBlocks = (firstCol.single.blocks is defined and firstCol.single.blocks is not empty) ? firstCol.single.blocks : ((firstCol.top.blocks ?? [])|merge(firstCol.bottom.blocks ?? [])) %}
+                      {% set numRows = firstColBlocks|length %}
                       <div class="mini-group" {% if instalacion == 'soporte_suelo' %} style="padding-bottom:70px;" {% endif %}>
 
                         <div class="mini-group-label">Grupo {{ loop.index }}</div>
 
                         <div class="mini-support-center">
-                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};">
+                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ singleCap > 50 ? '40px' : '14px' }};">
 
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                               <img class="mini-arm left"  src="{{ armSrc }}" alt="Brazo izq">
@@ -864,11 +882,28 @@
                             {% endif %}
 
                             <div class="cols">
+
+                              {# Buzones IZQUIERDA — solo en último grupo, primer item del flex #}
+                              {% if isLastGroup and mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
+                                <div style="display:flex;flex-direction:row;flex-shrink:0;height:calc({{ singleCap }}px * var(--hscale) + 12px);border:4px solid var(--col-border,#000);border-radius:6px;overflow:hidden;">
+                                  {% for c in 0..(mbCols - 1) %}
+                                    <div style="display:flex;flex-direction:column;flex:1;width:{{ mbCellW }}px;">
+                                      {% for r in 0..(mbRows - 1) %}
+                                        {% set cellIdx = r * mbCols + c %}
+                                        {% set filled = mbCells[cellIdx] ?? true %}
+                                        <div style="flex:1;width:{{ mbCellW }}px;overflow:hidden;border:1px solid {{ filled ? '#1187e6' : '#cbd5e1' }};background:{{ filled ? '#fff' : '#f0f4f8' }};">
+                                          {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
+                                        </div>
+                                      {% endfor %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+
                               {% for col in colsToShow %}
                                 {% set isEmpotrado = (col.single is defined and col.single is not empty) %}
 
                                 <div class="col-shell">
-                                  {% if isHome %}<div class="col-topbar">Col {{ shown + loop.index }}</div>{% endif %}
 
                                   <div class="col-card">
                                     <div class="col-body"
@@ -969,7 +1004,25 @@
                                 </div>
 
                               {% endfor %}
-                            </div>
+
+                              {# Buzones DERECHA — solo en último grupo, último item del flex #}
+                              {% if isLastGroup and mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
+                                <div style="display:flex;flex-direction:row;flex-shrink:0;height:calc({{ singleCap }}px * var(--hscale) + 12px);border:4px solid var(--col-border,#000);border-radius:6px;overflow:hidden;">
+                                  {% for c in 0..(mbCols - 1) %}
+                                    <div style="display:flex;flex-direction:column;flex:1;width:{{ mbCellW }}px;">
+                                      {% for r in 0..(mbRows - 1) %}
+                                        {% set cellIdx = r * mbCols + c %}
+                                        {% set filled = mbCells[cellIdx] ?? true %}
+                                        <div style="flex:1;width:{{ mbCellW }}px;overflow:hidden;border:1px solid {{ filled ? '#1187e6' : '#cbd5e1' }};background:{{ filled ? '#fff' : '#f0f4f8' }};">
+                                          {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
+                                        </div>
+                                      {% endfor %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+
+                            </div>{# /cols #}
 
                             {% if isSoporteSuelo and selectedType == 'patas' %}
                               {% set n = colsToShow|length %}
@@ -989,7 +1042,7 @@
                                 (selectedColor == 'plata' ? asset('assets/pie_plata.jpg') : asset('assets/pie_negro.jpg'))
                               %}
 
-                              <div class="mini-legs-under" style="--colsN: {{ n }};">
+                              <div class="mini-legs-under" style="--colsN: {{ n }};{% if isLastGroup and mbBlockPx > 0 and mbSide == 'left' %}padding-left:{{ mbBlockPx }}px;{% elseif isLastGroup and mbBlockPx > 0 and mbSide == 'right' %}padding-right:{{ mbBlockPx }}px;{% endif %}">
                                 {% for pos in legPositions %}
                                   <img class="mini-leg-img"
                                       style="grid-column: {{ pos }};"
@@ -999,10 +1052,10 @@
                               </div>
                             {% endif %}
 
-                          </div>
-                        </div>
+                          </div>{# /mini-support-wrap #}
+                        </div>{# /mini-support-center #}
 
-                      </div>
+                      </div>{# /mini-group #}
 
                       {% set shown = shown + (colsToShow|length) %}
                     {% endif %}
@@ -1015,7 +1068,8 @@
                   </div>
                 {% endif %}
 
-              </div>
+              </div>{# /mini-groups #}
+
             {% endif %}
           </div>
 

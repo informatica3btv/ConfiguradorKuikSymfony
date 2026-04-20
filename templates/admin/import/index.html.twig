@@ -78,7 +78,7 @@
   </a>
 
   <div class="import-title">Importar referencias</div>
-  <div class="import-sub">Sube un Excel con las hojas <strong>door</strong>, <strong>side</strong> y/o <strong>roof</strong>. Las filas existentes se actualizarán, las nuevas se crearán.</div>
+  <div class="import-sub">Sube un Excel con las hojas <strong>door</strong>, <strong>side</strong>, <strong>roof</strong>, <strong>columna</strong>, <strong>mailbox</strong>, <strong>control</strong>, <strong>bandeja</strong> y/o <strong>envolvente</strong>. Las filas existentes se actualizarán, las nuevas se crearán.</div>
 
   {% for msg in app.flashes('success') %}
     <div class="flash-success">{{ msg }}</div>
@@ -122,21 +122,21 @@
       <table class="sheet-table">
         <tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr>
         <tr><td>reference</td><td>serie</td><td>place</td><td>size</td><td>methacrylate (0/1)</td></tr>
-        <tr><td>05828</td><td>300</td><td>derecha</td><td>300</td><td>0</td></tr>
+        <tr><td>05828</td><td>300</td><td>interior</td><td>300</td><td>0</td></tr>
       </table>
 
       <div class="sheet-label">Hoja: side</div>
       <table class="sheet-table">
         <tr><th>A</th><th>B</th><th>C</th></tr>
         <tr><td>reference</td><td>serie</td><td>place</td></tr>
-        <tr><td>05900</td><td>300</td><td>derecha</td></tr>
+        <tr><td>05900</td><td>300</td><td>interior</td></tr>
       </table>
 
       <div class="sheet-label">Hoja: roof</div>
       <table class="sheet-table">
         <tr><th>A</th><th>B</th><th>C</th><th>D</th></tr>
         <tr><td>reference</td><td>serie</td><td>place</td><td>columns</td></tr>
-        <tr><td>06100</td><td>300</td><td>derecha</td><td>2</td></tr>
+        <tr><td>06100</td><td>300</td><td>exterior</td><td>2</td></tr>
       </table>
 
       <div class="sheet-label">Hoja: columna</div>
@@ -152,6 +152,29 @@
         <tr><td>reference</td><td>alto</td><td>ancho</td><td>fondo</td></tr>
         <tr><td>06500</td><td>400</td><td>300</td><td>300</td></tr>
       </table>
+
+      <div class="sheet-label">Hoja: control</div>
+      <table class="sheet-table">
+        <tr><th>A</th><th>B</th><th>C</th></tr>
+        <tr><td>reference</td><td>place</td><td>descripcion</td></tr>
+        <tr><td>20100</td><td>interior</td><td>Kuik Collet sin pago</td></tr>
+      </table>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Valores válidos — <strong>place</strong>: <code>interior</code>, <code>exterior</code></p>
+
+      <div class="sheet-label">Hoja: bandeja</div>
+      <table class="sheet-table">
+        <tr><th>A</th><th>B</th></tr>
+        <tr><td>reference</td><td>serie</td></tr>
+        <tr><td>11000</td><td>300</td></tr>
+      </table>
+
+      <div class="sheet-label">Hoja: envolvente</div>
+      <table class="sheet-table">
+        <tr><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+        <tr><td>reference</td><td>tipo</td><td>rango</td><td>descripcion</td></tr>
+        <tr><td>10364</td><td>buzon</td><td>grande</td><td>Acero Inoxidable Brillo</td></tr>
+      </table>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Valores válidos — <strong>tipo</strong>: <code>buzon</code>, <code>taquilla</code> · <strong>rango</strong>: <code>pequeño</code>, <code>grande</code></p>
 
       <p style="font-size:13px;color:#6b7280;margin-top:8px;">La primera fila de cada hoja es la cabecera y se ignora. Solo se procesan las hojas presentes en el archivo.</p>
     </div>

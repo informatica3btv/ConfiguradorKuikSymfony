@@ -8,6 +8,7 @@ use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\MailboxRepository;
 use App\Service\ConfigurationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -175,7 +176,7 @@ class ConfigurationController extends AbstractController
         return $this->render('configurations/home_instalacion.html.twig', [
             'configuration' => $configuration,
             'project'       => $project,
-            'options'         => $options, 
+            'options'       => $options,
         ]);
     }
 
@@ -187,7 +188,8 @@ class ConfigurationController extends AbstractController
         ConfigurationRepository $repo,
         ColorRepository $colorRepo,
         ConfigurationTypeRepository $configurationTypeRepo,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        MailboxRepository $mailboxRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         
@@ -195,8 +197,9 @@ class ConfigurationController extends AbstractController
         $projectId = $request->query->getInt('project_id');
 
         // Vienen por query cuando navegas desde las pantallas previas
-        $typeFromQuery        = (string) $request->query->get('type', '');
-        $instalacionFromQuery = (string) $request->query->get('instalacion', '');
+        $typeFromQuery              = (string) $request->query->get('type', '');
+        $instalacionFromQuery       = (string) $request->query->get('instalacion', '');
+        $agrupacionFromQuery        = $request->query->get('agrupacion_combinada', null);
 
         /*
         * 1) EDITAR configuración existente
@@ -270,6 +273,14 @@ class ConfigurationController extends AbstractController
             $changed = true;
         }
 
+        if ($agrupacionFromQuery !== null) {
+            $agrupacionValue = ($agrupacionFromQuery === '1' || $agrupacionFromQuery === 'true') ? true : false;
+            if (($payload['agrupacion_combinada'] ?? null) !== $agrupacionValue) {
+                $payload['agrupacion_combinada'] = $agrupacionValue;
+                $changed = true;
+            }
+        }
+
         if ($changed) {
             $configuration->setPayload(json_encode($payload));
             $em->flush();
@@ -326,17 +337,21 @@ class ConfigurationController extends AbstractController
         * Render
         */
         return $this->render('home.html.twig', [
-            'project'             => $project,
-            'configuration'       => $configuration,
-            'payload'             => $payload,
-            'project_id'          => $project->getId(),
-            'config_id'           => $configuration->getId(),
-            'type'                => $type,
-            'instalacion'         => $payload['instalacion'] ?? '',
-            'coloresCuerpo'       => $coloresCuerpo,
-            'coloresPuerta'       => $coloresPuerta,
-            'availableAttributes' => $availableAttributes,
-            'attributesGrouped'   => $attributesGrouped,
+            'project'              => $project,
+            'configuration'        => $configuration,
+            'payload'              => $payload,
+            'project_id'           => $project->getId(),
+            'config_id'            => $configuration->getId(),
+            'type'                 => $type,
+            'instalacion'          => $payload['instalacion'] ?? '',
+            'agrupacion_combinada' => $payload['agrupacion_combinada'] ?? false,
+            'coloresCuerpo'        => $coloresCuerpo,
+            'coloresPuerta'        => $coloresPuerta,
+            'availableAttributes'  => $availableAttributes,
+            'attributesGrouped'    => $attributesGrouped,
+            'mailboxes'            => $mailboxRepo->findBy([], ['reference' => 'ASC']),
+            'controles'            => $em->getRepository(\App\Entity\Control::class)->findBy([], ['reference' => 'ASC']),
+            'controlActual'        => $payload['control'] ?? null,
         ]);
     }
 
@@ -773,7 +788,14 @@ class ConfigurationController extends AbstractController
             throw $this->createNotFoundException('Configuration not found');
         }
 
-        $table = $this->configService->buildProductTable($configuration->getDecodedPayload());
+        $payload = $configuration->getDecodedPayload();
+
+        // If accepted, use the snapshot stored at acceptance time
+        if ($configuration->getStatus() === Configuration::STATUS_ACCEPTED && isset($payload['_acceptedProductTable'])) {
+            $table = $payload['_acceptedProductTable'];
+        } else {
+            $table = $this->configService->buildProductTable($payload);
+        }
 
         return $this->render('configurations/ajax.html.twig', $table);
     }
@@ -876,6 +898,17 @@ class ConfigurationController extends AbstractController
             $buzonBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($buzonPath));
         }
 
+        $mbGroupBase64 = null;
+        $mbGroupUrl = 'https://dbox.btv.es/products/img/medium/10723.jpg';
+        try {
+            $mbGroupImg = @file_get_contents($mbGroupUrl);
+            if ($mbGroupImg !== false) {
+                $mbGroupBase64 = 'data:image/jpeg;base64,' . base64_encode($mbGroupImg);
+            }
+        } catch (\Exception $e) {
+            $mbGroupBase64 = null;
+        }
+
         $legBase64 = null;
         $legPath = $this->getParameter('kernel.project_dir') . '/public/assets/pie_negro.jpg';
         if (file_exists($legPath)) {
@@ -899,7 +932,8 @@ class ConfigurationController extends AbstractController
             'arm_blanco' => $armBlanco,
             'arm_plata' => $armPlata,
             'arm_negro' => $armNegro,
-            'buzon_base64' => $buzonBase64,
+            'buzon_base64'    => $buzonBase64,
+            'mb_group_base64' => $mbGroupBase64,
             'leg_base64' => $legBase64,
             'logo_base64' => $logoBase64,
             'products'    => $productTable['products'],
@@ -994,12 +1028,31 @@ class ConfigurationController extends AbstractController
         }
 
         $configuration = $repo->find($id);
+
+        // Snapshot references and prices into the payload before accepting
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        $productTable = $this->configService->buildProductTable($payloadArr);
+
+        // Doctrine entities don't serialize to JSON — normalize them to plain arrays
+        $normalizedProducts = [];
+        foreach ($productTable['products'] as $key => $product) {
+            if (is_object($product) && method_exists($product, 'getReference')) {
+                $normalizedProducts[$key] = ['reference' => $product->getReference()];
+            } else {
+                $normalizedProducts[$key] = $product; // already a string (placa, buzon_group)
+            }
+        }
+        $productTable['products'] = $normalizedProducts;
+
+        $payloadArr['_acceptedProductTable'] = $productTable;
+        $configuration->setPayload(json_encode($payloadArr));
+
         $configuration->setStatus(Configuration::STATUS_ACCEPTED);
 
-        $project = $repoProject -> find(($configuration->getProject()->getId()));
+        $project = $repoProject->find($configuration->getProject()->getId());
 
         $project->setStatus(1);
-    
+
         $em->persist($configuration);
         $em->persist($project);
         $em->flush();

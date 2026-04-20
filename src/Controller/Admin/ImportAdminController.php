@@ -2,12 +2,16 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Bandeja;
 use App\Entity\Columna;
+use App\Entity\Control;
 use App\Entity\Door;
 use App\Entity\Mailbox;
 use App\Entity\Roof;
 use App\Entity\Side;
+use App\Repository\BandejaRepository;
 use App\Repository\ColumnaRepository;
+use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
 use App\Repository\MailboxRepository;
 use App\Repository\RoofRepository;
@@ -42,7 +46,9 @@ class ImportAdminController extends AbstractController
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
         ColumnaRepository $columnaRepo,
-        MailboxRepository $mailboxRepo
+        MailboxRepository $mailboxRepo,
+        ControlRepository $controlRepo,
+        BandejaRepository $bandejaRepo
     ): Response {
         if (!$this->isCsrfTokenValid('import_excel', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -70,7 +76,7 @@ class ImportAdminController extends AbstractController
             return $this->redirectToRoute('admin_import_index');
         }
 
-        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0];
+        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0, 'control' => 0, 'bandeja' => 0];
         $duplicates = [];
 
         // ── Hoja DOOR ──────────────────────────────────────────────
@@ -225,15 +231,61 @@ class ImportAdminController extends AbstractController
             }
         }
 
+        // ── Hoja CONTROL ───────────────────────────────────────────
+        // Columnas: reference | place | descripcion
+        if ($spreadsheet->getSheetByName('control')) {
+            $sheet = $spreadsheet->getSheetByName('control');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 3);
+                [$reference, $place, $descripcion] = $cells;
+
+                if (empty($reference) || empty($place)) {
+                    continue;
+                }
+
+                $em->persist((new Control())
+                    ->setReference($reference)
+                    ->setPlace($place)
+                    ->setDescripcion($descripcion ?: null));
+
+                $stats['control']++;
+            }
+        }
+
         $em->flush();
 
+        // ── Hoja BANDEJA ───────────────────────────────────────────
+        // Columnas: reference | serie
+        if ($spreadsheet->getSheetByName('bandeja')) {
+            $sheet = $spreadsheet->getSheetByName('bandeja');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 2);
+                [$reference, $serie] = $cells;
+
+                if (empty($reference) || empty($serie)) {
+                    continue;
+                }
+
+                $existing = $bandejaRepo->findOneBySerie($serie);
+                if ($existing) {
+                    $duplicates[] = sprintf('%s (bandeja)', $reference);
+                    continue;
+                }
+
+                $em->persist((new Bandeja())->setReference($reference)->setSerie($serie));
+                $stats['bandeja']++;
+            }
+        }
+
         $this->addFlash('success', sprintf(
-            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones.',
+            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas.',
             $stats['door'],
             $stats['side'],
             $stats['roof'],
             $stats['columna'],
-            $stats['mailbox']
+            $stats['mailbox'],
+            $stats['control'],
+            $stats['bandeja']
         ));
 
         if (!empty($duplicates)) {

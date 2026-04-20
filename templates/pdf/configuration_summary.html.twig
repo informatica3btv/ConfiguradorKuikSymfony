@@ -125,7 +125,6 @@
       border-top-width:6px;
       border-bottom-width:6px;
       border-radius:8px;
-      overflow:hidden;
       background:#f7f7f7;
       position:relative;
       z-index:2;
@@ -133,6 +132,30 @@
 
     .col-body{ background:#eaeaea; }
     .col-half{ overflow:hidden; }
+
+    /* Grupo buzones PDF */
+    .mb-pdf-block{
+      display:inline-block;
+      vertical-align:top;
+      border-style:solid;
+      border-left-width:4px;
+      border-right-width:4px;
+      border-top-width:6px;
+      border-bottom-width:6px;
+      border-radius:8px;
+      overflow:hidden;
+      font-size:0;
+    }
+    .mb-pdf-col{
+      display:inline-block;
+      vertical-align:top;
+      width:44px;
+    }
+    .mb-pdf-cell{
+      display:block;
+      width:44px;
+      overflow:hidden;
+    }
 
     .half-sep{
       border-top:2px dashed rgba(255,255,255,.95);
@@ -196,31 +219,36 @@
        ✅ SOPORTE SUELO (PDF)
        =========================== */
     .support-wrap{
-      --armW: 40px;
-      --armOverlap: 22px;
       position: relative;
       display: inline-block;
-      padding-left:  calc(var(--armW) - var(--armOverlap));
-      padding-right: calc(var(--armW) - var(--armOverlap));
       margin: 14px 0 6px;
       padding-bottom: 100px;
       page-break-inside: avoid;
     }
 
+    .preview-core{
+      position: relative;
+      display: inline-block;
+    }
+
     .arm-img{
       position:absolute;
       top: 30px;
-      padding:2px;
-      width: var(--armW);
+      padding:0;
+      width: 40px;
       object-fit: contain;
       z-index: 1;
     }
+
     .arm-img.left{
-      left: calc(-0.5 * var(--armOverlap));
+      right: 100%;
+      margin-right: 0px;   /* separación mínima */
       transform: scaleX(-1);
     }
+
     .arm-img.right{
-      right: calc(-1.05 * var(--armOverlap));
+      left: 100%;
+      margin-left: 9px;    /* separación mínima */
     }
 
     /* ✅ PATAS (PDF reliable): TABLE */
@@ -311,10 +339,23 @@
   {% set isZocalo = (isHome and instalacion == 'zocalo') %}
   {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
 
-  {% set topCap    = isZocalo ? (p.topCap|default(90)) : 90 %}
-  {% set bottomCap = isZocalo ? 70 : 90 %}
-  {% set singleCap = isEmpotradoLike ? (p.singleCap|default(180)) : 180 %}
+  {% set agrupacionCombinada = p.agrupacion_combinada ?? false %}
+  {% set mailboxGroup = p.mailboxGroup ?? null %}
+  {% set mbSide  = mailboxGroup.side ?? 'right' %}
+  {% set mbRows  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.rows ?? 0) : 0 %}
+  {% set mbCols  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cols ?? 0) : 0 %}
+  {% set mbCells = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cells ?? []) : [] %}
 
+  {% set topCap    = isZocalo ? (p.topCap|default(kuik.default_top_cap)) : kuik.default_top_cap %}
+  {% set bottomCap = isZocalo ? 70 : kuik.default_bottom_cap %}
+  {% set singleCap = isEmpotradoLike ? (p.singleCap|default(kuik.default_single_cap)) : kuik.default_single_cap %}
+  {% set mbTotalH = isEmpotradoLike ? (singleCap * pxPerH) : ((topCap + bottomCap) * pxPerH) %}
+  {% set mbCellH = mbRows > 0 ? (mbTotalH / mbRows) : (10 * pxPerH) %}
+  {% set mbCellHR = mbRows > 0 ? (mbTotalH / mbRows)|round(0, 'floor') : 0 %}
+  {% set mbCellW = mbCellHR * 2.76 %}
+  {% set mbActualBlockH = mbRows * mbCellHR %}
+  {% set mbPaddingTop = 6 + (mbTotalH - mbActualBlockH) / 2 %}
+  
   {% set previewHeightPx = (isEmpotradoLike ? singleCap : (topCap + bottomCap)) * pxPerH %}
   {% set armHeightPx = previewHeightPx + 58 %}
 
@@ -452,7 +493,10 @@
         {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
 
         {% set n = groupCols|length %}
+        {% set isLastGroup = loop.index == groups|length %}
+        {% set mbBlockWPdf = (isLastGroup and mbRows > 0 and mbCols > 0) ? (mbCols * mbCellW|round + 12) : 0 %}
         {% set groupW = n > 0 ? (n * 60 + (n - 1) * 5) : 0 %}
+        {% set totalW = groupW + mbBlockWPdf %}
         {% set groupNeedRotate = n > 11 %}
         {#
           Estimated rendered height of the support-wrap block:
@@ -477,29 +521,54 @@
         <div class="group-cell" style="margin-bottom: 55px; text-align:center;">
         {% endif %}
 
-          <div class="support-wrap" style="width: {{ groupW }}px;">
+          <div class="support-wrap">
 
-            {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-              <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo" style="height: {{ armHeightPx }}px;">
-              <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho"  style="height: {{ armHeightPx }}px;">
+            <div class="preview-core" style="width: {{ totalW }}px; background: transparent;">
+
+              {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
+                {% set armTop = singleCap > 50 ? 42 : 20 %}
+                <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo" style="height: {{ armHeightPx }}px; top:{{ armTop }}px;">
+                <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho"  style="height: {{ armHeightPx }}px; top:{{ armTop }}px;">
+              {% endif %}
+
+              <table style="border-collapse:collapse;border-spacing:0;background:transparent;">
+                <tr style="vertical-align:top;">
+
+            {# ── Buzones IZQUIERDA ── #}
+            {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
+              <td style="padding:0;vertical-align:top;padding-top:{{ mbPaddingTop|round }}px;">
+                <div class="mb-pdf-block" style="border-color:{{ bodyColor }};height:{{ mbTotalH + 4 }}px;">
+                  <table style="border-collapse:collapse;border-spacing:0;">
+                    {% for r in 0..(mbRows - 1) %}
+                      <tr style="height:{{ mbCellHR }}px;border:none;">
+                        {% for c in 0..(mbCols - 1) %}
+                          {% set cellIdx = r * mbCols + c %}
+                          {% set filled = mbCells[cellIdx] ?? true %}
+                          <td style="padding:0;border:none;width:{{ mbCellW|round }}px;height:{{ mbCellHR -2 }}px;background:{% if filled %}#f0f0f0{% else %}#d0d0d0{% endif %};">
+                            {% if filled and mb_group_base64 %}
+                              <img src="{{ mb_group_base64 }}" style="width:{{ mbCellW|round }}px;height:{{ mbCellHR - 2}}px;object-fit:cover;display:block;">
+                            {% endif %}
+                          </td>
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </table>
+                </div>
+              </td>
             {% endif %}
 
+            <td style="padding:0;vertical-align:top;">
             <div class="cols-wrap" style="width: {{ groupW }}px;">
               {% for col in groupCols %}
                 <div class="col-shell">
 
                   <div class="col-card" style="border-color: {{ bodyColor }}; {{ not isHome ? 'border-top-width: 18px; border-radius: 0 0 8px 8px;' : '' }}">
-                    <div class="col-body" style="
-                      {% if col.single is defined and col.single is not empty %}
-                        height: {{ singleCap * pxPerH }}px;
-                      {% else %}
-                        height: {{ (topCap + bottomCap) * pxPerH }}px;
-                      {% endif %}
-                    ">
+                    {% set colBodyH = (col.single is defined and col.single is not empty) ? (singleCap * pxPerH) : ((topCap + bottomCap) * pxPerH) %}
+                    <div class="col-body" style="height:{{ colBodyH + 4 }}px;">
 
                       {% if col.single is defined and col.single is not empty %}
 
-                        <div class="col-half" style="height: {{ singleCap * pxPerH }}px;">
+                        <div class="col-half" style="height:{{ singleCap * pxPerH + 4 }}px;">
                           {% for blk in (col.single.blocks_prepared ?? col.single.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
@@ -532,7 +601,7 @@
 
                       {% else %}
 
-                        <div class="col-half" style="height: {{ topCap * pxPerH }}px;">
+                        <div class="col-half" style="height:{{ topCap * pxPerH + 4 }}px;">
                           {% for blk in (col.top.blocks_prepared ?? col.top.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
@@ -563,7 +632,7 @@
                           {% endfor %}
                         </div>
 
-                        <div class="col-half" style="height: {{ bottomCap * pxPerH }}px;">
+                        <div class="col-half" style="height:{{ bottomCap * pxPerH + 4 }}px;">
                           {% for blk in (col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
                             {% set bType = blk.type ?? 'door' %}
                             {% set h = blk.h ?? blk %}
@@ -601,7 +670,34 @@
 
                 </div>
               {% endfor %}
-            </div>
+            </div>{# /cols-wrap #}
+            </td>
+
+            {# ── Buzones DERECHA ── #}
+            {% if mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
+              <td style="padding:0;vertical-align:top;padding-top:{{ mbPaddingTop|round }}px;">
+                <div class="mb-pdf-block" style="border-color:{{ bodyColor }};height:{{ mbTotalH + 4 }}px;">
+                  <table style="border-collapse:collapse;border-spacing:0;">
+                    {% for r in 0..(mbRows - 1) %}
+                      <tr style="height:{{ mbCellHR }}px;border:none;">
+                        {% for c in 0..(mbCols - 1) %}
+                          {% set cellIdx = r * mbCols + c %}
+                          {% set filled = mbCells[cellIdx] ?? true %}
+                          <td style="padding:0;border:none;width:{{ mbCellW|round }}px;height:{{ mbCellHR }}px;background:{% if filled %}#f0f0f0{% else %}#d0d0d0{% endif %};">
+                            {% if filled and mb_group_base64 %}
+                              <img src="{{ mb_group_base64 }}" style="width:{{ mbCellW|round }}px;height:{{ mbCellHR }}px;object-fit:cover;display:block;">
+                            {% endif %}
+                          </td>
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </table>
+                </div>
+              </td>
+            {% endif %}
+
+              </tr>
+            </table>
 
             {# Patas como imágenes, igual que en summary, con legPositions #}
             {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
@@ -720,12 +816,19 @@
             <td style="padding:6px 8px; border:1px solid #e5e7eb;">
               {% if size == 'lateral' %}Par de laterales
               {% elseif size == 'placa' %}Placa
+              {% elseif size == 'buzon_group' %}Buzones (agrupación)
+              {% elseif size == 'envolvente_buzon' %}Envolvente buzones ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m
               {% elseif size starts with 'tejado_' %}Tejado {{ size|replace({'tejado_': ''}) }} col.
               {% elseif size ends with '_meth' %}H{{ size|replace({'_meth': ''}) }} + Metacrilato
               {% else %}H{{ size }}{% endif %}
             </td>
             {% if product %}
-              <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">{{ size == 'placa' ? product : product.reference }}</td>
+              <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">
+                {{ (size in ['placa','buzon_group']) ? product : product.reference }}
+                {% if size == 'buzon_group' and info._descripcion is defined and info._descripcion %}
+                  <div style="font-weight:400; color:#6b7280; font-size:10px; margin-top:2px;">{{ info._descripcion }}</div>
+                {% endif %}
+              </td>
               <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right;">{{ count }}</td>
               {% if info and info.PrecioVenta is defined and info.PrecioVenta is not iterable %}
                 {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}

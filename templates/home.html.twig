@@ -8,7 +8,7 @@
   <style>
     :root{
       /* ✅ no tocamos tu escala (la usa el JS) */
-      --hscale: 4.16px;
+      --hscale: {{ kuik.scale }}px;
 
       --kuik-blue-900:#003b73;
       --kuik-blue-700:#005fae;
@@ -330,6 +330,38 @@
       display:block;
     }
 
+    /* ── Mailbox group grid ── */
+    .mb-cell {
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transition: opacity .15s, border-color .15s;
+    }
+    .mb-cell img {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+    }
+    .mb-cell.empty {
+      background: #f0f4f8;
+      border-color: #cbd5e1;
+      border-style: dashed;
+    }
+    .mb-cell.empty img { display: none; }
+    .mb-cell .mb-remove {
+      position: absolute;
+      top: 2px; right: 3px;
+      font-size: 11px;
+      color: #e74c3c;
+      font-weight: 900;
+      line-height: 1;
+      display: none;
+    }
+    .mb-cell:hover .mb-remove { display: block; }
+
     .block .delete-block{
       position:absolute;
       top:2px;
@@ -614,6 +646,57 @@
       </div>
     </div>
 
+    {% if agrupacion_combinada %}
+    <div class="section-card" id="mailbox-group-section">
+      <h3 class="section-title">Grupo de buzones</h3>
+      <div class="section-help">Selecciona el modelo, número de columnas y edita las celdas vacías.</div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:13px;font-weight:700;">Modelo de buzón</label>
+          <select id="mb-model-select" style="min-width:200px;">
+            <option value="">-- Selecciona --</option>
+            {% for mb in mailboxes %}
+              <option value="{{ mb.id }}"
+                      data-alto="{{ mb.alto }}"
+                      data-ancho="{{ mb.ancho }}"
+                      data-fondo="{{ mb.fondo }}"
+                      data-ref="{{ mb.reference }}"
+                      data-desc="{{ mb.descripcion }}">
+                {{ mb.reference }} ({{ mb.alto }}×{{ mb.ancho }}×{{ mb.fondo }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:13px;font-weight:700;">Nº columnas (ancho)</label>
+          <select id="mb-cols-select" style="width:100px;">
+            {% for n in 1..20 %}
+              <option value="{{ n }}">{{ n }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-size:13px;font-weight:700;">Posición</label>
+          <select id="mb-side-select" style="width:130px;">
+            <option value="left">Izquierda</option>
+            <option value="right">Derecha</option>
+          </select>
+        </div>
+
+        <button type="button" id="mb-generate-btn" class="secondary-btn">Generar grid</button>
+        <span id="mb-info" style="font-size:13px;color:#6b7280;"></span>
+      </div>
+
+      {# Grid editable de buzones #}
+      <div id="mb-grid-wrap" style="overflow-x:auto;">
+        <div id="mb-grid" style="display:inline-grid;gap:3px;"></div>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="section-card">
       <h3 class="section-title">Hardware</h3>
       <select name="hardware" id="hardware">
@@ -645,6 +728,20 @@
       </select>
     </div>
 
+    {% if controles is defined and controles is not empty %}
+    <div class="section-card">
+      <h3 class="section-title">Control de acceso</h3>
+      <select name="control" id="control-select">
+        <option value="">Sin control</option>
+        {% for ctrl in controles %}
+          <option value="{{ ctrl.reference }}" data-place="{{ ctrl.place }}"{% if controlActual == ctrl.reference %} selected{% endif %}>
+            {{ ctrl.reference }}{% if ctrl.descripcion %} — {{ ctrl.descripcion }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
     <div class="form-actions">
       <button type="submit" class="primary-btn">Siguiente</button>
       <div id="formError" class="warn"></div>
@@ -674,17 +771,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if (input) input.value = value;
   }
 
+  function filterControlByPlacement(placement) {
+    const sel = document.getElementById('control-select');
+    if (!sel) return;
+    const current = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      if (!opt.value) return; // "Sin control" siempre visible
+      const show = !placement || opt.dataset.place === placement;
+      opt.hidden = !show;
+      opt.disabled = !show;
+    });
+    // Si la opción seleccionada ya no es válida, resetear
+    const selected = sel.options[sel.selectedIndex];
+    if (selected && selected.value && selected.dataset.place && selected.dataset.place !== placement) {
+      sel.value = '';
+    }
+  }
+
   document.querySelectorAll('.option-row .option-card').forEach(btn => {
     btn.addEventListener('click', function() {
       const row = btn.closest('.option-row');
       const group = row.getAttribute('data-group');
       const value = btn.getAttribute('data-value');
       setSelected(group, value, btn);
+      if (group === 'placement') filterControlByPlacement(value);
     });
   });
 
+  // Aplicar filtro inicial si ya hay placement cargado
+  (function() {
+    const pl = document.getElementById('placement');
+    if (pl && pl.value) filterControlByPlacement(pl.value);
+  })();
+
   // -------- Column builder --------
-  const hScale = 4.16;
+  const hScale = {{ kuik.scale }};
 
   // ✅ state con grupos + grupo activo
   const state = {
@@ -770,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (configType === 'home') {
     if (instalacionCfg === 'zocalo') {
       layout.mode = 'home_zocalo';
-      layout.bottomCap = 70; // fijo H70
+      layout.bottomCap = {{ kuik.bottom_cap_zocalo }}; // fijo H{{ kuik.bottom_cap_zocalo }}
 
       const preTop = parseInt(preCaps.topCap || '40', 10);
       layout.topCap = [40,50,60,70].includes(preTop) ? preTop : 40;
@@ -1338,12 +1459,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (nb.type === 'screen') {
             const img = document.createElement('img');
-            img.src = '/assets/pantalla.png';
+            img.src = '{{ asset(kuik.img_pantalla) }}';
             img.alt = 'Pantalla';
             b.appendChild(img);
           } else if (nb.type === 'mailbox') {
             const img = document.createElement('img');
-            img.src = '/assets/buzon_kuik.png';
+            img.src = '{{ asset(kuik.img_buzon_kuik) }}';
             img.alt = 'Buzón';
             b.appendChild(img);
           } else {
@@ -1757,6 +1878,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ensureHidden.call(this, 'payload', JSON.stringify({
       type: type,
       instalacion: instalacion,
+      agrupacion_combinada: !!(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.agrupacion_combinada),
 
       groups: groupsPayload,
       columns: columnsPayload,
@@ -1770,13 +1892,163 @@ document.addEventListener('DOMContentLoaded', () => {
       colorDoorRal: colorDoorRal,
 
       colorBody: colorBody,
-      colorBodyRal: colorBodyRal
+      colorBodyRal: colorBodyRal,
+
+      ...(window.MB_STATE ? { mailboxGroup: window.MB_STATE } : {}),
+
+      control: (document.getElementById('control-select') ? document.getElementById('control-select').value : null) || null,
     }));
   });
 
 })();
 });
 </script>
+
+{% if agrupacion_combinada %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+(function() {
+  // ── Estado del grupo de buzones ──────────────────────────────────────────
+  // cells: array plano de booleanos (true=ocupado, false=vacío), row-major
+  window.MB_STATE = null;
+
+  const MAILBOX_IMG = '{{ kuik.img_buzon_btv }}';
+  const CELL_W = 104; // px por celda ~30% más grande (alto se calcula por proporción de la imagen)
+
+  const modelSel  = document.getElementById('mb-model-select');
+  const colsSel   = document.getElementById('mb-cols-select');
+  const sideSel   = document.getElementById('mb-side-select');
+  const genBtn    = document.getElementById('mb-generate-btn');
+  const grid      = document.getElementById('mb-grid');
+  const info      = document.getElementById('mb-info');
+
+  if (!modelSel || !colsSel || !genBtn || !grid) return;
+
+  // Altura del módulo (tomada del selector de altura si existe, si no del payload)
+  function getCapH() {
+    const sel = document.getElementById('singleCapSelect') || document.getElementById('topCapSelect');
+    if (sel) return parseInt(sel.value, 10) || 40;
+    const pre = window.PRELOADED_CONFIG || {};
+    return parseInt(pre.singleCap || pre.topCap || '40', 10);
+  }
+
+  function calcRows() {
+    // Los buzones siempre ocupan H10 en el sistema del configurador
+    return Math.floor(getCapH() / 10);
+  }
+
+  function buildGrid(rows, cols, existingCells) {
+    const total = rows * cols;
+    // existingCells puede ser array de booleanos del payload guardado
+    const cells = existingCells && existingCells.length === total
+      ? existingCells.slice()
+      : Array(total).fill(true);
+
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${CELL_W}px)`;
+    grid.style.gridTemplateRows    = '';
+    grid.innerHTML = '';
+
+    cells.forEach((filled, idx) => {
+      const cell = document.createElement('div');
+      cell.className = 'mb-cell' + (filled ? '' : ' empty');
+      cell.dataset.idx = idx;
+
+      const img = document.createElement('img');
+      img.src = MAILBOX_IMG;
+      img.alt = 'Buzón';
+      cell.appendChild(img);
+
+      const rm = document.createElement('span');
+      rm.className = 'mb-remove';
+      rm.textContent = '✕';
+      cell.appendChild(rm);
+
+      cell.addEventListener('click', () => {
+        const i = parseInt(cell.dataset.idx, 10);
+        window.MB_STATE.cells[i] = !window.MB_STATE.cells[i];
+        cell.classList.toggle('empty', !window.MB_STATE.cells[i]);
+        updateInfo();
+      });
+
+      grid.appendChild(cell);
+    });
+
+    // Calcular alto real de la imagen y aplicarlo a todas las celdas (incluidas vacías)
+    const probe = new Image();
+    probe.onload = function() {
+      const ratio = probe.naturalHeight / probe.naturalWidth;
+      const cellH = Math.round(CELL_W * ratio);
+      grid.querySelectorAll('.mb-cell').forEach(c => {
+        c.style.width  = CELL_W + 'px';
+        c.style.height = cellH + 'px';
+      });
+    };
+    probe.src = MAILBOX_IMG;
+
+    return cells;
+  }
+
+  function updateInfo() {
+    if (!window.MB_STATE) return;
+    const filled = window.MB_STATE.cells.filter(Boolean).length;
+    info.textContent = `${filled} buzones activos de ${window.MB_STATE.cells.length} total`;
+  }
+
+  function generate(existingCells) {
+    const opt = modelSel.selectedOptions[0];
+    if (!opt || !opt.value) { info.textContent = 'Selecciona un modelo.'; return; }
+
+    const numCols = parseInt(colsSel.value, 10) || 1;
+    const rows    = calcRows();
+
+    const cells = buildGrid(rows, numCols, existingCells || null);
+
+    window.MB_STATE = {
+      mailboxId:   parseInt(opt.value, 10),
+      reference:   opt.dataset.ref,
+      descripcion: opt.dataset.desc || null,
+      alto:        opt.dataset.alto,
+      ancho:       opt.dataset.ancho,
+      fondo:       opt.dataset.fondo,
+      rows:        rows,
+      cols:        numCols,
+      side:        sideSel ? sideSel.value : 'right',
+      cells:       cells
+    };
+
+    updateInfo();
+  }
+
+  genBtn.addEventListener('click', () => generate(null));
+
+  // ── Precargar desde payload guardado ──────────────────────────────────────
+  const pre = window.PRELOADED_CONFIG || {};
+  if (pre.mailboxGroup) {
+    const mg = pre.mailboxGroup;
+    // Seleccionar modelo
+    if (mg.mailboxId) {
+      const opt = modelSel.querySelector(`option[value="${mg.mailboxId}"]`);
+      if (opt) opt.selected = true;
+    }
+    // Seleccionar columnas
+    if (mg.cols) colsSel.value = String(mg.cols);
+    // Seleccionar lado
+    if (mg.side && sideSel) sideSel.value = mg.side;
+    // Generar con celdas existentes (tras breve espera para que el layout.singleCap esté listo)
+    setTimeout(() => generate(mg.cells || null), 50);
+  }
+
+  // Si cambia la altura del módulo, regenerar manteniendo celdas
+  const singleSel = document.getElementById('singleCapSelect');
+  if (singleSel) {
+    singleSel.addEventListener('change', () => {
+      if (window.MB_STATE) generate(null); // resetea celdas al cambiar altura
+    });
+  }
+})();
+});
+</script>
+{% endif %}
 
 
 {% endblock %}

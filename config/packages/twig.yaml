@@ -1,5 +1,58 @@
 twig:
     default_path: '%kernel.project_dir%/templates'
+    globals:
+        kuik:
+            # Escala px/H-unit usada en los previews
+            scale: 4.16
+            scale_arm: 4.5
+
+            # Capacidades por defecto (en unidades H)
+            default_single_cap: 180
+            default_top_cap: 90
+            default_bottom_cap: 90
+
+            # Anchuras de columna en px (preview)
+            col_width_px: 135
+            mb_col_width_px: 115
+
+            # Dimensiones físicas reales de las puertas (en mm)
+            # El valor H (10,20,30...) multiplica la unidad base de 12,5 mm
+            door_width_mm: 380
+            h_unit_mm: 12.5      # 1 unidad H = 12,5 mm  (H10 = 125 mm, H20 = 250 mm, etc.)
+            h_heights_mm:
+                10: 125
+                20: 250
+                30: 375
+                40: 500
+                50: 625
+                60: 750
+                70: 875
+                80: 1000
+                90: 1125
+
+            # Referencia de placa electrónica
+            placa_reference: '13180'
+
+            # Altura fija del módulo inferior en instalación zócalo (H units)
+            bottom_cap_zocalo: 70
+
+            # Número de puertas por placa electrónica
+            doors_per_plate: 16
+
+            # Escalas específicas por vista (pantalla ≠ recover ≠ listado)
+            scale_recover: 3.76   # vista recover (panel de recuperación)
+            scale_list: 2         # vista mini del listado de configuraciones
+
+            # Rutas de assets (usar con asset())
+            img_pantalla:    'assets/pantalla.png'
+            img_buzon_kuik:  'assets/buzon_kuik.png'
+            img_brazo_blanco: 'assets/brazo_blanco.jpg'
+            img_brazo_negro:  'assets/brazo_negro.jpg'
+            img_brazo_plata:  'assets/brazo_plata.jpg'
+            img_pie:          'assets/pie_negro.jpg'
+
+            # URL externa imagen buzón BTV (no usa asset())
+            img_buzon_btv: 'https://dbox.btv.es/products/img/medium/10723.jpg'
 
 when@test:
     twig:

@@ -6,9 +6,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity()
- * @ORM\Table(name="mailbox")
+ * @ORM\Table(name="envolvente")
  */
-class Mailbox
+class Envolvente
 {
     /**
      * @ORM\Id()
@@ -20,14 +20,11 @@ class Mailbox
     /** @ORM\Column(type="string", length=255) */
     private $reference;
 
-    /** @ORM\Column(type="string", length=255) */
-    private $alto;
+    /** @ORM\Column(type="string", length=50) */
+    private $tipo; // 'buzon' | 'taquilla'
 
-    /** @ORM\Column(type="string", length=255) */
-    private $ancho;
-
-    /** @ORM\Column(type="string", length=255) */
-    private $fondo;
+    /** @ORM\Column(type="string", length=50) */
+    private $rango; // 'pequeño' | 'grande'
 
     /** @ORM\Column(type="string", length=500, nullable=true) */
     private $descripcion;
@@ -37,14 +34,11 @@ class Mailbox
     public function getReference(): ?string { return $this->reference; }
     public function setReference(string $v): self { $this->reference = $v; return $this; }
 
-    public function getAlto(): ?string { return $this->alto; }
-    public function setAlto(string $v): self { $this->alto = $v; return $this; }
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(string $v): self { $this->tipo = $v; return $this; }
 
-    public function getAncho(): ?string { return $this->ancho; }
-    public function setAncho(string $v): self { $this->ancho = $v; return $this; }
-
-    public function getFondo(): ?string { return $this->fondo; }
-    public function setFondo(string $v): self { $this->fondo = $v; return $this; }
+    public function getRango(): ?string { return $this->rango; }
+    public function setRango(string $v): self { $this->rango = $v; return $this; }
 
     public function getDescripcion(): ?string { return $this->descripcion; }
     public function setDescripcion(?string $v): self { $this->descripcion = $v; return $this; }

@@ -2,30 +2,41 @@
 
 namespace App\Service;
 
+use App\Repository\BandejaRepository;
 use App\Repository\DoorRepository;
+use App\Repository\EnvolventeRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 
 class ConfigurationService
 {
-    private DoorRepository $doorRepo;
-    private SideRepository $sideRepo;
-    private RoofRepository $roofRepo;
-    private BtvApiService  $btvApi;
-    private string         $placaReference;
+    private DoorRepository       $doorRepo;
+    private SideRepository       $sideRepo;
+    private RoofRepository       $roofRepo;
+    private EnvolventeRepository $envolventeRepo;
+    private BandejaRepository    $bandejaRepo;
+    private BtvApiService        $btvApi;
+    private string               $placaReference;
+    private int                  $doorsPerPlate;
 
     public function __construct(
         DoorRepository $doorRepo,
         SideRepository $sideRepo,
         RoofRepository $roofRepo,
+        EnvolventeRepository $envolventeRepo,
+        BandejaRepository $bandejaRepo,
         BtvApiService  $btvApi,
-        string         $placaReference
+        string         $placaReference,
+        int            $doorsPerPlate = 16
     ) {
         $this->doorRepo       = $doorRepo;
         $this->sideRepo       = $sideRepo;
         $this->roofRepo       = $roofRepo;
+        $this->envolventeRepo = $envolventeRepo;
+        $this->bandejaRepo    = $bandejaRepo;
         $this->btvApi         = $btvApi;
         $this->placaReference = $placaReference;
+        $this->doorsPerPlate  = $doorsPerPlate;
     }
 
     /**
@@ -151,7 +162,7 @@ class ConfigurationService
                 $preparedCols[] = $preparedCol;
             }
 
-            $globalPlateNumber += max(1, (int) ceil($groupDoorCounter / 16));
+            $globalPlateNumber += max(1, (int) ceil($groupDoorCounter / $this->doorsPerPlate));
             $preparedGroups[]   = $preparedCols;
         }
 
@@ -194,7 +205,7 @@ class ConfigurationService
         $globalDoorNumber++;
         $groupDoorCounter++;
 
-        $plateNumber = $globalPlateNumber + intdiv($groupDoorCounter - 1, 16);
+        $plateNumber = $globalPlateNumber + intdiv($groupDoorCounter - 1, $this->doorsPerPlate);
         $sel         = $addons[(string) $globalDoorNumber] ?? $addons[$globalDoorNumber] ?? null;
 
         $blk['doorNumber']   = $groupDoorCounter;
@@ -268,6 +279,24 @@ class ConfigurationService
             $productInfo['lateral'] = $this->btvApi->getProductInfo($side->getReference(), $groupCount);
         }
 
+        // Bandejas: una por columna que tiene bloques tanto en top como en bottom
+        $bandejaCount = 0;
+        foreach ($allCols as $col) {
+            $hasTop    = !empty($col['top']['blocks'] ?? []);
+            $hasBottom = !empty($col['bottom']['blocks'] ?? []);
+            if ($hasTop && $hasBottom) {
+                $bandejaCount++;
+            }
+        }
+        if ($bandejaCount > 0) {
+            $bandeja = $this->bandejaRepo->findOneBySerie($serie);
+            $sizeCounts['bandeja'] = $bandejaCount;
+            $products['bandeja']   = $bandeja;
+            if ($bandeja) {
+                $productInfo['bandeja'] = $this->btvApi->getProductInfo($bandeja->getReference(), $bandejaCount);
+            }
+        }
+
         $roofGroups = !empty($groups) ? $groups : (!empty($payload['columns']) ? [$payload['columns']] : []);
         $roofCounts = [];
         foreach ($roofGroups as $groupCols) {
@@ -302,12 +331,63 @@ class ConfigurationService
                     }
                 }
             }
-            $totalPlates += max(1, (int) ceil($doorsInGroup / 16));
+            $totalPlates += max(1, (int) ceil($doorsInGroup / $this->doorsPerPlate));
         }
 
         $sizeCounts['placa'] = $totalPlates;
         $products['placa']   = $this->placaReference;
         $productInfo['placa'] = $this->btvApi->getProductInfo($this->placaReference, $totalPlates);
+
+        // Grupo de buzones (agrupación combinada)
+        $agrupacion = $payload['agrupacion_combinada'] ?? false;
+        $mbGroup    = $payload['mailboxGroup'] ?? null;
+        if ($agrupacion && $mbGroup && !empty($mbGroup['reference'])) {
+            $mbRef   = $mbGroup['reference'];
+            $mbCells = $mbGroup['cells'] ?? [];
+            // Contar celdas activas (filled = true por defecto)
+            $mbCount = 0;
+            $totalMbCells = ($mbGroup['rows'] ?? 0) * ($mbGroup['cols'] ?? 0);
+            for ($i = 0; $i < $totalMbCells; $i++) {
+                if ($mbCells[$i] ?? true) {
+                    $mbCount++;
+                }
+            }
+            if ($mbCount > 0) {
+                $sizeCounts['buzon_group'] = $mbCount;
+                $products['buzon_group']   = $mbRef;
+                $apiInfo = $this->btvApi->getProductInfo($mbRef, $mbCount);
+                if (is_array($apiInfo)) {
+                    $apiInfo['_descripcion'] = $mbGroup['descripcion'] ?? null;
+                }
+                $productInfo['buzon_group'] = $apiInfo;
+
+                // Envolvente para agrupación de buzones
+                $mbRows  = (int) ($mbGroup['rows'] ?? 0);
+                $mbCols  = (int) ($mbGroup['cols'] ?? 0);
+                $mbAlto  = (float) ($mbGroup['alto']  ?? 0); // mm
+                $mbAncho = (float) ($mbGroup['ancho'] ?? 0); // mm
+
+                // Rango: 4-15 buzones → pequeño, >15 → grande
+                $rango = ($mbCount <= 15) ? 'pequeño' : 'grande';
+
+                // Perímetro en tramos de 0,5 m con mínimo 1 m
+                $perimetroMm = 2 * ($mbCols * $mbAncho + $mbRows * $mbAlto);
+                $metros = max(1.0, ceil($perimetroMm / 500) / 2);
+
+                $envolvente = $this->envolventeRepo->findOneBy(['tipo' => 'buzon', 'rango' => $rango]);
+                if ($envolvente && $metros > 0) {
+                    $sizeCounts['envolvente_buzon'] = $metros;
+                    $products['envolvente_buzon']   = $envolvente;
+                    $envInfo = $this->btvApi->getProductInfo($envolvente->getReference(), $metros);
+                    if (is_array($envInfo)) {
+                        $envInfo['_descripcion'] = $envolvente->getDescripcion();
+                        $envInfo['_metros']      = $metros;
+                        $envInfo['_rango']       = $rango;
+                    }
+                    $productInfo['envolvente_buzon'] = $envInfo;
+                }
+            }
+        }
 
         return [
             'products'    => $products,

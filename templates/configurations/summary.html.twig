@@ -37,9 +37,9 @@
 {% set isZocalo = (isHome and instalacion == 'zocalo') %}
 {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
 
-{% set topCap = isZocalo ? (p.topCap|default(90)) : 90 %}
-{% set bottomCap = isZocalo ? 70 : 90 %}
-{% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : 180 %}
+{% set topCap = isZocalo ? (p.topCap|default(kuik.default_top_cap)) : kuik.default_top_cap %}
+{% set bottomCap = isZocalo ? 70 : kuik.default_bottom_cap %}
+{% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : kuik.default_single_cap %}
 
 {% set selectedType  = p.bracketType ?? '' %}
 {% set selectedColor = p.bracketColor ?? '' %}
@@ -191,7 +191,6 @@
       gap:155px;
       align-items:center;
       width: max-content;
-      min-width: 100%;
     }
 
     .group-label{
@@ -211,14 +210,14 @@
     }
 
     .col-shell{
-      width:135px;
+      width:{{ kuik.col_width_px }}px;
       display:flex;
       flex-direction:column;
       gap:6px;
     }
 
     .col-card{
-      width:135px;
+      width:{{ kuik.col_width_px }}px;
       border-style:solid;
       border-color: var(--col-border, #000);
       border-left-width:4px;
@@ -230,6 +229,33 @@
       box-shadow: var(--shadow);
       position: relative;
       z-index: 2;
+    }
+
+    /* Grupo de buzones: bloque único con un solo borde exterior */
+    .mb-group-block {
+      display: flex;
+      flex-direction: row;
+      border-style: solid;
+      border-color: var(--col-border, #000);
+      border-left-width: 4px;
+      border-right-width: 4px;
+      border-top-width: 8px;
+      border-bottom-width: 8px;
+      border-radius: 7px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 2;
+    }
+    .mb-group-col {
+      width: {{ kuik.mb_col_width_px }}px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .mb-group-col .door.mailbox {
+      border: none;
+      border-radius: 0;
     }
 
     .col-body{
@@ -421,7 +447,7 @@
     .support-wrap{
       --armW: 65px;
       --armOverlap: 14px;
-      --colW: 135px;
+      --colW: {{ kuik.col_width_px }}px;
 
       position: relative;
       display: inline-block;
@@ -458,12 +484,11 @@
       pointer-events:none;
       user-select:none;
       z-index:1;
-      padding: 0 18px;
       margin-top:-10px;
     }
 
     .leg-img{
-      width:135px;
+      width:{{ kuik.col_width_px }}px;
       height:175px;
       object-fit:contain;
       justify-self:center;
@@ -475,7 +500,7 @@
       background: var(--col-border, #000);
       border-radius: 6px 6px 0 0;
       display: block;
-      margin: 10px auto -10px;
+      margin: 10px auto -20px;
       position: relative;
       z-index: 3;
     }
@@ -487,7 +512,7 @@
 {% endblock %}
 
 {% block content %}
-  {% set scale = 4.16 %}
+  {% set scale = kuik.scale %}
 
   <div class="page-wrap">
 
@@ -534,13 +559,25 @@
 
           {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
             {% set armSrc =
-              selectedColor == 'blanco' ? asset('assets/brazo_blanco.jpg') :
-              (selectedColor == 'plata' ? asset('assets/brazo_plata.jpg') : asset('assets/brazo_negro.jpg'))
+              selectedColor == 'blanco' ? asset(kuik.img_brazo_blanco) :
+              (selectedColor == 'plata' ? asset(kuik.img_brazo_plata) : asset(kuik.img_brazo_negro))
             %}
           {% endif %}
 
           <div class="preview-scroll">
           <div class="preview-stage" id="previewCapture">
+            {% set agrupacionCombinada = p.agrupacion_combinada ?? false %}
+            {% set mailboxGroup = p.mailboxGroup ?? null %}
+            {% set mbSide = mailboxGroup.side ?? 'right' %}
+            {% set mbRows = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.rows ?? 0) : 0 %}
+            {% set mbCols = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cols ?? 0) : 0 %}
+            {% set mbCells = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cells ?? []) : [] %}
+            {% set mbTotalH = isEmpotradoLike ? (singleCap * scale) : ((topCap + bottomCap) * scale) %}
+            {% set mbCellH = 10 * scale %}
+            {% set mbBlockH = mbRows * mbCellH + 16 %}
+            {% set mbLockerH = mbTotalH + 16 %}
+            {% set mbMarginTop = 10 + (mbLockerH - mbBlockH) / 2 %}
+
             <div class="groups-stage" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
               {% if groups is empty %}
@@ -548,11 +585,12 @@
               {% else %}
                 {% for groupCols in groups %}
                   {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+                  {% set totalCols = groupCols|length %}
 
                   <div class="group-block">
                     <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
 
-                    <div class="support-wrap" style="--colsN: {{ groupCols|length }};">
+                    <div class="support-wrap" style="--colsN: {{ totalCols }};">
 
                       {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                         <img class="arm-img left" src="{{ armSrc }}" alt="Brazo izquierdo">
@@ -562,6 +600,25 @@
                       {% if not isHome %}
                         <div class="group-roof"></div>
                       {% endif %}
+
+                      <div style="display:flex;flex-direction:row;align-items:flex-start;gap:0;">
+
+                        {# ── Buzones IZQUIERDA ── #}
+                        {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
+                          <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                            {% for c in 0..(mbCols - 1) %}
+                              <div class="mb-group-col">
+                                {% for r in 0..(mbRows - 1) %}
+                                  {% set cellIdx = r * mbCols + c %}
+                                  {% set filled = mbCells[cellIdx] ?? true %}
+                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
 
                       <div class="cols" id="previewCols">
                         {% for col in groupCols %}
@@ -594,9 +651,9 @@
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
-                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                          <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -628,9 +685,9 @@
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
-                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                          <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -662,9 +719,9 @@
                                            style="height: {{ hh * scale }}px;">
 
                                         {% if btype == 'screen' %}
-                                          <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                          <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -683,8 +740,27 @@
                               </div>
                             </div>
                           </div>
-                        {% endfor %}
-                      </div>
+                        {% endfor %}{# endfor col in groupCols #}
+                      </div>{# /cols grid #}
+
+                        {# ── Buzones DERECHA ── #}
+                        {% if mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
+                          <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                            {% for c in 0..(mbCols - 1) %}
+                              <div class="mb-group-col">
+                                {% for r in 0..(mbRows - 1) %}
+                                  {% set cellIdx = r * mbCols + c %}
+                                  {% set filled = mbCells[cellIdx] ?? true %}
+                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+
+                      </div>{# /flex row #}
 
                       {% if isSoporteSuelo and selectedType == 'patas' %}
                         {% set n = groupCols|length %}
@@ -703,7 +779,7 @@
                           {% for pos in legPositions %}
                             <img class="leg-img"
                                  style="grid-column: {{ pos }};"
-                                 src="{{ asset('assets/pie_negro.jpg') }}"
+                                 src="{{ asset(kuik.img_pie) }}"
                                  alt="Pata">
                           {% endfor %}
                         </div>
@@ -714,7 +790,7 @@
                 {% endfor %}
               {% endif %}
 
-            </div>
+            </div>{# /groups-stage #}
           </div>
           </div>
         </div>
@@ -738,6 +814,16 @@
           <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
           <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
           <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
+          {% if p.control ?? null %}
+            <div class="kv"><div class="k">Control</div><div class="v">{{ p.control }}</div></div>
+          {% endif %}
+          {% set _mbGroup = p.mailboxGroup ?? null %}
+          {% if (p.agrupacion_combinada ?? false) and _mbGroup %}
+            <div class="kv"><div class="k">Buzones (ref.)</div><div class="v">{{ _mbGroup.reference ?? '—' }}</div></div>
+            {% if _mbGroup.descripcion ?? null %}
+              <div class="kv"><div class="k">Descripción buzón</div><div class="v">{{ _mbGroup.descripcion }}</div></div>
+            {% endif %}
+          {% endif %}
         </div>
 
         <div class="section-sep"></div>
