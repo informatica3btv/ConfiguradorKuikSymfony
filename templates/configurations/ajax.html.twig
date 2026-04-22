@@ -22,8 +22,12 @@
         {% set border = not isLast ? 'border-bottom:1px solid rgba(15,23,42,.08);' %}
         <tr>
           <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">
-            {% if size == 'bandeja' %}
-              Bandeja
+            {% if size == 'columna' %}
+              Columna
+            {% elseif size == 'control' %}
+              Periféricos
+            {% elseif size == 'bandeja' %}
+              Bandeja Intermedia
             {% elseif size == 'lateral' %}
               Par de laterales
             {% elseif size == 'placa' %}

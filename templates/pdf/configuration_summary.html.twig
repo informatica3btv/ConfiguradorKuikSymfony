@@ -814,7 +814,10 @@
           {% set count = sizeCounts[size] ?? 0 %}
           <tr>
             <td style="padding:6px 8px; border:1px solid #e5e7eb;">
-              {% if size == 'lateral' %}Par de laterales
+              {% if size == 'columna' %}Columna
+              {% elseif size == 'control' %}Periféricos
+              {% elseif size == 'bandeja' %}Bandeja Intermedia
+              {% elseif size == 'lateral' %}Par de laterales
               {% elseif size == 'placa' %}Placa
               {% elseif size == 'buzon_group' %}Buzones (agrupación)
               {% elseif size == 'envolvente_buzon' %}Envolvente buzones ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m

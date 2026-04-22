@@ -625,10 +625,16 @@
           <label for="itemTypeSelect">Elemento:</label>
           <select id="itemTypeSelect" style="max-width:180px;">
             <option value="door" selected>Puerta</option>
-            <option value="screen">Pantalla (H30)</option>
+            <option value="screen">Pantalla</option>
             {% if type|default('') == 'home' %}
               <option value="mailbox">Buzón (H10)</option>
             {% endif %}
+          </select>
+
+          <label for="screenSizeSelect" id="screenSizeLabel" style="display:none;">Tamaño pantalla:</label>
+          <select id="screenSizeSelect" style="max-width:120px;display:none;">
+            <option value="30">H30</option>
+            <option value="40">H40</option>
           </select>
 
           <label for="hSizeSelect">Tamaño a añadir:</label>
@@ -697,40 +703,9 @@
     </div>
     {% endif %}
 
-    <div class="section-card">
-      <h3 class="section-title">Hardware</h3>
-      <select name="hardware" id="hardware">
-        <option value="" selected disabled>Selecciona un hardware</option>
-        <option value="kuikandcollect">Intelio Kuik&Collect</option>
-        <option value="residencial">Intelio Residencial</option>
-        <option value="custodia">Custodia</option>
-        <option value="custodiaconpagofisico">Custodia con pago físico</option>
-      </select>
-    </div>
-
-    <div class="section-card">
-      <h3 class="section-title">Puertas periféricos</h3>
-      <select name="periferico" id="periferico">
-        <option value="" selected disabled>Selecciona el periférico</option>
-        <option value="collect">Electrónica KUIK COLLECT</option>
-        <option value="consigna">Electrónica KUIK CONSIGNA SIN PAGO</option>
-        <option value="consignasinpagoycontrol">Electrónica KUIK CONSIGNA SIN PAGO + CONTROL ACCESO</option>
-      </select>
-    </div>
-
-    <div class="section-card">
-      <h3 class="section-title">Licencia de Software</h3>
-      <select name="softwareLicense" id="softwareLicense">
-        <option value="" selected disabled>Selecciona una licencia de software</option>
-        <option value="licencia1">Licencia de Software Intelio Click&Collect – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
-        <option value="licencia2">Licencia de Software Intelio Residencial – Cesión de uso del software según servicio de mantenimiento de software contratado.; Plataforma de control en remoto</option>
-        <option value="licencia3">Licencia de Software Custodia BASIC – Control de hasta 15 puertas; Plataforma de gestión con motor de reservas y pago en la nube; Plataforma de control en remoto; Maquetación de página web</option>
-      </select>
-    </div>
-
     {% if controles is defined and controles is not empty %}
     <div class="section-card">
-      <h3 class="section-title">Control de acceso</h3>
+      <h3 class="section-title">Perifricos</h3>
       <select name="control" id="control-select">
         <option value="">Sin control</option>
         {% for ctrl in controles %}
@@ -960,16 +935,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const screenSizeSelect = document.getElementById('screenSizeSelect');
+  const screenSizeLabel  = document.getElementById('screenSizeLabel');
+
   function syncSizeControl(){
     const selectedType = itemTypeSelect?.value || 'door';
-    const fixedHeight = (selectedType === 'screen' || selectedType === 'mailbox');
+    const isScreen  = selectedType === 'screen';
+    const isMailbox = selectedType === 'mailbox';
+    const fixedHeight = isScreen || isMailbox;
+
+    if (screenSizeSelect) {
+      screenSizeSelect.style.display = isScreen ? '' : 'none';
+      screenSizeLabel.style.display  = isScreen ? '' : 'none';
+    }
 
     if (hSizeSelect){
       hSizeSelect.disabled = fixedHeight;
-
-      if (selectedType === 'screen') hSizeSelect.value = '30';
-      if (selectedType === 'mailbox') hSizeSelect.value = '10';
+      if (isScreen)  hSizeSelect.value = screenSizeSelect ? screenSizeSelect.value : '30';
+      if (isMailbox) hSizeSelect.value = '10';
     }
+  }
+
+  if (screenSizeSelect) {
+    screenSizeSelect.addEventListener('change', () => {
+      if (hSizeSelect && itemTypeSelect?.value === 'screen') {
+        hSizeSelect.value = screenSizeSelect.value;
+      }
+    });
   }
   itemTypeSelect?.addEventListener('change', syncSizeControl);
   syncSizeControl();
@@ -1298,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         plus.addEventListener('click', () => {
           const itemType = itemTypeSelect?.value || 'door';
           const h = itemType === 'screen'
-            ? 30
+            ? parseInt(screenSizeSelect ? screenSizeSelect.value : '30', 10)
             : itemType === 'mailbox'
               ? 10
               : parseInt(hSizeSelect.value, 10);

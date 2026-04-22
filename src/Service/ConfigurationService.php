@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Repository\BandejaRepository;
+use App\Repository\ColumnaRepository;
 use App\Repository\DoorRepository;
 use App\Repository\EnvolventeRepository;
 use App\Repository\RoofRepository;
@@ -15,6 +16,7 @@ class ConfigurationService
     private RoofRepository       $roofRepo;
     private EnvolventeRepository $envolventeRepo;
     private BandejaRepository    $bandejaRepo;
+    private ColumnaRepository    $columnaRepo;
     private BtvApiService        $btvApi;
     private string               $placaReference;
     private int                  $doorsPerPlate;
@@ -25,6 +27,7 @@ class ConfigurationService
         RoofRepository $roofRepo,
         EnvolventeRepository $envolventeRepo,
         BandejaRepository $bandejaRepo,
+        ColumnaRepository $columnaRepo,
         BtvApiService  $btvApi,
         string         $placaReference,
         int            $doorsPerPlate = 16
@@ -34,6 +37,7 @@ class ConfigurationService
         $this->roofRepo       = $roofRepo;
         $this->envolventeRepo = $envolventeRepo;
         $this->bandejaRepo    = $bandejaRepo;
+        $this->columnaRepo    = $columnaRepo;
         $this->btvApi         = $btvApi;
         $this->placaReference = $placaReference;
         $this->doorsPerPlate  = $doorsPerPlate;
@@ -277,6 +281,28 @@ class ConfigurationService
         $products['lateral']   = $side;
         if ($side) {
             $productInfo['lateral'] = $this->btvApi->getProductInfo($side->getReference(), $groupCount);
+        }
+
+        // Columnas: una por columna en total
+        $totalCols = count($allCols);
+        if ($totalCols > 0) {
+            $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement);
+            $sizeCounts['columna'] = $totalCols;
+            $products['columna']   = $columna;
+            if ($columna) {
+                $productInfo['columna'] = $this->btvApi->getProductInfo($columna->getReference(), $totalCols);
+            }
+        }
+
+        // Control de acceso
+        $controlRef = $payload['control'] ?? null;
+        if ($controlRef) {
+            $sizeCounts['control'] = 1;
+            $products['control']   = ['reference' => $controlRef];
+            $apiInfo = $this->btvApi->getProductInfo($controlRef, 1);
+            if (is_array($apiInfo)) {
+                $productInfo['control'] = $apiInfo;
+            }
         }
 
         // Bandejas: una por columna que tiene bloques tanto en top como en bottom
