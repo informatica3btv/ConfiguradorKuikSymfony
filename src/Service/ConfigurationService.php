@@ -230,6 +230,7 @@ class ConfigurationService
     {
         $serie     = $payload['fondo'] ?? '';
         $placement = $payload['placement'] ?? '';
+        $tipo      = $payload['type'] ?? null; // 'home' | 'profesional'
         $addons    = $payload['addons'] ?? [];
         $doorIndex = 0;
         $sizeCounts = [];
@@ -268,7 +269,7 @@ class ConfigurationService
         foreach ($sizeCounts as $key => $count) {
             $meth    = str_ends_with($key, '_meth');
             $size    = $meth ? substr($key, 0, -5) : $key;
-            $product = $this->doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $placement, $size, $meth);
+            $product = $this->doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $placement, $size, $meth, $tipo);
             $products[$key] = $product;
             if ($product) {
                 $productInfo[$key] = $this->btvApi->getProductInfo($product->getReference(), $count);
@@ -276,21 +277,73 @@ class ConfigurationService
         }
 
         $groupCount = !empty($groups) ? count($groups) : 1;
-        $side       = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement);
-        $sizeCounts['lateral'] = $groupCount;
-        $products['lateral']   = $side;
-        if ($side) {
-            $productInfo['lateral'] = $this->btvApi->getProductInfo($side->getReference(), $groupCount);
+
+        // Para Home, calcular la altura de cada agrupación y buscar lateral por altura
+        if ($tipo === 'home' && !empty($groups)) {
+            foreach ($groups as $gIdx => $groupCols) {
+                if (!is_array($groupCols)) continue;
+                $maxH = 0;
+                foreach ($groupCols as $col) {
+                    $colH = 0;
+                    foreach (['top', 'bottom', 'single'] as $part) {
+                        foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                            $colH += (int)($blk['h'] ?? 0);
+                        }
+                    }
+                    $maxH = max($maxH, $colH);
+                }
+                $alturaKey = (string)$maxH;
+                $lateralKey = 'lateral_' . $alturaKey;
+                $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement, $tipo, $alturaKey);
+                $sizeCounts[$lateralKey] = ($sizeCounts[$lateralKey] ?? 0) + 1;
+                $products[$lateralKey]   = $side;
+                if ($side) {
+                    $qty = $sizeCounts[$lateralKey];
+                    $productInfo[$lateralKey] = $this->btvApi->getProductInfo($side->getReference(), $qty);
+                }
+            }
+        } else {
+            $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement, $tipo);
+            $sizeCounts['lateral'] = $groupCount;
+            $products['lateral']   = $side;
+            if ($side) {
+                $productInfo['lateral'] = $this->btvApi->getProductInfo($side->getReference(), $groupCount);
+            }
         }
 
-        // Columnas: una por columna en total
+        // Columnas: una por columna en total.
+        // Para Home, agrupar columnas por altura total (suma de h de sus bloques) y buscar referencia por altura.
         $totalCols = count($allCols);
         if ($totalCols > 0) {
-            $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement);
-            $sizeCounts['columna'] = $totalCols;
-            $products['columna']   = $columna;
-            if ($columna) {
-                $productInfo['columna'] = $this->btvApi->getProductInfo($columna->getReference(), $totalCols);
+            if ($tipo === 'home') {
+                // Calcular altura total de cada columna y agrupar
+                $colsByAltura = [];
+                foreach ($allCols as $col) {
+                    $h = 0;
+                    foreach (['top', 'bottom', 'single'] as $part) {
+                        foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                            $h += (int)($blk['h'] ?? 0);
+                        }
+                    }
+                    $alturaKey = (string)$h;
+                    $colsByAltura[$alturaKey] = ($colsByAltura[$alturaKey] ?? 0) + 1;
+                }
+                foreach ($colsByAltura as $alturaVal => $count) {
+                    $key     = 'columna_' . $alturaVal;
+                    $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement, $tipo, $alturaVal);
+                    $sizeCounts[$key] = $count;
+                    $products[$key]   = $columna;
+                    if ($columna) {
+                        $productInfo[$key] = $this->btvApi->getProductInfo($columna->getReference(), $count);
+                    }
+                }
+            } else {
+                $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement, $tipo);
+                $sizeCounts['columna'] = $totalCols;
+                $products['columna']   = $columna;
+                if ($columna) {
+                    $productInfo['columna'] = $this->btvApi->getProductInfo($columna->getReference(), $totalCols);
+                }
             }
         }
 
@@ -315,7 +368,7 @@ class ConfigurationService
             }
         }
         if ($bandejaCount > 0) {
-            $bandeja = $this->bandejaRepo->findOneBySerie($serie);
+            $bandeja = $this->bandejaRepo->findOneBySerie($serie, $tipo);
             $sizeCounts['bandeja'] = $bandejaCount;
             $products['bandeja']   = $bandeja;
             if ($bandeja) {
@@ -335,7 +388,7 @@ class ConfigurationService
         }
         foreach ($roofCounts as $numCols => $count) {
             $key  = 'tejado_' . $numCols;
-            $roof = $this->roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $placement, (string) $numCols);
+            $roof = $this->roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $placement, (string) $numCols, $tipo);
             $sizeCounts[$key] = $count;
             $products[$key]   = $roof;
             if ($roof) {
@@ -400,7 +453,10 @@ class ConfigurationService
                 $perimetroMm = 2 * ($mbCols * $mbAncho + $mbRows * $mbAlto);
                 $metros = max(1.0, ceil($perimetroMm / 500) / 2);
 
-                $envolvente = $this->envolventeRepo->findOneBy(['tipo' => 'buzon', 'rango' => $rango]);
+                $envCriteria = ['tipo' => 'buzon', 'rango' => $rango];
+                if ($tipo !== null) { $envCriteria['tipoConfig'] = $tipo; }
+                $envolvente = $this->envolventeRepo->findOneBy($envCriteria)
+                    ?? ($tipo !== null ? $this->envolventeRepo->findOneBy(['tipo' => 'buzon', 'rango' => $rango, 'tipoConfig' => null]) : null);
                 if ($envolvente && $metros > 0) {
                     $sizeCounts['envolvente_buzon'] = $metros;
                     $products['envolvente_buzon']   = $envolvente;

@@ -818,9 +818,11 @@
           {% set count = sizeCounts[size] ?? 0 %}
           <tr>
             <td style="padding:6px 8px; border:1px solid #e5e7eb;">
-              {% if size == 'columna' %}Columna
+              {% if size starts with 'columna_' %}Columna H{{ size|replace({'columna_': ''}) }}
+              {% elseif size == 'columna' %}Columna
               {% elseif size == 'control' %}Periféricos
               {% elseif size == 'bandeja' %}Bandeja Intermedia
+              {% elseif size starts with 'lateral_' %}Par de laterales H{{ size|replace({'lateral_': ''}) }}
               {% elseif size == 'lateral' %}Par de laterales
               {% elseif size == 'placa' %}Placa
               {% elseif size == 'buzon_group' %}Buzones (agrupación)
@@ -852,11 +854,26 @@
           </tr>
         {% endfor %}
       </tbody>
+      {% set instalacionPrecio = p._instalacion_precio ?? 0 %}
+      {% set instalacionIva    = p._instalacion_iva ?? false %}
+      {% set totalConInstalacion = grandTotal + instalacionPrecio %}
+      {% set totalConIva = instalacionIva ? totalConInstalacion * 1.21 : totalConInstalacion %}
       <tfoot>
+        {% if instalacionPrecio > 0 %}
+        <tr>
+          <td colspan="4" style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">Instalación</td>
+          <td style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incluido)' : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalConIva|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% else %}
         <tr>
           <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total</td>
           <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ grandTotal|number_format(2, ',', '.') }} €</td>
         </tr>
+        {% endif %}
       </tfoot>
     </table>
   </div>

@@ -51,6 +51,7 @@
     }
     .btn-import:hover { background: #0960b0; }
     .btn-import:disabled { background: #9ca3af; cursor: not-allowed; }
+    .tipo-label-active { border-color: #0b76d8 !important; background: rgba(11,118,216,.07); }
 
     .format-info {
       margin-top: 28px;
@@ -101,6 +102,21 @@
     <form method="post" action="{{ path('admin_import_upload') }}" enctype="multipart/form-data" id="importForm">
       <input type="hidden" name="_token" value="{{ csrf_token('import_excel') }}">
 
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">Tipo de configuración</label>
+        <div style="display:flex;gap:10px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:14px;cursor:pointer;padding:9px 16px;border:2px solid rgba(15,23,42,.15);border-radius:10px;font-weight:600;transition:.15s;" id="lbl-tipo-home">
+            <input type="radio" name="tipo_override" value="home" style="accent-color:#0b76d8;">
+            Home
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:14px;cursor:pointer;padding:9px 16px;border:2px solid rgba(15,23,42,.15);border-radius:10px;font-weight:600;transition:.15s;" id="lbl-tipo-pro">
+            <input type="radio" name="tipo_override" value="profesional" style="accent-color:#0b76d8;">
+            Profesional
+          </label>
+        </div>
+        <p style="margin:8px 0 0;font-size:12px;color:#6b7280;">Selecciona el tipo que se asignará a todas las referencias importadas. Si el Excel ya incluye una columna <code>tipo</code>, esta selección la sobreescribe.</p>
+      </div>
+
       <div class="drop-zone" id="dropZone">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -127,10 +143,11 @@
 
       <div class="sheet-label">Hoja: side</div>
       <table class="sheet-table">
-        <tr><th>A</th><th>B</th><th>C</th></tr>
-        <tr><td>reference</td><td>serie</td><td>place</td></tr>
-        <tr><td>05900</td><td>300</td><td>interior</td></tr>
+        <tr><th>A</th><th>B</th><th>C</th><th>D (Home)</th></tr>
+        <tr><td>reference</td><td>serie</td><td>place</td><td>altura</td></tr>
+        <tr><td>05900</td><td>300</td><td>interior</td><td>40</td></tr>
       </table>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">La columna <strong>altura</strong> solo aplica para tipo <strong>Home</strong>; déjala vacía para Profesional.</p>
 
       <div class="sheet-label">Hoja: roof</div>
       <table class="sheet-table">
@@ -141,10 +158,11 @@
 
       <div class="sheet-label">Hoja: columna</div>
       <table class="sheet-table">
-        <tr><th>A</th><th>B</th><th>C</th></tr>
-        <tr><td>reference</td><td>serie</td><td>place</td></tr>
-        <tr><td>06200</td><td>400</td><td>interior</td></tr>
+        <tr><th>A</th><th>B</th><th>C</th><th>D (Home)</th></tr>
+        <tr><td>reference</td><td>serie</td><td>place</td><td>altura</td></tr>
+        <tr><td>06200</td><td>400</td><td>interior</td><td>40</td></tr>
       </table>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">La columna <strong>altura</strong> solo aplica para tipo <strong>Home</strong>; déjala vacía para Profesional.</p>
 
       <div class="sheet-label">Hoja: mailbox</div>
       <table class="sheet-table">
@@ -188,12 +206,25 @@
   const fileName  = document.getElementById('fileName');
   const btnImport = document.getElementById('btnImport');
 
+  function checkReady() {
+    const tipoSelected = document.querySelector('input[name="tipo_override"]:checked');
+    btnImport.disabled = !(fileInput.files.length && tipoSelected);
+  }
+
+  document.querySelectorAll('input[name="tipo_override"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('lbl-tipo-home').classList.toggle('tipo-label-active', radio.value === 'home' && radio.checked);
+      document.getElementById('lbl-tipo-pro').classList.toggle('tipo-label-active', radio.value === 'profesional' && radio.checked);
+      checkReady();
+    });
+  });
+
   dropZone.addEventListener('click', () => fileInput.click());
 
   fileInput.addEventListener('change', () => {
     if (fileInput.files.length) {
       fileName.textContent = fileInput.files[0].name;
-      btnImport.disabled = false;
+      checkReady();
     }
   });
 
@@ -206,7 +237,7 @@
     if (files.length) {
       fileInput.files = files;
       fileName.textContent = files[0].name;
-      btnImport.disabled = false;
+      checkReady();
     }
   });
 </script>

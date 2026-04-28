@@ -779,7 +779,8 @@ class ConfigurationController extends AbstractController
      */
     public function productTable(
         int $id,
-        ConfigurationRepository $repo
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -793,9 +794,31 @@ class ConfigurationController extends AbstractController
         // If accepted, use the snapshot stored at acceptance time
         if ($configuration->getStatus() === Configuration::STATUS_ACCEPTED && isset($payload['_acceptedProductTable'])) {
             $table = $payload['_acceptedProductTable'];
+        } elseif ($configuration->getStatus() === Configuration::STATUS_ACCEPTED) {
+            // Accepted but no snapshot (config was closed before snapshot feature existed).
+            // Build table ignoring tipo filter so references still resolve despite DB changes,
+            // then persist the snapshot so future views don't need to query the DB again.
+            $payloadNoTipo = $payload;
+            unset($payloadNoTipo['type']);
+            $table = $this->configService->buildProductTable($payloadNoTipo);
+            $normalizedProducts = [];
+            foreach ($table['products'] as $key => $product) {
+                $normalizedProducts[$key] = (is_object($product) && method_exists($product, 'getReference'))
+                    ? ['reference' => $product->getReference()]
+                    : $product;
+            }
+            $snapshotTable = $table;
+            $snapshotTable['products'] = $normalizedProducts;
+            $payload['_acceptedProductTable'] = $snapshotTable;
+            $configuration->setPayload(json_encode($payload));
+            $em->persist($configuration);
+            $em->flush();
         } else {
             $table = $this->configService->buildProductTable($payload);
         }
+
+        $table['instalacionPrecio'] = (float) ($payload['_instalacion_precio'] ?? 0);
+        $table['instalacionIva']    = (bool)  ($payload['_instalacion_iva']    ?? false);
 
         return $this->render('configurations/ajax.html.twig', $table);
     }
@@ -1098,6 +1121,42 @@ class ConfigurationController extends AbstractController
 
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         $payloadArr['_screenshots'] = $screenshots;
+        $configuration->setPayload(json_encode($payloadArr));
+
+        $em->persist($configuration);
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
+    }
+
+    /**
+     * @Route("/configuracion/instalacion/{id}", name="configuration_instalacion", methods={"POST"})
+     */
+    public function saveInstalacion(
+        int $id,
+        Request $request,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            return new JsonResponse(['ok' => false], 404);
+        }
+
+        $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            return new JsonResponse(['ok' => false], 403);
+        }
+
+        $data  = json_decode($request->getContent(), true);
+        $precio = isset($data['precio']) ? (float) $data['precio'] : 0.0;
+        $iva    = !empty($data['iva']);
+
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        $payloadArr['_instalacion_precio'] = $precio;
+        $payloadArr['_instalacion_iva']    = $iva;
         $configuration->setPayload(json_encode($payloadArr));
 
         $em->persist($configuration);

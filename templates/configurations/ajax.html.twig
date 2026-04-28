@@ -1,6 +1,16 @@
 {% if products is defined and products is not empty %}
+  {% set instalacionPrecio = instalacionPrecio ?? 0 %}
+  {% set instalacionIva    = instalacionIva ?? false %}
+
   <div style="height:1px; background:rgba(15,23,42,.10); margin:16px 0;"></div>
-  <h3 style="margin:0 0 10px; font-size:16px; font-weight:900; letter-spacing:-0.01em;">Referencias de producto</h3>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;">
+    <h3 style="margin:0; font-size:16px; font-weight:900; letter-spacing:-0.01em;">Referencias de producto</h3>
+    <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; cursor:pointer;">
+      <input type="checkbox" id="ivaCheck" style="width:15px;height:15px;" {{ instalacionIva ? 'checked' : '' }}>
+      Aplicar IVA (21%)
+    </label>
+  </div>
 
   <table style="width:100%; border-collapse:separate; border-spacing:0; border:1px solid rgba(15,23,42,.12); border-radius:14px; overflow:hidden; background:#fff;">
     <thead>
@@ -18,16 +28,19 @@
       {% for size, product in products %}
         {% set info = productInfo[size] ?? null %}
         {% set count = sizeCounts[size] ?? 0 %}
-        {% set isLast = loop.last %}
-        {% set border = not isLast ? 'border-bottom:1px solid rgba(15,23,42,.08);' %}
+        {% set border = 'border-bottom:1px solid rgba(15,23,42,.08);' %}
         <tr>
           <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">
-            {% if size == 'columna' %}
+            {% if size starts with 'columna_' %}
+              Columna H{{ size|replace({'columna_': ''}) }}
+            {% elseif size == 'columna' %}
               Columna
             {% elseif size == 'control' %}
               Periféricos
             {% elseif size == 'bandeja' %}
               Bandeja Intermedia
+            {% elseif size starts with 'lateral_' %}
+              Par de laterales H{{ size|replace({'lateral_': ''}) }}
             {% elseif size == 'lateral' %}
               Par de laterales
             {% elseif size == 'placa' %}
@@ -66,12 +79,36 @@
           {% endif %}
         </tr>
       {% endfor %}
+
+      {% if instalacionPrecio > 0 %}
+        <tr>
+          <td style="padding:10px 12px; font-size:14px; font-weight:900; border-bottom:1px solid rgba(15,23,42,.08);">Instalación</td>
+          <td style="padding:10px 12px; font-size:14px; border-bottom:1px solid rgba(15,23,42,.08);">—</td>
+          <td style="padding:10px 12px; font-size:14px; color:#6b7280; border-bottom:1px solid rgba(15,23,42,.08);">—</td>
+          <td style="padding:10px 12px; font-size:14px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">1</td>
+          <td style="padding:10px 12px; font-size:14px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
+          <td style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
+        </tr>
+      {% endif %}
     </tbody>
     <tfoot>
+      {% set subtotal = grandTotal + instalacionPrecio %}
+      {% set totalFinal = instalacionIva ? subtotal * 1.21 : subtotal %}
+      {% if instalacionIva and subtotal > 0 %}
+        <tr>
+          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">Subtotal</td>
+          <td style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ subtotal|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">IVA (21%)</td>
+          <td style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ (subtotal * 0.21)|number_format(2, ',', '.') }} €</td>
+        </tr>
+      {% endif %}
       <tr>
-        <td colspan="5" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">Total</td>
-        <td style="padding:10px 12px; font-size:16px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ grandTotal|number_format(2, ',', '.') }} €</td>
+        <td colspan="5" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+        <td style="padding:10px 12px; font-size:16px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ totalFinal|number_format(2, ',', '.') }} €</td>
       </tr>
     </tfoot>
   </table>
+
 {% endif %}

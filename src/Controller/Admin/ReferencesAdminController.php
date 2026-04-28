@@ -199,6 +199,8 @@ class ReferencesAdminController extends AbstractController
         $ancho       = trim((string) $request->request->get('ancho'));
         $fondo       = trim((string) $request->request->get('fondo'));
         $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
         if ($reference === '' || $alto === '' || $ancho === '' || $fondo === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
@@ -211,7 +213,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
         }
 
-        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion));
+        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Buzón añadido correctamente.');
@@ -232,6 +234,8 @@ class ReferencesAdminController extends AbstractController
         $place        = trim((string) $request->request->get('place'));
         $size         = trim((string) $request->request->get('size'));
         $methacrylate = (bool) $request->request->get('methacrylate');
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
         if ($reference === '' || $serie === '' || $place === '' || $size === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
@@ -244,7 +248,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'door']);
         }
 
-        $em->persist((new Door())->setReference($reference)->setSerie($serie)->setPlace($place)->setSize($size)->setMethacrylate($methacrylate));
+        $em->persist((new Door())->setReference($reference)->setSerie($serie)->setPlace($place)->setSize($size)->setMethacrylate($methacrylate)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Puerta añadida correctamente.');
@@ -263,19 +267,23 @@ class ReferencesAdminController extends AbstractController
         $reference = trim((string) $request->request->get('reference'));
         $serie     = trim((string) $request->request->get('serie'));
         $place     = trim((string) $request->request->get('place'));
+        $tipo      = trim((string) $request->request->get('tipo'));
+        $tipoVal   = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $alturaRaw = trim((string) $request->request->get('altura'));
+        $alturaVal = ($tipoVal === 'home' && $alturaRaw !== '') ? $alturaRaw : null;
 
         if ($reference === '' || $serie === '' || $place === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'side']);
         }
 
-        $existing = $repo->findOneSideBySerieAndPlace($serie, $place);
+        $existing = $repo->findOneSideBySerieAndPlace($serie, $place, $tipoVal, $alturaVal);
         if ($existing) {
             $this->addFlash('error', sprintf('Ya existe un lateral con esa combinación (ref. %s).', $existing->getReference()));
             return $this->redirectToRoute('admin_references_index', ['tab' => 'side']);
         }
 
-        $em->persist((new Side())->setReference($reference)->setSerie($serie)->setPlace($place));
+        $em->persist((new Side())->setReference($reference)->setSerie($serie)->setPlace($place)->setAltura($alturaVal)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Lateral añadido correctamente.');
@@ -295,6 +303,8 @@ class ReferencesAdminController extends AbstractController
         $serie     = trim((string) $request->request->get('serie'));
         $place     = trim((string) $request->request->get('place'));
         $columns   = trim((string) $request->request->get('columns'));
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
         if ($reference === '' || $serie === '' || $place === '' || $columns === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
@@ -307,7 +317,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'roof']);
         }
 
-        $em->persist((new Roof())->setReference($reference)->setSerie($serie)->setPlace($place)->setColumns($columns));
+        $em->persist((new Roof())->setReference($reference)->setSerie($serie)->setPlace($place)->setColumns($columns)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Tejado añadido correctamente.');
@@ -326,19 +336,23 @@ class ReferencesAdminController extends AbstractController
         $reference = trim((string) $request->request->get('reference'));
         $serie     = trim((string) $request->request->get('serie'));
         $place     = trim((string) $request->request->get('place'));
+        $tipo      = trim((string) $request->request->get('tipo'));
+        $tipoVal   = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $alturaRaw = trim((string) $request->request->get('altura'));
+        $alturaVal = ($tipoVal === 'home' && $alturaRaw !== '') ? $alturaRaw : null;
 
         if ($reference === '' || $serie === '' || $place === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'columna']);
         }
 
-        $existing = $repo->findOneColumnaBySerieAndPlace($serie, $place);
+        $existing = $repo->findOneColumnaBySerieAndPlace($serie, $place, $tipoVal, $alturaVal);
         if ($existing) {
             $this->addFlash('error', sprintf('Ya existe una columna con esa combinación (ref. %s).', $existing->getReference()));
             return $this->redirectToRoute('admin_references_index', ['tab' => 'columna']);
         }
 
-        $em->persist((new Columna())->setReference($reference)->setSerie($serie)->setPlace($place));
+        $em->persist((new Columna())->setReference($reference)->setSerie($serie)->setPlace($place)->setAltura($alturaVal)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Columna añadida correctamente.');
@@ -377,13 +391,15 @@ class ReferencesAdminController extends AbstractController
         $tipo        = trim((string) $request->request->get('tipo'));
         $rango       = trim((string) $request->request->get('rango'));
         $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipoConfig  = trim((string) $request->request->get('tipoConfig'));
+        $tipoConfigVal = in_array($tipoConfig, ['home', 'profesional'], true) ? $tipoConfig : null;
 
         if ($reference === '' || $tipo === '' || $rango === '') {
             $this->addFlash('error', 'Referencia, tipo y rango son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
         }
 
-        $em->persist((new Envolvente())->setReference($reference)->setTipo($tipo)->setRango($rango)->setDescripcion($descripcion));
+        $em->persist((new Envolvente())->setReference($reference)->setTipo($tipo)->setRango($rango)->setDescripcion($descripcion)->setTipoConfig($tipoConfigVal));
         $em->flush();
 
         $this->addFlash('success', 'Envolvente añadido correctamente.');
@@ -401,6 +417,8 @@ class ReferencesAdminController extends AbstractController
 
         $reference = trim((string) $request->request->get('reference'));
         $serie     = trim((string) $request->request->get('serie'));
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
         if ($reference === '' || $serie === '') {
             $this->addFlash('error', 'Referencia y serie son obligatorias.');
@@ -413,7 +431,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
         }
 
-        $em->persist((new Bandeja())->setReference($reference)->setSerie($serie));
+        $em->persist((new Bandeja())->setReference($reference)->setSerie($serie)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Bandeja añadida correctamente.');
@@ -451,13 +469,15 @@ class ReferencesAdminController extends AbstractController
         $reference   = trim((string) $request->request->get('reference'));
         $place       = trim((string) $request->request->get('place'));
         $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
         if ($reference === '' || $place === '') {
             $this->addFlash('error', 'La referencia y el lugar son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
         }
 
-        $em->persist((new Control())->setReference($reference)->setPlace($place)->setDescripcion($descripcion));
+        $em->persist((new Control())->setReference($reference)->setPlace($place)->setDescripcion($descripcion)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Control añadido correctamente.');

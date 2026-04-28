@@ -13,8 +13,17 @@ class BandejaRepository extends ServiceEntityRepository
         parent::__construct($registry, Bandeja::class);
     }
 
-    public function findOneBySerie(string $serie): ?Bandeja
+    public function findOneBySerie(string $serie, ?string $tipo = null): ?Bandeja
     {
-        return $this->findOneBy(['serie' => $serie]);
+        $qb = $this->createQueryBuilder('b')
+            ->andWhere('b.serie = :serie')
+            ->setParameter('serie', $serie);
+
+        if ($tipo !== null) {
+            $qb->andWhere('b.tipo = :tipo OR b.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 }

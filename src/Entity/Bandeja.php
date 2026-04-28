@@ -23,6 +23,9 @@ class Bandeja
     /** @ORM\Column(type="string", length=255) */
     private $serie;
 
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipo;
+
     public function getId(): ?int { return $this->id; }
 
     public function getReference(): ?string { return $this->reference; }
@@ -30,4 +33,7 @@ class Bandeja
 
     public function getSerie(): ?string { return $this->serie; }
     public function setSerie(string $v): self { $this->serie = $v; return $this; }
+
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
 }

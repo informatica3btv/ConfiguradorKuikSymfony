@@ -29,6 +29,9 @@ class Roof
     /** @ORM\Column(type="string", length=255) */
     private $columns;
 
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipo;
+
     public function __construct() {}
 
     public function getId(): ?int { return $this->id; }
@@ -44,4 +47,7 @@ class Roof
 
     public function getColumns(): ?string { return $this->columns; }
     public function setColumns(string $v): self { $this->columns = $v; return $this; }
+
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
 }

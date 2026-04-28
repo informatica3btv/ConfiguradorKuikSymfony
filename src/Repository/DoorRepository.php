@@ -13,34 +13,9 @@ class DoorRepository extends ServiceEntityRepository
         parent::__construct($registry, Door::class);
     }
 
-
-    public function findOneBySerieAndPlace(int $serie, string $place): ?Door
+    public function findOneDoorBySerieAndPlaceAndSizeAndMethacrylate(string $serie, string $place, string $size, bool $methacrylate, ?string $tipo = null): ?Door
     {
-        return $this->createQueryBuilder('p')
-            ->andWhere('p.serie = :serie')
-            ->andWhere('p.place = :place')
-            ->setParameter('serie', $serie)
-            ->setParameter('place', $place)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
-    public function findOneDoorBySerieAndPlaceAndSize(string $serie, string $place, string $size): ?Door
-    {
-        return $this->createQueryBuilder('p')
-            ->andWhere('p.serie = :serie')
-            ->andWhere('p.place = :place')
-            ->andWhere('p.size = :size')
-            ->setParameter('serie', $serie)
-            ->setParameter('place', $place)
-            ->setParameter('size', $size)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
-    public function findOneDoorBySerieAndPlaceAndSizeAndMethacrylate(string $serie, string $place, string $size, bool $methacrylate): ?Door
-    {
-        return $this->createQueryBuilder('p')
+        $qb = $this->createQueryBuilder('p')
             ->andWhere('p.serie = :serie')
             ->andWhere('p.place = :place')
             ->andWhere('p.size = :size')
@@ -48,9 +23,13 @@ class DoorRepository extends ServiceEntityRepository
             ->setParameter('serie', $serie)
             ->setParameter('place', $place)
             ->setParameter('size', $size)
-            ->setParameter('methacrylate', $methacrylate)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
+            ->setParameter('methacrylate', $methacrylate);
 
+        if ($tipo !== null) {
+            $qb->andWhere('p.tipo = :tipo OR p.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
+    }
 }

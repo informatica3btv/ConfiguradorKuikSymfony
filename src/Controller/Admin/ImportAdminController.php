@@ -6,6 +6,7 @@ use App\Entity\Bandeja;
 use App\Entity\Columna;
 use App\Entity\Control;
 use App\Entity\Door;
+use App\Entity\Envolvente;
 use App\Entity\Mailbox;
 use App\Entity\Roof;
 use App\Entity\Side;
@@ -76,25 +77,29 @@ class ImportAdminController extends AbstractController
             return $this->redirectToRoute('admin_import_index');
         }
 
+        $tipoOverride = $request->request->get('tipo_override');
+        $tipoOverride = in_array($tipoOverride, ['home', 'profesional'], true) ? $tipoOverride : null;
+
         $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0, 'control' => 0, 'bandeja' => 0];
         $duplicates = [];
 
         // ── Hoja DOOR ──────────────────────────────────────────────
-        // Columnas: reference | serie | place | size | methacrylate
+        // Columnas: reference | serie | place | size | methacrylate | tipo
         if ($spreadsheet->getSheetByName('door')) {
             $sheet = $spreadsheet->getSheetByName('door');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
-                [$reference, $serie, $place, $size, $meth] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 6);
+                [$reference, $serie, $place, $size, $meth, $tipo] = $cells;
 
                 if (empty($reference) || empty($serie) || empty($place) || empty($size)) {
                     continue;
                 }
 
                 $methacrylate = filter_var($meth, FILTER_VALIDATE_BOOLEAN);
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
 
                 $existing = $doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate(
-                    $serie, $place, $size, $methacrylate
+                    $serie, $place, $size, $methacrylate, $tipoVal
                 );
 
                 if ($existing) {
@@ -102,118 +107,126 @@ class ImportAdminController extends AbstractController
                     continue;
                 }
 
-                $door = (new Door())
+                $em->persist((new Door())
                     ->setReference($reference)
                     ->setSerie($serie)
                     ->setPlace($place)
                     ->setSize($size)
-                    ->setMethacrylate($methacrylate);
+                    ->setMethacrylate($methacrylate)
+                    ->setTipo($tipoVal));
 
-                $em->persist($door);
                 $stats['door']++;
             }
         }
 
         // ── Hoja SIDE ──────────────────────────────────────────────
-        // Columnas: reference | serie | place
+        // Columnas: reference | serie | place | altura (home) | tipo
         if ($spreadsheet->getSheetByName('side')) {
             $sheet = $spreadsheet->getSheetByName('side');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 3);
-                [$reference, $serie, $place] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $serie, $place, $alturaRaw, $tipo] = $cells;
 
                 if (empty($reference) || empty($serie) || empty($place)) {
                     continue;
                 }
 
-                $existing = $sideRepo->findOneSideBySerieAndPlace($serie, $place);
+                $tipoVal   = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $alturaVal = ($alturaRaw !== '') ? $alturaRaw : null;
+                $existing  = $sideRepo->findOneSideBySerieAndPlace($serie, $place, $tipoVal, $alturaVal);
 
                 if ($existing) {
                     $duplicates[] = sprintf('%s (lateral)', $reference);
                     continue;
                 }
 
-                $side = (new Side())
+                $em->persist((new Side())
                     ->setReference($reference)
                     ->setSerie($serie)
-                    ->setPlace($place);
+                    ->setPlace($place)
+                    ->setAltura($alturaVal)
+                    ->setTipo($tipoVal));
 
-                $em->persist($side);
                 $stats['side']++;
             }
         }
 
         // ── Hoja ROOF ──────────────────────────────────────────────
-        // Columnas: reference | serie | place | columns
+        // Columnas: reference | serie | place | columns | tipo
         if ($spreadsheet->getSheetByName('roof')) {
             $sheet = $spreadsheet->getSheetByName('roof');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
-                [$reference, $serie, $place, $columns] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $serie, $place, $columns, $tipo] = $cells;
 
                 if (empty($reference) || empty($serie) || empty($place) || empty($columns)) {
                     continue;
                 }
 
-                $existing = $roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $place, (string) $columns);
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $existing = $roofRepo->findOneRoofBySerieAndPlaceAndColumns($serie, $place, (string) $columns, $tipoVal);
 
                 if ($existing) {
                     $duplicates[] = sprintf('%s (tejado)', $reference);
                     continue;
                 }
 
-                $roof = (new Roof())
+                $em->persist((new Roof())
                     ->setReference($reference)
                     ->setSerie($serie)
                     ->setPlace($place)
-                    ->setColumns((string) $columns);
+                    ->setColumns((string) $columns)
+                    ->setTipo($tipoVal));
 
-                $em->persist($roof);
                 $stats['roof']++;
             }
         }
 
         // ── Hoja COLUMNA ───────────────────────────────────────────
-        // Columnas: reference | serie | place
+        // Columnas: reference | serie | place | altura (home) | tipo
         if ($spreadsheet->getSheetByName('columna')) {
             $sheet = $spreadsheet->getSheetByName('columna');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 3);
-                [$reference, $serie, $place] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $serie, $place, $alturaRaw, $tipo] = $cells;
 
                 if (empty($reference) || empty($serie) || empty($place)) {
                     continue;
                 }
 
-                $existing = $columnaRepo->findOneColumnaBySerieAndPlace($serie, $place);
+                $tipoVal  = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $alturaVal = ($alturaRaw !== '') ? $alturaRaw : null;
+                $existing = $columnaRepo->findOneColumnaBySerieAndPlace($serie, $place, $tipoVal, $alturaVal);
 
                 if ($existing) {
                     $duplicates[] = sprintf('%s (columna)', $reference);
                     continue;
                 }
 
-                $columna = (new Columna())
+                $em->persist((new Columna())
                     ->setReference($reference)
                     ->setSerie($serie)
-                    ->setPlace($place);
+                    ->setPlace($place)
+                    ->setAltura($alturaVal)
+                    ->setTipo($tipoVal));
 
-                $em->persist($columna);
                 $stats['columna']++;
             }
         }
 
         // ── Hoja MAILBOX ────────────────────────────────────────────
-        // Columnas: reference | alto | ancho | fondo
+        // Columnas: reference | alto | ancho | fondo | tipo
         if ($spreadsheet->getSheetByName('mailbox')) {
             $sheet = $spreadsheet->getSheetByName('mailbox');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
-                [$reference, $alto, $ancho, $fondo] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $alto, $ancho, $fondo, $tipo] = $cells;
 
                 if (empty($reference) || empty($alto) || empty($ancho) || empty($fondo)) {
                     continue;
                 }
 
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
                 $existing = $mailboxRepo->findOneMailboxByDimensions($alto, $ancho, $fondo);
 
                 if ($existing) {
@@ -225,67 +238,93 @@ class ImportAdminController extends AbstractController
                     ->setReference($reference)
                     ->setAlto($alto)
                     ->setAncho($ancho)
-                    ->setFondo($fondo));
+                    ->setFondo($fondo)
+                    ->setTipo($tipoVal));
 
                 $stats['mailbox']++;
             }
         }
 
         // ── Hoja CONTROL ───────────────────────────────────────────
-        // Columnas: reference | place | descripcion
+        // Columnas: reference | place | descripcion | tipo
         if ($spreadsheet->getSheetByName('control')) {
             $sheet = $spreadsheet->getSheetByName('control');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 3);
-                [$reference, $place, $descripcion] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
+                [$reference, $place, $descripcion, $tipo] = $cells;
 
                 if (empty($reference) || empty($place)) {
                     continue;
                 }
 
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+
                 $em->persist((new Control())
                     ->setReference($reference)
                     ->setPlace($place)
-                    ->setDescripcion($descripcion ?: null));
+                    ->setDescripcion($descripcion ?: null)
+                    ->setTipo($tipoVal));
 
                 $stats['control']++;
             }
         }
 
         // ── Hoja BANDEJA ───────────────────────────────────────────
-        // Columnas: reference | serie
+        // Columnas: reference | serie | tipo
         if ($spreadsheet->getSheetByName('bandeja')) {
             $sheet = $spreadsheet->getSheetByName('bandeja');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 2);
-                [$reference, $serie] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 3);
+                [$reference, $serie, $tipo] = $cells;
 
                 if (empty($reference) || empty($serie)) {
                     continue;
                 }
 
-                $existing = $bandejaRepo->findOneBySerie($serie);
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $existing = $bandejaRepo->findOneBySerie($serie, $tipoVal);
                 if ($existing) {
                     $duplicates[] = sprintf('%s (bandeja)', $reference);
                     continue;
                 }
 
-                $em->persist((new Bandeja())->setReference($reference)->setSerie($serie));
+                $em->persist((new Bandeja())->setReference($reference)->setSerie($serie)->setTipo($tipoVal));
                 $stats['bandeja']++;
+            }
+        }
+
+        // ── Hoja ENVOLVENTE ────────────────────────────────────────
+        // Columnas: reference | tipo | rango | descripcion | tipoConfig
+        $stats['envolvente'] = 0;
+        if ($spreadsheet->getSheetByName('envolvente')) {
+            $sheet = $spreadsheet->getSheetByName('envolvente');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $tipo, $rango, $descripcion, $tipoConfig] = $cells;
+
+                if (empty($reference) || empty($tipo) || empty($rango)) {
+                    continue;
+                }
+
+                $tipoConfigVal = $tipoOverride ?? (in_array($tipoConfig, ['home', 'profesional'], true) ? $tipoConfig : null);
+
+                $em->persist((new Envolvente())
+                    ->setReference($reference)
+                    ->setTipo($tipo)
+                    ->setRango($rango)
+                    ->setDescripcion($descripcion ?: null)
+                    ->setTipoConfig($tipoConfigVal));
+
+                $stats['envolvente']++;
             }
         }
 
         $em->flush();
 
         $this->addFlash('success', sprintf(
-            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas.',
-            $stats['door'],
-            $stats['side'],
-            $stats['roof'],
-            $stats['columna'],
-            $stats['mailbox'],
-            $stats['control'],
-            $stats['bandeja']
+            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas, %d envolventes.',
+            $stats['door'], $stats['side'], $stats['roof'], $stats['columna'],
+            $stats['mailbox'], $stats['control'], $stats['bandeja'], $stats['envolvente']
         ));
 
         if (!empty($duplicates)) {

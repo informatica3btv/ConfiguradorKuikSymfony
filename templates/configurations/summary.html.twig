@@ -805,6 +805,15 @@
         {% block product_table %}
           <div id="productTableContainer"></div>
         {% endblock %}
+
+        <div style="margin-top:16px; border-top:1px solid rgba(15,23,42,.08); padding-top:16px; display:flex; align-items:center; gap:12px;">
+          <label style="font-size:14px; font-weight:700; white-space:nowrap;">Instalación (€):</label>
+          <input type="number" id="instalacionPrecio" min="0" step="0.01"
+            value="{{ p._instalacion_precio ?? '' }}"
+            placeholder="0,00"
+            style="width:130px; padding:6px 10px; border:1px solid rgba(15,23,42,.15); border-radius:8px; font-size:14px;">
+          <span id="instalacionStatus" style="font-size:12px; color:#6b7280; display:none;">Guardado ✓</span>
+        </div>
       </div>
 
       <div class="card">
@@ -1079,11 +1088,11 @@
 
     window.addEventListener('DOMContentLoaded', function () {
       // Load product reference table via AJAX
-      const productContainer = document.getElementById('productTableContainer');
-      if (productContainer) {
+      const _productContainer = document.getElementById('productTableContainer');
+      if (_productContainer) {
         fetch('{{ path('configuration_product_table', { id: configuration.id }) }}')
-          .then( function (r) { console.log(r); return r.text(); })
-          .then(function (html) { productContainer.innerHTML = html; })
+          .then(function (r) { return r.text(); })
+          .then(function (html) { _productContainer.innerHTML = html; bindIvaCheck(); })
           .catch(function (e) { console.error('Error cargando referencias de producto:', e); });
       }
     });
@@ -1156,6 +1165,48 @@
   </script>
 
   <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const precioInput  = document.getElementById('instalacionPrecio');
+      const statusEl     = document.getElementById('instalacionStatus');
+      const saveUrl      = '{{ path('configuration_instalacion', { id: configuration.id }) }}';
+      const tableUrl     = '{{ path('configuration_product_table', { id: configuration.id }) }}';
+      const productContainer = document.getElementById('productTableContainer');
+
+      function getIvaChecked() {
+        const chk = document.getElementById('ivaCheck');
+        return chk ? chk.checked : false;
+      }
+
+      async function saveInstalacion() {
+        const precio = parseFloat(precioInput?.value) || 0;
+        const iva    = getIvaChecked();
+        await fetch(saveUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ precio, iva })
+        });
+        if (statusEl) { statusEl.style.display = 'inline'; setTimeout(() => { statusEl.style.display = 'none'; }, 2000); }
+      }
+
+      async function saveAndReloadTable() {
+        await saveInstalacion();
+        if (productContainer) {
+          const html = await fetch(tableUrl).then(r => r.text());
+          productContainer.innerHTML = html;
+          bindIvaCheck();
+        }
+      }
+
+      function bindIvaCheck() {
+        const chk = document.getElementById('ivaCheck');
+        if (chk) chk.addEventListener('change', saveAndReloadTable);
+      }
+
+      if (precioInput) precioInput.addEventListener('change', saveAndReloadTable);
+
+      // bind after initial AJAX load (handled below)
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
       const btnPdf = document.getElementById('btnDescargarPdf');
       if (!btnPdf) return;

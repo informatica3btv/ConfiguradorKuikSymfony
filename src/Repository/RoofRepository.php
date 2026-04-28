@@ -13,16 +13,21 @@ class RoofRepository extends ServiceEntityRepository
         parent::__construct($registry, Roof::class);
     }
 
-    public function findOneRoofBySerieAndPlaceAndColumns(string $serie, string $place, string $columns): ?Roof
+    public function findOneRoofBySerieAndPlaceAndColumns(string $serie, string $place, string $columns, ?string $tipo = null): ?Roof
     {
-        return $this->createQueryBuilder('r')
+        $qb = $this->createQueryBuilder('r')
             ->andWhere('r.serie = :serie')
             ->andWhere('r.place = :place')
             ->andWhere('r.columns = :columns')
             ->setParameter('serie', $serie)
             ->setParameter('place', $place)
-            ->setParameter('columns', $columns)
-            ->getQuery()
-            ->getOneOrNullResult();
+            ->setParameter('columns', $columns);
+
+        if ($tipo !== null) {
+            $qb->andWhere('r.tipo = :tipo OR r.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 }

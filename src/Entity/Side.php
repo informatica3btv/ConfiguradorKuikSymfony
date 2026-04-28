@@ -9,8 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Table(name="side")
  */
 class Side
-{   
-
+{
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
@@ -24,13 +23,16 @@ class Side
     /** @ORM\Column(type="string", length=255) */
     private $serie;
 
-     /** @ORM\Column(type="string", length=255) */
+    /** @ORM\Column(type="string", length=255) */
     private $place;
 
-    public function __construct()
-    {
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipo;
 
-    }
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $altura;
+
+    public function __construct() {}
 
     public function getId(): ?int { return $this->id; }
 
@@ -43,4 +45,9 @@ class Side
     public function getPlace(): ?string { return $this->place; }
     public function setPlace(string $v): self { $this->place = $v; return $this; }
 
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
+
+    public function getAltura(): ?string { return $this->altura; }
+    public function setAltura(?string $v): self { $this->altura = $v; return $this; }
 }

@@ -32,6 +32,9 @@ class Mailbox
     /** @ORM\Column(type="string", length=500, nullable=true) */
     private $descripcion;
 
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipo;
+
     public function getId(): ?int { return $this->id; }
 
     public function getReference(): ?string { return $this->reference; }
@@ -48,4 +51,7 @@ class Mailbox
 
     public function getDescripcion(): ?string { return $this->descripcion; }
     public function setDescripcion(?string $v): self { $this->descripcion = $v; return $this; }
+
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
 }

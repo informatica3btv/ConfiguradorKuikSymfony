@@ -33,6 +33,9 @@ class Door
     /** @ORM\Column(type="boolean", options={"default": false}) */
     private $methacrylate = false;
 
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipo; // 'home' | 'profesional' | null (ambos)
+
     public function __construct()
     {
 
@@ -55,4 +58,6 @@ class Door
     public function getMethacrylate(): bool { return $this->methacrylate ?? false; }
     public function setMethacrylate(bool $v): self { $this->methacrylate = $v; return $this; }
 
+    public function getTipo(): ?string { return $this->tipo; }
+    public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
 }

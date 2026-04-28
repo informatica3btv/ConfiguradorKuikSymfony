@@ -123,6 +123,18 @@
       border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
     }
     .btn-save:hover { background: #0960b0; }
+
+    .tipo-filter-bar { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+    .tipo-filter-bar span { font-size: 13px; font-weight: 700; color: #374151; margin-right: 4px; }
+    .btn-tipo {
+      padding: 6px 18px; border-radius: 999px; border: 2px solid rgba(15,23,42,.15);
+      background: #fff; font-size: 13px; font-weight: 700; cursor: pointer; color: #6b7280; transition: .15s;
+    }
+    .btn-tipo:hover { border-color: #0b76d8; color: #0b76d8; }
+    .btn-tipo.active { background: #0b76d8; border-color: #0b76d8; color: #fff; }
+    .badge-home  { background: #dbeafe; color: #1d4ed8; }
+    .badge-pro   { background: #fef9c3; color: #854d0e; }
+    .badge-ambos { background: #f3f4f6; color: #6b7280; }
   </style>
 {% endblock %}
 
@@ -143,6 +155,13 @@
   {% for msg in app.flashes('error') %}
     <div class="flash-error">{{ msg }}</div>
   {% endfor %}
+
+  <div class="tipo-filter-bar">
+    <span>Tipo:</span>
+    <button class="btn-tipo active" id="btn-tipo-all"  onclick="setGlobalTipo('all',  this)">Todos</button>
+    <button class="btn-tipo"        id="btn-tipo-home" onclick="setGlobalTipo('home', this)">Home</button>
+    <button class="btn-tipo"        id="btn-tipo-pro"  onclick="setGlobalTipo('profesional', this)">Profesional</button>
+  </div>
 
   {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox','envolvente','control','bandeja'] ? app.request.query.get('tab') : 'door' %}
 
@@ -210,16 +229,17 @@
           <div class="empty-msg">No hay puertas registradas.</div>
         {% else %}
           <table class="ref-table" id="table-door">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for door in doors %}
-                <tr>
+                <tr data-tipo="{{ door.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ door.id }}" class="row-check check-door" onchange="updateCount('door')"></td>
                   <td><strong>{{ door.reference }}</strong></td>
                   <td>{{ door.serie }}</td>
                   <td>{{ door.place }}</td>
                   <td>{{ door.size }}</td>
                   <td>{% if door.methacrylate %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if door.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif door.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     {# El botón apunta al formulario individual por id (fuera del bulk form) #}
                     <button type="submit" form="del-door-{{ door.id }}" class="btn-delete"
@@ -264,14 +284,16 @@
           <div class="empty-msg">No hay laterales registrados.</div>
         {% else %}
           <table class="ref-table" id="table-side">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Altura</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for side in sides %}
-                <tr>
+                <tr data-tipo="{{ side.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ side.id }}" class="row-check check-side" onchange="updateCount('side')"></td>
                   <td><strong>{{ side.reference }}</strong></td>
                   <td>{{ side.serie }}</td>
                   <td>{{ side.place }}</td>
+                  <td>{{ side.altura ?? '—' }}</td>
+                  <td>{% if side.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif side.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-side-{{ side.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
@@ -316,15 +338,16 @@
           <div class="empty-msg">No hay tejados registrados.</div>
         {% else %}
           <table class="ref-table" id="table-roof">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Columnas</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Columnas</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for roof in roofs %}
-                <tr>
+                <tr data-tipo="{{ roof.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ roof.id }}" class="row-check check-roof" onchange="updateCount('roof')"></td>
                   <td><strong>{{ roof.reference }}</strong></td>
                   <td>{{ roof.serie }}</td>
                   <td>{{ roof.place }}</td>
                   <td>{{ roof.columns }}</td>
+                  <td>{% if roof.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif roof.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-roof-{{ roof.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
@@ -368,14 +391,16 @@
           <div class="empty-msg">No hay columnas registradas.</div>
         {% else %}
           <table class="ref-table" id="table-columna">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Altura</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for columna in columnas %}
-                <tr>
+                <tr data-tipo="{{ columna.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ columna.id }}" class="row-check check-columna" onchange="updateCount('columna')"></td>
                   <td><strong>{{ columna.reference }}</strong></td>
                   <td>{{ columna.serie }}</td>
                   <td>{{ columna.place }}</td>
+                  <td>{{ columna.altura ?? '—' }}</td>
+                  <td>{% if columna.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif columna.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-columna-{{ columna.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
@@ -421,16 +446,17 @@
           <div class="empty-msg">No hay buzones registrados.</div>
         {% else %}
           <table class="ref-table" id="table-mailbox">
-            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for mailbox in mailboxes %}
-                <tr>
+                <tr data-tipo="{{ mailbox.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ mailbox.id }}" class="row-check check-mailbox" onchange="updateCount('mailbox')"></td>
                   <td><strong>{{ mailbox.reference }}</strong></td>
                   <td>{{ mailbox.descripcion }}</td>
                   <td>{{ mailbox.alto }}</td>
                   <td>{{ mailbox.ancho }}</td>
                   <td>{{ mailbox.fondo }}</td>
+                  <td>{% if mailbox.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif mailbox.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este buzón?')">Eliminar</button>
@@ -475,15 +501,16 @@
           <div class="empty-msg">No hay envolventes registrados.</div>
         {% else %}
           <table class="ref-table" id="table-envolvente">
-            <thead><tr><th></th><th>Referencia</th><th>Tipo</th><th>Rango</th><th>Descripción</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Tipo</th><th>Rango</th><th>Descripción</th><th>Config</th><th></th></tr></thead>
             <tbody>
               {% for env in envolventes %}
-                <tr>
+                <tr data-tipo="{{ env.tipoConfig ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ env.id }}" class="row-check check-envolvente" onchange="updateCount('envolvente')"></td>
                   <td><strong>{{ env.reference }}</strong></td>
                   <td>{{ env.tipo }}</td>
                   <td>{{ env.rango }}</td>
                   <td>{{ env.descripcion }}</td>
+                  <td>{% if env.tipoConfig == 'home' %}<span class="badge badge-home">Home</span>{% elseif env.tipoConfig == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-envolvente-{{ env.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este envolvente?')">Eliminar</button>
@@ -527,14 +554,15 @@
           <div class="empty-msg">No hay controles registrados.</div>
         {% else %}
           <table class="ref-table" id="table-control">
-            <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for ctrl in controles %}
-                <tr>
+                <tr data-tipo="{{ ctrl.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ ctrl.id }}" class="row-check check-control" onchange="updateCount('control')"></td>
                   <td><strong>{{ ctrl.reference }}</strong></td>
                   <td>{{ ctrl.place }}</td>
                   <td>{{ ctrl.descripcion }}</td>
+                  <td>{% if ctrl.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif ctrl.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-control-{{ ctrl.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este control?')">Eliminar</button>
@@ -577,13 +605,14 @@
           <div class="empty-msg">No hay bandejas registradas.</div>
         {% else %}
           <table class="ref-table" id="table-bandeja">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for bandeja in bandejas %}
-                <tr>
+                <tr data-tipo="{{ bandeja.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ bandeja.id }}" class="row-check check-bandeja" onchange="updateCount('bandeja')"></td>
                   <td><strong>{{ bandeja.reference }}</strong></td>
                   <td>{{ bandeja.serie }}</td>
+                  <td>{% if bandeja.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif bandeja.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-bandeja-{{ bandeja.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta bandeja?')">Eliminar</button>
@@ -661,6 +690,12 @@
         <option value="0">No</option>
         <option value="1">Sí</option>
       </select>
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('door')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -681,6 +716,16 @@
       <input type="text" name="serie" required>
       <label>Lugar</label>
       <input type="text" name="place" required placeholder="interior / exterior">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="side-tipo-select" onchange="toggleSideAltura()">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
+      <div id="side-altura-wrap" style="display:none;">
+        <label>Altura (H total)</label>
+        <input type="text" name="altura" placeholder="ej. 40">
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('side')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -703,6 +748,12 @@
       <input type="text" name="place" required placeholder="interior / exterior">
       <label>Columnas</label>
       <input type="number" name="columns" required min="1">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('roof')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -733,6 +784,12 @@
       </select>
       <label>Descripción</label>
       <input type="text" name="descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipoConfig">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('envolvente')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -757,6 +814,12 @@
       <input type="text" name="fondo" required>
       <label>Descripción</label>
       <input type="text" name="descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('mailbox')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -775,6 +838,12 @@
       <input type="text" name="reference" required autofocus>
       <label>Serie</label>
       <input type="text" name="serie" required placeholder="300 / 400 / 500">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('bandeja')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -799,6 +868,12 @@
       </select>
       <label>Descripción</label>
       <input type="text" name="descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('control')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -819,6 +894,16 @@
       <input type="text" name="serie" required>
       <label>Lugar</label>
       <input type="text" name="place" required placeholder="interior / exterior">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="columna-tipo-select" onchange="toggleColumnaAltura()">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
+      <div id="columna-altura-wrap" style="display:none;">
+        <label>Altura (H total)</label>
+        <input type="text" name="altura" id="columna-altura-input" placeholder="ej. 40">
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('columna')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -828,11 +913,23 @@
 </div>
 
 <script>
+  let globalTipo = 'all';
+  let activeTabName = '{{ activeTab }}';
+
+  function setGlobalTipo(tipo, btn) {
+    globalTipo = tipo;
+    document.querySelectorAll('.btn-tipo').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterTable(activeTabName);
+  }
+
   function switchTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     btn.classList.add('active');
+    activeTabName = name;
+    filterTable(name);
   }
 
   function updateCount(type) {
@@ -877,7 +974,9 @@
 
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      const show  = filters.every(([id, colIdx]) => {
+      const rowTipo = row.dataset.tipo || '';
+      const tipoOk = globalTipo === 'all' || rowTipo === globalTipo;
+      const show  = tipoOk && filters.every(([id, colIdx]) => {
         const val = document.getElementById(id).value.trim().toLowerCase();
         if (!val) return true;
         const cell = cells[colIdx];
@@ -889,6 +988,16 @@
 
     const fc = document.getElementById('fc-' + type);
     if (fc) fc.textContent = visible + ' / ' + rows.length;
+  }
+
+  function toggleSideAltura() {
+    const val = document.getElementById('side-tipo-select').value;
+    document.getElementById('side-altura-wrap').style.display = val === 'home' ? 'block' : 'none';
+  }
+
+  function toggleColumnaAltura() {
+    const val = document.getElementById('columna-tipo-select').value;
+    document.getElementById('columna-altura-wrap').style.display = val === 'home' ? 'block' : 'none';
   }
 
   function openModal(type) {

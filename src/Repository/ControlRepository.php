@@ -12,4 +12,18 @@ class ControlRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Control::class);
     }
+
+    public function findByPlace(string $place, ?string $tipo = null): array
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->andWhere('c.place = :place')
+            ->setParameter('place', $place);
+
+        if ($tipo !== null) {
+            $qb->andWhere('c.tipo = :tipo OR c.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

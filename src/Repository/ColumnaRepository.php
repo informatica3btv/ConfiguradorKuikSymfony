@@ -13,8 +13,24 @@ class ColumnaRepository extends ServiceEntityRepository
         parent::__construct($registry, Columna::class);
     }
 
-    public function findOneColumnaBySerieAndPlace(string $serie, string $place): ?Columna
+    public function findOneColumnaBySerieAndPlace(string $serie, string $place, ?string $tipo = null, ?string $altura = null): ?Columna
     {
-        return $this->findOneBy(['serie' => $serie, 'place' => $place]);
+        $qb = $this->createQueryBuilder('c')
+            ->andWhere('c.serie = :serie')
+            ->andWhere('c.place = :place')
+            ->setParameter('serie', $serie)
+            ->setParameter('place', $place);
+
+        if ($tipo !== null) {
+            $qb->andWhere('c.tipo = :tipo OR c.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        if ($altura !== null) {
+            $qb->andWhere('c.altura = :altura OR c.altura IS NULL')
+               ->setParameter('altura', $altura);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
     }
 }

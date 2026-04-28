@@ -29,6 +29,9 @@ class Envolvente
     /** @ORM\Column(type="string", length=500, nullable=true) */
     private $descripcion;
 
+    /** @ORM\Column(type="string", length=50, nullable=true) */
+    private $tipoConfig; // 'home' | 'profesional' | null (ambos)
+
     public function getId(): ?int { return $this->id; }
 
     public function getReference(): ?string { return $this->reference; }
@@ -42,4 +45,7 @@ class Envolvente
 
     public function getDescripcion(): ?string { return $this->descripcion; }
     public function setDescripcion(?string $v): self { $this->descripcion = $v; return $this; }
+
+    public function getTipoConfig(): ?string { return $this->tipoConfig; }
+    public function setTipoConfig(?string $v): self { $this->tipoConfig = $v; return $this; }
 }

@@ -13,24 +13,24 @@ class SideRepository extends ServiceEntityRepository
         parent::__construct($registry, Side::class);
     }
 
-    public function findOneSideBySerie(string $serie): ?Side
+    public function findOneSideBySerieAndPlace(string $serie, string $place, ?string $tipo = null, ?string $altura = null): ?Side
     {
-        return $this->createQueryBuilder('p')
-            ->andWhere('p.serie = :serie')
-            ->setParameter('serie', $serie)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
-    public function findOneSideBySerieAndPlace(string $serie,string $place): ?Side
-    {
-        return $this->createQueryBuilder('p')
+        $qb = $this->createQueryBuilder('p')
             ->andWhere('p.serie = :serie')
             ->andWhere('p.place = :place')
             ->setParameter('serie', $serie)
-            ->setParameter('place', $place)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
+            ->setParameter('place', $place);
 
+        if ($tipo !== null) {
+            $qb->andWhere('p.tipo = :tipo OR p.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        if ($altura !== null) {
+            $qb->andWhere('p.altura = :altura OR p.altura IS NULL')
+               ->setParameter('altura', $altura);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult();
+    }
 }
