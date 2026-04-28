@@ -546,7 +546,11 @@
           <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
         {% endif %}
 
-        <a class="btn primary" href="{{ path('configuration_pdf', { id: configuration.id }) }}">Descargar PDF</a>
+        <button class="btn primary" id="btnDescargarPdf"
+          data-screenshot-url="{{ path('configuration_screenshot', { id: configuration.id }) }}"
+          data-pdf-url="{{ path('configuration_pdf', { id: configuration.id }) }}">
+          Descargar PDF
+        </button>
       {% endif %}
     </div>
 
@@ -1147,6 +1151,54 @@
           status.style.display = 'none';
           btn.disabled = false;
         }
+      });
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnPdf = document.getElementById('btnDescargarPdf');
+      if (!btnPdf) return;
+
+      btnPdf.addEventListener('click', async function () {
+        const screenshotUrl = btnPdf.dataset.screenshotUrl;
+        const pdfUrl        = btnPdf.dataset.pdfUrl;
+
+        btnPdf.disabled = true;
+        btnPdf.textContent = 'Generando…';
+
+        try {
+          const groups = document.querySelectorAll('#previewCapture .group-block');
+          if (groups.length > 0) {
+            const hidden = [...document.querySelectorAll('#previewCapture .num, #previewCapture .badges')];
+            hidden.forEach(el => el.style.visibility = 'hidden');
+
+            const screenshots = [];
+            for (const group of groups) {
+              const prevPadding = group.style.padding;
+              group.style.padding = '10px 70px 100px';
+              const canvas = await html2canvas(group, { backgroundColor: '#ffffff', scale: 1, useCORS: true });
+              group.style.padding = prevPadding;
+              screenshots.push(canvas.toDataURL('image/png'));
+            }
+
+            hidden.forEach(el => el.style.visibility = '');
+
+            await fetch(screenshotUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ screenshots })
+            });
+          }
+        } catch (e) {
+          console.warn('Screenshot failed, continuing without it:', e);
+        }
+
+        window.location.href = pdfUrl;
+        setTimeout(() => {
+          btnPdf.disabled = false;
+          btnPdf.textContent = 'Descargar PDF';
+        }, 2000);
       });
     });
   </script>

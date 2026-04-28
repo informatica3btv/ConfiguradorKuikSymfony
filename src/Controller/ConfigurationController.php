@@ -1058,10 +1058,52 @@ class ConfigurationController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Configuración aceptada. Proyecto finalizado.');
-        
-        return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
-    
 
+        return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+    }
+
+    /**
+     * @Route("/configuracion/screenshot/{id}", name="configuration_screenshot", methods={"POST"})
+     */
+    public function saveScreenshot(
+        int $id,
+        Request $request,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            return new JsonResponse(['ok' => false], 404);
+        }
+
+        $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            return new JsonResponse(['ok' => false], 403);
+        }
+
+        $data        = json_decode($request->getContent(), true);
+        $screenshots = $data['screenshots'] ?? null;
+
+        if (!$screenshots || !is_array($screenshots)) {
+            return new JsonResponse(['ok' => false, 'error' => 'Invalid screenshots'], 400);
+        }
+
+        foreach ($screenshots as $s) {
+            if (!is_string($s) || !str_starts_with($s, 'data:image/')) {
+                return new JsonResponse(['ok' => false, 'error' => 'Invalid screenshot entry'], 400);
+            }
+        }
+
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        $payloadArr['_screenshots'] = $screenshots;
+        $configuration->setPayload(json_encode($payloadArr));
+
+        $em->persist($configuration);
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
     }
 
 }

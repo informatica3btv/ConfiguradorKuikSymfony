@@ -252,8 +252,6 @@ class ImportAdminController extends AbstractController
             }
         }
 
-        $em->flush();
-
         // ── Hoja BANDEJA ───────────────────────────────────────────
         // Columnas: reference | serie
         if ($spreadsheet->getSheetByName('bandeja')) {
@@ -276,6 +274,8 @@ class ImportAdminController extends AbstractController
                 $stats['bandeja']++;
             }
         }
+
+        $em->flush();
 
         $this->addFlash('success', sprintf(
             'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas.',

@@ -483,7 +483,11 @@
      ========================= #}
   <div class="card-preview">
 
-    {% if groups is empty %}
+    {% if p._screenshots is defined and p._screenshots is not empty %}
+      {% for shot in p._screenshots %}
+        <img src="{{ shot }}" style="max-width:100%; height:auto; display:block; margin:0 auto 12px;" alt="Agrupación {{ loop.index }}">
+      {% endfor %}
+    {% elseif groups is empty %}
       <div style="color:#c0392b; font-weight:900;">No hay columnas en esta configuración.</div>
     {% else %}
 
