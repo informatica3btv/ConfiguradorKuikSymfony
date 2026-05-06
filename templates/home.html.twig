@@ -680,7 +680,7 @@
           <label style="font-size:13px;font-weight:700;">Modelo de buzón</label>
           <select id="mb-model-select" style="min-width:200px;">
             <option value="">-- Selecciona --</option>
-            {% for mb in mailboxes %}
+            {% for mb in mailboxesGrupo %}
               <option value="{{ mb.id }}"
                       data-alto="{{ mb.alto }}"
                       data-ancho="{{ mb.ancho }}"
@@ -2033,6 +2033,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ...(window.MB_STATE ? { mailboxGroup: window.MB_STATE } : {}),
 
       control: (document.getElementById('control-select') ? document.getElementById('control-select').value : null) || null,
+
+      ...(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.bracketType  ? { bracketType:  window.PRELOADED_CONFIG.bracketType }  : {}),
+      ...(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.bracketColor ? { bracketColor: window.PRELOADED_CONFIG.bracketColor } : {}),
     }));
   });
 

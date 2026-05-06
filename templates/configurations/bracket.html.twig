@@ -538,7 +538,7 @@
                                   {% set cellIdx = r * mbCols + c %}
                                   {% set filled = mbCells[cellIdx] ?? true %}
                                   <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}" alt="Buzón">{% endif %}
+                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
                                   </div>
                                 {% endfor %}
                               </div>
@@ -597,7 +597,7 @@
                                   {% set cellIdx = r * mbCols + c %}
                                   {% set filled = mbCells[cellIdx] ?? true %}
                                   <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}" alt="Buzón">{% endif %}
+                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
                                   </div>
                                 {% endfor %}
                               </div>

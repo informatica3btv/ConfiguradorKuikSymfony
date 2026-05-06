@@ -359,6 +359,7 @@ class ConfigurationController extends AbstractController
                     isset($payload['aceroInoxidable']) ? (bool) $payload['aceroInoxidable'] : null
                 )
                 : $mailboxRepo->findBy([], ['reference' => 'ASC']),
+            'mailboxesGrupo'       => $mailboxRepo->findBy(['agrupacion' => true], ['reference' => 'ASC']),
             'controles'            => $controlRepo->findByTipo(
                 $type !== '' ? $type : null
             ),
@@ -937,14 +938,9 @@ class ConfigurationController extends AbstractController
         }
 
         $mbGroupBase64 = null;
-        $mbGroupUrl = 'https://dbox.btv.es/products/img/medium/10723.jpg';
-        try {
-            $mbGroupImg = @file_get_contents($mbGroupUrl);
-            if ($mbGroupImg !== false) {
-                $mbGroupBase64 = 'data:image/jpeg;base64,' . base64_encode($mbGroupImg);
-            }
-        } catch (\Exception $e) {
-            $mbGroupBase64 = null;
+        $mbGroupLocalPath = realpath(__DIR__ . '/../../public/assets/buzon_agrupacion.jpg');
+        if ($mbGroupLocalPath && file_exists($mbGroupLocalPath)) {
+            $mbGroupBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($mbGroupLocalPath));
         }
 
         $legBase64 = null;

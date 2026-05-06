@@ -519,7 +519,7 @@ class ConfigurationService
         // Grupo de buzones y envolvente (agrupación combinada) — no aplica en Home
         $agrupacion = $payload['agrupacion_combinada'] ?? false;
         $mbGroup    = $payload['mailboxGroup'] ?? null;
-        if ($tipo !== 'home' && $agrupacion && $mbGroup && !empty($mbGroup['reference'])) {
+        if ($agrupacion && $mbGroup && !empty($mbGroup['reference'])) {
             $mbRef   = $mbGroup['reference'];
             $mbCells = $mbGroup['cells'] ?? [];
             // Contar celdas activas (filled = true por defecto)

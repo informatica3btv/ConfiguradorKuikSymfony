@@ -51,8 +51,7 @@ twig:
             img_brazo_plata:  'assets/brazo_plata.jpg'
             img_pie:          'assets/pie_negro.jpg'
 
-            # URL externa imagen buzón BTV (no usa asset())
-            img_buzon_btv: 'https://dbox.btv.es/products/img/medium/10723.jpg'
+            img_buzon_btv: '/assets/buzon_agrupacion.jpg'
 
 when@test:
     twig:
