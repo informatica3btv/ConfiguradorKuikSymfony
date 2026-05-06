@@ -3,9 +3,12 @@
 namespace App\Service;
 
 use App\Repository\BandejaRepository;
+use App\Repository\BrazoRepository;
 use App\Repository\ColumnaRepository;
+use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
 use App\Repository\EnvolventeRepository;
+use App\Repository\MailboxRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 
@@ -16,9 +19,13 @@ class ConfigurationService
     private RoofRepository       $roofRepo;
     private EnvolventeRepository $envolventeRepo;
     private BandejaRepository    $bandejaRepo;
+    private BrazoRepository      $brazoRepo;
     private ColumnaRepository    $columnaRepo;
+    private ControlRepository    $controlRepo;
+    private MailboxRepository    $mailboxRepo;
     private BtvApiService        $btvApi;
     private string               $placaReference;
+    private string               $colgadorReference;
     private int                  $doorsPerPlate;
 
     public function __construct(
@@ -27,9 +34,13 @@ class ConfigurationService
         RoofRepository $roofRepo,
         EnvolventeRepository $envolventeRepo,
         BandejaRepository $bandejaRepo,
+        BrazoRepository $brazoRepo,
         ColumnaRepository $columnaRepo,
+        ControlRepository $controlRepo,
+        MailboxRepository $mailboxRepo,
         BtvApiService  $btvApi,
         string         $placaReference,
+        string         $colgadorReference = '',
         int            $doorsPerPlate = 16
     ) {
         $this->doorRepo       = $doorRepo;
@@ -37,10 +48,14 @@ class ConfigurationService
         $this->roofRepo       = $roofRepo;
         $this->envolventeRepo = $envolventeRepo;
         $this->bandejaRepo    = $bandejaRepo;
+        $this->brazoRepo      = $brazoRepo;
         $this->columnaRepo    = $columnaRepo;
+        $this->controlRepo    = $controlRepo;
+        $this->mailboxRepo    = $mailboxRepo;
         $this->btvApi         = $btvApi;
-        $this->placaReference = $placaReference;
-        $this->doorsPerPlate  = $doorsPerPlate;
+        $this->placaReference    = $placaReference;
+        $this->colgadorReference = $colgadorReference;
+        $this->doorsPerPlate     = $doorsPerPlate;
     }
 
     /**
@@ -191,10 +206,11 @@ class ConfigurationService
             $blk    = ['h' => $height, 'type' => $type];
         }
 
-        $isScreen  = ($type === 'screen');
-        $isMailbox = ($type === 'mailbox');
+        $isScreen         = ($type === 'screen');
+        $isMailbox        = ($type === 'mailbox');
+        $isElecMailbox    = $isMailbox && !empty($blk['electronico']);
 
-        if ($isScreen || $isMailbox) {
+        if ($isScreen || ($isMailbox && !$isElecMailbox)) {
             $blk['doorNumber']   = null;
             $blk['plateNumber']  = null;
             $blk['socket']       = false;
@@ -247,11 +263,21 @@ class ConfigurationService
             $allCols = $payload['columns'] ?? [];
         }
 
+        $mailboxBlockCounts = []; // key => [elec, tarj, count]
+
         foreach ($allCols as $col) {
             foreach (['top', 'bottom', 'single'] as $part) {
                 foreach ($col[$part]['blocks'] ?? [] as $blk) {
                     $btype = $blk['type'] ?? 'door';
-                    if ($btype !== 'screen' && $btype !== 'mailbox') {
+                    if ($btype === 'mailbox') {
+                        $elec = !empty($blk['electronico']);
+                        $tarj = !empty($blk['tarjetero']);
+                        $mbKey = 'mailbox_col_' . ($elec ? '1' : '0') . '_' . ($tarj ? '1' : '0');
+                        if (!isset($mailboxBlockCounts[$mbKey])) {
+                            $mailboxBlockCounts[$mbKey] = ['electronico' => $elec, 'tarjetero' => $tarj, 'count' => 0];
+                        }
+                        $mailboxBlockCounts[$mbKey]['count']++;
+                    } elseif ($btype !== 'screen') {
                         $doorIndex++;
                         $size = (string)($blk['h'] ?? '');
                         $sel  = $addons[(string)$doorIndex] ?? $addons[$doorIndex] ?? null;
@@ -278,9 +304,13 @@ class ConfigurationService
 
         $groupCount = !empty($groups) ? count($groups) : 1;
 
-        // Para Home, calcular la altura de cada agrupación y buscar lateral por altura
-        if ($tipo === 'home' && !empty($groups)) {
-            foreach ($groups as $gIdx => $groupCols) {
+        $isBrazos = $tipo === 'home'
+            && ($payload['instalacion'] ?? '') === 'soporte_suelo'
+            && ($payload['bracketType'] ?? '') === 'brazos';
+
+        // Para Home con brazos: sin laterales, 1 brazo por agrupación según altura
+        if ($isBrazos && !empty($groups)) {
+            foreach ($groups as $groupCols) {
                 if (!is_array($groupCols)) continue;
                 $maxH = 0;
                 foreach ($groupCols as $col) {
@@ -292,7 +322,34 @@ class ConfigurationService
                     }
                     $maxH = max($maxH, $colH);
                 }
-                $alturaKey = (string)$maxH;
+                $hUnits   = (string)intdiv($maxH, 10);
+                $brazoKey = 'brazo_' . $maxH;
+                $brazo = $this->brazoRepo->findOneBy(['altura' => $hUnits, 'tipo' => $tipo])
+                      ?? $this->brazoRepo->findOneBy(['altura' => $hUnits])
+                      ?? $this->brazoRepo->findOneBy(['altura' => $hUnits . 'H', 'tipo' => $tipo])
+                      ?? $this->brazoRepo->findOneBy(['altura' => $hUnits . 'H']);
+                $sizeCounts[$brazoKey] = ($sizeCounts[$brazoKey] ?? 0) + 1;
+                $products[$brazoKey]   = $brazo;
+                if ($brazo) {
+                    $qty = $sizeCounts[$brazoKey];
+                    $productInfo[$brazoKey] = $this->btvApi->getProductInfo($brazo->getReference(), $qty);
+                }
+            }
+        } elseif ($tipo === 'home' && !empty($groups)) {
+            // Para Home sin brazos: lateral por altura de agrupación
+            foreach ($groups as $groupCols) {
+                if (!is_array($groupCols)) continue;
+                $maxH = 0;
+                foreach ($groupCols as $col) {
+                    $colH = 0;
+                    foreach (['top', 'bottom', 'single'] as $part) {
+                        foreach ($col[$part]['blocks'] ?? [] as $blk) {
+                            $colH += (int)($blk['h'] ?? 0);
+                        }
+                    }
+                    $maxH = max($maxH, $colH);
+                }
+                $alturaKey  = (string)$maxH;
                 $lateralKey = 'lateral_' . $alturaKey;
                 $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement, $tipo, $alturaKey);
                 $sizeCounts[$lateralKey] = ($sizeCounts[$lateralKey] ?? 0) + 1;
@@ -347,32 +404,51 @@ class ConfigurationService
             }
         }
 
-        // Control de acceso
-        $controlRef = $payload['control'] ?? null;
-        if ($controlRef) {
-            $sizeCounts['control'] = 1;
-            $products['control']   = ['reference' => $controlRef];
-            $apiInfo = $this->btvApi->getProductInfo($controlRef, 1);
-            if (is_array($apiInfo)) {
-                $productInfo['control'] = $apiInfo;
+        // Buzones integrados en columnas (home)
+        foreach ($mailboxBlockCounts as $mbKey => $mbData) {
+            $mbEntity = $this->mailboxRepo->findOneBy([
+                'agrupacion'  => false,
+                'electronico' => $mbData['electronico'],
+                'tarjetero'   => $mbData['tarjetero'],
+            ]);
+            $sizeCounts[$mbKey] = $mbData['count'];
+            $products[$mbKey]   = $mbEntity;
+            if ($mbEntity) {
+                $productInfo[$mbKey] = $this->btvApi->getProductInfo($mbEntity->getReference(), $mbData['count']);
             }
         }
 
-        // Bandejas: una por columna que tiene bloques tanto en top como en bottom
-        $bandejaCount = 0;
-        foreach ($allCols as $col) {
-            $hasTop    = !empty($col['top']['blocks'] ?? []);
-            $hasBottom = !empty($col['bottom']['blocks'] ?? []);
-            if ($hasTop && $hasBottom) {
-                $bandejaCount++;
+        // Control de acceso
+        $controlRef = $payload['control'] ?? null;
+        if ($controlRef) {
+            $controlEntity = $this->controlRepo->findOneBy(['reference' => $controlRef]);
+            $sizeCounts['control'] = 1;
+            $products['control']   = $controlEntity ?? ['reference' => $controlRef];
+            $apiInfo = $this->btvApi->getProductInfo($controlRef, 1);
+            if (!is_array($apiInfo)) {
+                $apiInfo = [];
             }
+            $apiInfo['_descripcion'] = $controlEntity ? $controlEntity->getDescripcion() : null;
+            $productInfo['control'] = $apiInfo;
         }
-        if ($bandejaCount > 0) {
-            $bandeja = $this->bandejaRepo->findOneBySerie($serie, $tipo);
-            $sizeCounts['bandeja'] = $bandejaCount;
-            $products['bandeja']   = $bandeja;
-            if ($bandeja) {
-                $productInfo['bandeja'] = $this->btvApi->getProductInfo($bandeja->getReference(), $bandejaCount);
+
+        // Bandejas: una por columna que tiene bloques tanto en top como en bottom (no aplica en Home)
+        if ($tipo !== 'home') {
+            $bandejaCount = 0;
+            foreach ($allCols as $col) {
+                $hasTop    = !empty($col['top']['blocks'] ?? []);
+                $hasBottom = !empty($col['bottom']['blocks'] ?? []);
+                if ($hasTop && $hasBottom) {
+                    $bandejaCount++;
+                }
+            }
+            if ($bandejaCount > 0) {
+                $bandeja = $this->bandejaRepo->findOneBySerie($serie, $tipo);
+                $sizeCounts['bandeja'] = $bandejaCount;
+                $products['bandeja']   = $bandeja;
+                if ($bandeja) {
+                    $productInfo['bandeja'] = $this->btvApi->getProductInfo($bandeja->getReference(), $bandejaCount);
+                }
             }
         }
 
@@ -381,10 +457,16 @@ class ConfigurationService
         foreach ($roofGroups as $groupCols) {
             if (!is_array($groupCols)) continue;
             $numCols = count($groupCols);
-            $pairs   = intdiv($numCols, 2);
-            $singles = $numCols % 2;
-            if ($pairs > 0)   { $roofCounts[2] = ($roofCounts[2] ?? 0) + $pairs; }
-            if ($singles > 0) { $roofCounts[1] = ($roofCounts[1] ?? 0) + $singles; }
+            if ($tipo === 'home') {
+                // Home: un tejado individual por columna
+                $roofCounts[1] = ($roofCounts[1] ?? 0) + $numCols;
+            } else {
+                // Profesional: agrupar en pares de 2 + sueltos
+                $pairs   = intdiv($numCols, 2);
+                $singles = $numCols % 2;
+                if ($pairs > 0)   { $roofCounts[2] = ($roofCounts[2] ?? 0) + $pairs; }
+                if ($singles > 0) { $roofCounts[1] = ($roofCounts[1] ?? 0) + $singles; }
+            }
         }
         foreach ($roofCounts as $numCols => $count) {
             $key  = 'tejado_' . $numCols;
@@ -404,23 +486,40 @@ class ConfigurationService
                 foreach (['top', 'bottom', 'single'] as $part) {
                     foreach ($col[$part]['blocks'] ?? [] as $blk) {
                         $btype = $blk['type'] ?? 'door';
-                        if ($btype !== 'screen' && $btype !== 'mailbox') {
-                            $doorsInGroup++;
+                        if ($btype === 'screen') {
+                            continue;
                         }
+                        if ($btype === 'mailbox' && empty($blk['electronico'])) {
+                            continue;
+                        }
+                        $doorsInGroup++;
                     }
                 }
             }
             $totalPlates += max(1, (int) ceil($doorsInGroup / $this->doorsPerPlate));
         }
 
-        $sizeCounts['placa'] = $totalPlates;
-        $products['placa']   = $this->placaReference;
-        $productInfo['placa'] = $this->btvApi->getProductInfo($this->placaReference, $totalPlates);
+        $extraPlates = $totalPlates - 1; // 1 placa ya incluida en periféricos
+        if ($extraPlates > 0) {
+            $sizeCounts['placa'] = $extraPlates;
+            $products['placa']   = $this->placaReference;
+            $productInfo['placa'] = $this->btvApi->getProductInfo($this->placaReference, $extraPlates);
+        }
 
-        // Grupo de buzones (agrupación combinada)
+        // Colgadores: solo para instalación 'colgado' en Home
+        if ($tipo === 'home' && ($payload['instalacion'] ?? '') === 'colgado' && $totalCols > 0) {
+            $numColgadores = $totalCols <= 1 ? 1 : (int)(floor(($totalCols - 2) / 3) + 2);
+            $sizeCounts['colgador'] = $numColgadores;
+            $products['colgador']   = $this->colgadorReference;
+            if ($this->colgadorReference !== '') {
+                $productInfo['colgador'] = $this->btvApi->getProductInfo($this->colgadorReference, $numColgadores);
+            }
+        }
+
+        // Grupo de buzones y envolvente (agrupación combinada) — no aplica en Home
         $agrupacion = $payload['agrupacion_combinada'] ?? false;
         $mbGroup    = $payload['mailboxGroup'] ?? null;
-        if ($agrupacion && $mbGroup && !empty($mbGroup['reference'])) {
+        if ($tipo !== 'home' && $agrupacion && $mbGroup && !empty($mbGroup['reference'])) {
             $mbRef   = $mbGroup['reference'];
             $mbCells = $mbGroup['cells'] ?? [];
             // Contar celdas activas (filled = true por defecto)

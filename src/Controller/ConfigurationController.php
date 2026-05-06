@@ -8,6 +8,7 @@ use App\Repository\ConfigurationRepository;
 use App\Repository\ConfigurationTypeRepository;
 use App\Repository\ColorRepository;
 use App\Repository\ProjectRepository;
+use App\Repository\ControlRepository;
 use App\Repository\MailboxRepository;
 use App\Service\ConfigurationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -169,8 +170,9 @@ class ConfigurationController extends AbstractController
 
         $options = [
             ['value' => 'empotrado',     'name' => 'Empotrado'],
-            ['value' => 'zocalo',         'name' => 'Zócalo'],
+            ['value' => 'zocalo',        'name' => 'Zócalo'],
             ['value' => 'soporte_suelo', 'name' => 'Soporte a suelo'],
+            ['value' => 'colgado',       'name' => 'Colgado'],
         ];
 
         return $this->render('configurations/home_instalacion.html.twig', [
@@ -189,7 +191,8 @@ class ConfigurationController extends AbstractController
         ColorRepository $colorRepo,
         ConfigurationTypeRepository $configurationTypeRepo,
         EntityManagerInterface $em,
-        MailboxRepository $mailboxRepo
+        MailboxRepository $mailboxRepo,
+        ControlRepository $controlRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         
@@ -349,8 +352,16 @@ class ConfigurationController extends AbstractController
             'coloresPuerta'        => $coloresPuerta,
             'availableAttributes'  => $availableAttributes,
             'attributesGrouped'    => $attributesGrouped,
-            'mailboxes'            => $mailboxRepo->findBy([], ['reference' => 'ASC']),
-            'controles'            => $em->getRepository(\App\Entity\Control::class)->findBy([], ['reference' => 'ASC']),
+            'mailboxes'            => $type === 'home'
+                ? $mailboxRepo->findAgrupacion(
+                    isset($payload['electronico']) ? (bool) $payload['electronico'] : null,
+                    isset($payload['tarjetero'])   ? (bool) $payload['tarjetero']   : null,
+                    isset($payload['aceroInoxidable']) ? (bool) $payload['aceroInoxidable'] : null
+                )
+                : $mailboxRepo->findBy([], ['reference' => 'ASC']),
+            'controles'            => $controlRepo->findByTipo(
+                $type !== '' ? $type : null
+            ),
             'controlActual'        => $payload['control'] ?? null,
         ]);
     }
@@ -562,10 +573,15 @@ class ConfigurationController extends AbstractController
             ? (json_decode($payloadRaw, true) ?: [])
             : (is_array($payloadRaw) ? $payloadRaw : []);
 
-        // ✅ si quieres mantener addons previos si no vienen en el nuevo payload
+        // Preservar campos internos del payload anterior que el editor no emite
         $old = $config->getDecodedPayload();
         if (isset($old['addons']) && !isset($payloadArr['addons'])) {
             $payloadArr['addons'] = $old['addons'];
+        }
+        foreach (['_instalacion_precio', '_instalacion_iva', '_screenshots', '_acceptedProductTable'] as $internalKey) {
+            if (isset($old[$internalKey]) && !isset($payloadArr[$internalKey])) {
+                $payloadArr[$internalKey] = $old[$internalKey];
+            }
         }
 
         $payloadArr = $this->configService->cleanAddons($payloadArr, $old);
@@ -576,7 +592,7 @@ class ConfigurationController extends AbstractController
         $em->flush();
         
 
-        if(isset($payloadArr['instalacion']) && ($payloadArr['instalacion'] == 'empotrado' || $payloadArr['instalacion'] == 'zocalo' )){
+        if(isset($payloadArr['instalacion']) && in_array($payloadArr['instalacion'], ['empotrado', 'zocalo', 'colgado'])){
 
             $payloadPrepared = $this->configService->prepareSummaryPayload($payloadArr);
             return $this->render('configurations/summary.html.twig', [
@@ -791,28 +807,21 @@ class ConfigurationController extends AbstractController
 
         $payload = $configuration->getDecodedPayload();
 
-        // If accepted, use the snapshot stored at acceptance time
-        if ($configuration->getStatus() === Configuration::STATUS_ACCEPTED && isset($payload['_acceptedProductTable'])) {
+        $isClosed = in_array($configuration->getStatus(), [
+            Configuration::STATUS_ACCEPTED,
+            Configuration::STATUS_CLOSED,
+        ], true);
+
+        if ($isClosed && isset($payload['_acceptedProductTable'])) {
             $table = $payload['_acceptedProductTable'];
-        } elseif ($configuration->getStatus() === Configuration::STATUS_ACCEPTED) {
-            // Accepted but no snapshot (config was closed before snapshot feature existed).
-            // Build table ignoring tipo filter so references still resolve despite DB changes,
-            // then persist the snapshot so future views don't need to query the DB again.
-            $payloadNoTipo = $payload;
-            unset($payloadNoTipo['type']);
-            $table = $this->configService->buildProductTable($payloadNoTipo);
-            $normalizedProducts = [];
-            foreach ($table['products'] as $key => $product) {
-                $normalizedProducts[$key] = (is_object($product) && method_exists($product, 'getReference'))
-                    ? ['reference' => $product->getReference()]
-                    : $product;
-            }
-            $snapshotTable = $table;
-            $snapshotTable['products'] = $normalizedProducts;
-            $payload['_acceptedProductTable'] = $snapshotTable;
+        } elseif ($isClosed) {
+            // Configuración cerrada/aceptada sin snapshot previo — generarlo y persistirlo.
+            $snapshot = $this->buildProductSnapshot($payload);
+            $payload['_acceptedProductTable'] = $snapshot;
             $configuration->setPayload(json_encode($payload));
             $em->persist($configuration);
             $em->flush();
+            $table = $snapshot;
         } else {
             $table = $this->configService->buildProductTable($payload);
         }
@@ -882,11 +891,17 @@ class ConfigurationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        if (!isset($payloadArr['_acceptedProductTable'])) {
+            $payloadArr['_acceptedProductTable'] = $this->buildProductSnapshot($payloadArr);
+            $configuration->setPayload(json_encode($payloadArr));
+        }
+
         $configuration->setStatus(Configuration::STATUS_CLOSED);
         $em->persist($configuration);
         $em->flush();
 
-        $payload = $configuration->getDecodedPayload();
+        $payload = $payloadArr;
 
         $screenPath = $this->getParameter('kernel.project_dir') . '/public/assets/pantalla.png';
         $screenBase64 = null;
@@ -944,7 +959,7 @@ class ConfigurationController extends AbstractController
             $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
         }
 
-        $productTable = $this->configService->buildProductTable($payload);
+        $productTable = $payload['_acceptedProductTable'] ?? $this->configService->buildProductTable($payload);
 
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project' => $project,
@@ -1052,22 +1067,8 @@ class ConfigurationController extends AbstractController
 
         $configuration = $repo->find($id);
 
-        // Snapshot references and prices into the payload before accepting
         $payloadArr = $configuration->getDecodedPayload() ?? [];
-        $productTable = $this->configService->buildProductTable($payloadArr);
-
-        // Doctrine entities don't serialize to JSON — normalize them to plain arrays
-        $normalizedProducts = [];
-        foreach ($productTable['products'] as $key => $product) {
-            if (is_object($product) && method_exists($product, 'getReference')) {
-                $normalizedProducts[$key] = ['reference' => $product->getReference()];
-            } else {
-                $normalizedProducts[$key] = $product; // already a string (placa, buzon_group)
-            }
-        }
-        $productTable['products'] = $normalizedProducts;
-
-        $payloadArr['_acceptedProductTable'] = $productTable;
+        $payloadArr['_acceptedProductTable'] = $this->buildProductSnapshot($payloadArr);
         $configuration->setPayload(json_encode($payloadArr));
 
         $configuration->setStatus(Configuration::STATUS_ACCEPTED);
@@ -1127,6 +1128,19 @@ class ConfigurationController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['ok' => true]);
+    }
+
+    private function buildProductSnapshot(array $payload): array
+    {
+        $table = $this->configService->buildProductTable($payload);
+        $normalized = [];
+        foreach ($table['products'] as $key => $product) {
+            $normalized[$key] = (is_object($product) && method_exists($product, 'getReference'))
+                ? ['reference' => $product->getReference()]
+                : $product;
+        }
+        $table['products'] = $normalized;
+        return $table;
     }
 
     /**

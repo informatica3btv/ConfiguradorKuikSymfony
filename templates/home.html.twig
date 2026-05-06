@@ -591,6 +591,15 @@
       <h3 class="section-title">Colores</h3>
       <div class="section-help">Selecciona color de puerta y cuerpo.</div>
 
+      {% if type|default('') == 'home' %}
+      <div style="margin-bottom:12px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer;">
+          <input type="checkbox" id="chkAceroInoxidable" style="width:16px;height:16px;accent-color:#0b76d8;">
+          Acero inoxidable
+        </label>
+      </div>
+      {% endif %}
+
       <div class="grid-two">
         <div class="field">
           <label for="color-door">Color Puerta</label>
@@ -602,7 +611,7 @@
           </select>
         </div>
 
-        <div class="field">
+        <div class="field" {% if type|default('') == 'home' %}style="display:none;"{% endif %}>
           <label for="color-body">Color Cuerpo</label>
           <select name="color-body" id="color-body">
             <option value="" selected disabled>Selecciona un color</option>
@@ -643,6 +652,15 @@
               <option value="{{ h }}">H{{ h }}</option>
             {% endfor %}
           </select>
+
+          {% if type|default('') == 'home' %}
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="chkTarjetero" style="width:15px;height:15px;accent-color:#0b76d8;"> Tarjetero
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="chkElectronico" style="width:15px;height:15px;accent-color:#0b76d8;"> Electrónico
+          </label>
+          {% endif %}
 
           <span id="builderMsg" class="warn"></span>
         </div>
@@ -709,7 +727,7 @@
       <select name="control" id="control-select">
         <option value="">Sin control</option>
         {% for ctrl in controles %}
-          <option value="{{ ctrl.reference }}" data-place="{{ ctrl.place }}"{% if controlActual == ctrl.reference %} selected{% endif %}>
+          <option value="{{ ctrl.reference }}" data-place="{{ ctrl.place }}" data-acero="{{ ctrl.aceroInoxidable ? '1' : '0' }}"{% if controlActual == ctrl.reference %} selected{% endif %}>
             {{ ctrl.reference }}{% if ctrl.descripcion %} — {{ ctrl.descripcion }}{% endif %}
           </option>
         {% endfor %}
@@ -888,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    if (instalacionCfg === 'empotrado' || instalacionCfg === 'soporte_suelo') {
+    if (instalacionCfg === 'empotrado' || instalacionCfg === 'soporte_suelo' || instalacionCfg === 'colgado') {
       layout.mode = 'home_empotrado';
 
       const preSingle = parseInt(preCaps.singleCap || '40', 10);
@@ -938,6 +956,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const screenSizeSelect = document.getElementById('screenSizeSelect');
   const screenSizeLabel  = document.getElementById('screenSizeLabel');
 
+  const chkTarjetero   = document.getElementById('chkTarjetero');
+  const chkElectronico = document.getElementById('chkElectronico');
+
+  const BUZON_IMGS = {
+    mec_sin:   '{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}',
+    mec_con:   '{{ asset('assets/buzon_kuik_mecanico_con_tarjetero.png') }}',
+    elec_sin:  '{{ asset('assets/buzon_kuik_electronico_sin_tarjetero.png') }}',
+    elec_con:  '{{ asset('assets/buzon_kuik_electronico_con_tarjetero.png') }}',
+  };
+  function getBuzonImg(electronico, tarjetero) {
+    const e = electronico ? 'elec' : 'mec';
+    const t = tarjetero   ? 'con'  : 'sin';
+    return BUZON_IMGS[e + '_' + t];
+  }
+
   function syncSizeControl(){
     const selectedType = itemTypeSelect?.value || 'door';
     const isScreen  = selectedType === 'screen';
@@ -954,6 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isScreen)  hSizeSelect.value = screenSizeSelect ? screenSizeSelect.value : '30';
       if (isMailbox) hSizeSelect.value = '10';
     }
+
   }
 
   if (screenSizeSelect) {
@@ -966,13 +1000,31 @@ document.addEventListener('DOMContentLoaded', () => {
   itemTypeSelect?.addEventListener('change', syncSizeControl);
   syncSizeControl();
 
+  function updateAllMailboxImages() {
+    state.columns.forEach(col => {
+      ['top', 'bottom', 'single'].forEach(part => {
+        if (!col[part]) return;
+        col[part].blocks.forEach(blk => {
+          if (blk.type === 'mailbox') {
+            blk.electronico = chkElectronico?.checked ?? false;
+            blk.tarjetero   = chkTarjetero?.checked   ?? false;
+          }
+        });
+      });
+    });
+    render();
+  }
+
+  chkTarjetero?.addEventListener('change', updateAllMailboxImages);
+  chkElectronico?.addEventListener('change', updateAllMailboxImages);
+
   // =========================
   // AGRUPACIÓN VARIABLE + ACTIVO
   // =========================
   function getGroupMax() {
     if (layout.mode === 'professional') return 13;
     if (layout.mode === 'home_zocalo') return 3;
-    if (layout.mode === 'home_empotrado') return 5;
+    if (layout.mode === 'home_empotrado') return 8;
     return 1;
   }
 
@@ -1301,6 +1353,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           const newBlock = { type: itemType, h };
+          if (itemType === 'mailbox') {
+            if (chkTarjetero?.checked)  newBlock.tarjetero  = true;
+            if (chkElectronico?.checked) newBlock.electronico = true;
+          }
 
           if (layout.mode === 'home_empotrado') {
             if (col.single.sum + h <= layout.singleCap) {
@@ -1456,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
             b.appendChild(img);
           } else if (nb.type === 'mailbox') {
             const img = document.createElement('img');
-            img.src = '{{ asset(kuik.img_buzon_kuik) }}';
+            img.src = getBuzonImg(nb.electronico, nb.tarjetero);
             img.alt = 'Buzón';
             b.appendChild(img);
           } else {
@@ -1612,10 +1668,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Acero inoxidable
+  const chkAceroInoxidable = document.getElementById('chkAceroInoxidable');
+  const ACERO_HEX = '#878581';
+  const ACERO_RAL = '9007';
+
+  function applyAceroInoxidable() {
+    if (!chkAceroInoxidable) return;
+    if (chkAceroInoxidable.checked) {
+      if (colorDoorSelect) {
+        colorDoorSelect.disabled = true;
+        // Selecciona la opción de acero inoxidable si existe, si no la simula
+        let found = false;
+        for (const opt of colorDoorSelect.options) {
+          if (opt.value === ACERO_HEX) { colorDoorSelect.value = ACERO_HEX; found = true; break; }
+        }
+        if (!found) {
+          const opt = new Option('Acero Inoxidable', ACERO_HEX);
+          opt.dataset.ral = ACERO_RAL;
+          opt.id = '_acero_tmp';
+          colorDoorSelect.appendChild(opt);
+          colorDoorSelect.value = ACERO_HEX;
+        }
+      }
+      state.selectedColor = ACERO_HEX;
+      setColumnsBorderColor(ACERO_HEX);
+    } else {
+      if (colorDoorSelect) {
+        colorDoorSelect.disabled = false;
+        const tmp = document.getElementById('_acero_tmp');
+        if (tmp) tmp.remove();
+        colorDoorSelect.value = '';
+      }
+      state.selectedColor = colorDoorSelect?.value || '';
+      syncBodyToDoor();
+    }
+    render();
+  }
+
+  function filterControlesByAcero() {
+    const sel = document.getElementById('control-select');
+    if (!sel || !chkAceroInoxidable) return;
+    const acero = chkAceroInoxidable.checked;
+    const current = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      if (opt.value === '') return;
+      const optAcero = opt.dataset.acero === '1';
+      opt.hidden = acero !== optAcero;
+    });
+    if (acero && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].hidden) {
+      sel.value = '';
+    }
+  }
+
+  chkAceroInoxidable?.addEventListener('change', function() {
+    applyAceroInoxidable();
+    filterControlesByAcero();
+  });
+
   // Inicializa color puertas
+  // Sincroniza color cuerpo con color puerta (home: mismo color para ambos)
+  function syncBodyToDoor() {
+    if (colorBodySelect && colorDoorSelect && colorDoorSelect.value) {
+      const hex = colorDoorSelect.value;
+      // Si la opción no existe en body, la añade temporalmente
+      if (!colorBodySelect.querySelector(`option[value="${hex}"]`)) {
+        const opt = new Option('', hex);
+        opt.id = '_body_sync_tmp';
+        colorBodySelect.appendChild(opt);
+      }
+      colorBodySelect.value = hex;
+      setColumnsBorderColor(hex);
+    }
+  }
+
   state.selectedColor = colorDoorSelect?.value || '';
   colorDoorSelect?.addEventListener('change', () => {
     state.selectedColor = colorDoorSelect.value || '';
+    syncBodyToDoor();
     render();
   });
 
@@ -1695,11 +1825,21 @@ document.addEventListener('DOMContentLoaded', () => {
   if (pre && Object.keys(pre).length) {
     selectOption('placement', pre.placement);
 
-    setSelectValue(colorDoorSelect, pre.colorDoor);
-    state.selectedColor = pre.colorDoor || '';
+    if (chkElectronico && pre.electronico) { chkElectronico.checked = true; }
+    if (chkTarjetero   && pre.tarjetero)   { chkTarjetero.checked   = true; }
 
-    setSelectValue(colorBodySelect, pre.colorBody);
-    setColumnsBorderColor(pre.colorBody || '#000');
+    if (pre.aceroInoxidable && chkAceroInoxidable) {
+      chkAceroInoxidable.checked = true;
+      applyAceroInoxidable();
+      filterControlesByAcero();
+    } else {
+      setSelectValue(colorDoorSelect, pre.colorDoor);
+      state.selectedColor = pre.colorDoor || '';
+      syncBodyToDoor();
+    }
+
+    setSelectValue(colorBodySelect, pre.colorBody || pre.colorDoor || '');
+    setColumnsBorderColor(pre.colorBody || pre.colorDoor || '#000');
 
     if (layout.mode === 'home_zocalo' && pre.topCap) layout.topCap = parseInt(pre.topCap, 10) || layout.topCap;
     if (layout.mode === 'home_empotrado' && pre.singleCap) layout.singleCap = parseInt(pre.singleCap, 10) || layout.singleCap;
@@ -1743,6 +1883,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('configForm').addEventListener('submit', function(e) {
     const pl = document.getElementById('placement').value;
     const colorDoor = document.getElementById('color-door').value;
+    syncBodyToDoor();
     const colorBody = document.getElementById('color-body').value;
 
     const colorDoorRal = getSelectedRal(colorDoorSelect);
@@ -1882,6 +2023,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       colorDoor: colorDoor,
       colorDoorRal: colorDoorRal,
+      aceroInoxidable: !!(chkAceroInoxidable?.checked),
+      electronico: !!(chkElectronico?.checked),
+      tarjetero:   !!(chkTarjetero?.checked),
 
       colorBody: colorBody,
       colorBodyRal: colorBodyRal,

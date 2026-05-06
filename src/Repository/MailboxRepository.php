@@ -17,4 +17,13 @@ class MailboxRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['alto' => $alto, 'ancho' => $ancho, 'fondo' => $fondo, 'descripcion' => $descripcion]);
     }
+
+    public function findAgrupacion(?bool $electronico, ?bool $tarjetero, ?bool $aceroInoxidable): array
+    {
+        $criteria = ['agrupacion' => false];
+        if ($electronico !== null)     { $criteria['electronico']     = $electronico; }
+        if ($tarjetero !== null)       { $criteria['tarjetero']       = $tarjetero; }
+        if ($aceroInoxidable !== null) { $criteria['aceroInoxidable'] = $aceroInoxidable; }
+        return $this->findBy($criteria, ['reference' => 'ASC']);
+    }
 }

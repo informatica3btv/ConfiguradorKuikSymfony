@@ -1,6 +1,7 @@
 parameters:
     gemini.api_key: '%env(GEMINI_API_KEY)%'
     placa.reference: '13180'
+    colgador.reference: '61456'
     doors.per_plate: 16
 
 services:
@@ -29,4 +30,5 @@ services:
     App\Service\ConfigurationService:
         arguments:
             $placaReference: '%placa.reference%'
+            $colgadorReference: '%colgador.reference%'
             $doorsPerPlate: '%doors.per_plate%'

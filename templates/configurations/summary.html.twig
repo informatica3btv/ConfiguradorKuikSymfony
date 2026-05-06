@@ -35,7 +35,7 @@
 
 {% set isHome = (type == 'home') %}
 {% set isZocalo = (isHome and instalacion == 'zocalo') %}
-{% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
+{% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo' or instalacion == 'colgado')) %}
 
 {% set topCap = isZocalo ? (p.topCap|default(kuik.default_top_cap)) : kuik.default_top_cap %}
 {% set bottomCap = isZocalo ? 70 : kuik.default_bottom_cap %}
@@ -302,9 +302,12 @@
 
     .door.mailbox{
       padding:0;
+      overflow:hidden;
     }
 
     .door.mailbox img{
+      position:absolute;
+      top:0; left:0;
       width:100%;
       height:100%;
       object-fit:fill;
@@ -616,7 +619,7 @@
                                   {% set cellIdx = r * mbCols + c %}
                                   {% set filled = mbCells[cellIdx] ?? true %}
                                   <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    {% if filled %}<img src="{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}" alt="Buzón">{% endif %}
                                   </div>
                                 {% endfor %}
                               </div>
@@ -657,7 +660,13 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
+                                          {% set _elec = blk.electronico ?? false %}
+                                          {% set _tarj = blk.tarjetero ?? false %}
+                                          {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                          <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                          {% if _elec and plateNumber is not null %}
+                                            <div class="num" style="color:#fff;text-shadow:0 0 3px #000;">{{ plateNumber }},{{ doorNumber }}</div>
+                                          {% endif %}
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -691,7 +700,13 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
+                                          {% set _elec = blk.electronico ?? false %}
+                                          {% set _tarj = blk.tarjetero ?? false %}
+                                          {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                          <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                          {% if _elec and plateNumber is not null %}
+                                            <div class="num" style="color:#fff;text-shadow:0 0 3px #000;">{{ plateNumber }},{{ doorNumber }}</div>
+                                          {% endif %}
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -725,7 +740,13 @@
                                         {% if btype == 'screen' %}
                                           <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
                                         {% elseif btype == 'mailbox' %}
-                                          <img src="{{ asset(kuik.img_buzon_kuik) }}" alt="Buzón">
+                                          {% set _elec = blk.electronico ?? false %}
+                                          {% set _tarj = blk.tarjetero ?? false %}
+                                          {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                          <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                          {% if _elec and plateNumber is not null %}
+                                            <div class="num" style="color:#fff;text-shadow:0 0 3px #000;">{{ plateNumber }},{{ doorNumber }}</div>
+                                          {% endif %}
                                         {% else %}
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
@@ -756,7 +777,7 @@
                                   {% set cellIdx = r * mbCols + c %}
                                   {% set filled = mbCells[cellIdx] ?? true %}
                                   <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    {% if filled %}<img src="{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}" alt="Buzón">{% endif %}
                                   </div>
                                 {% endfor %}
                               </div>
@@ -827,6 +848,11 @@
           <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
           <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
           <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
+          {% if instalacion == 'colgado' %}
+            {% set _ncols = columnsAll|length %}
+            {% set _colgadores = _ncols <= 1 ? 1 : ((_ncols - 2) // 3 + 2) %}
+            <div class="kv"><div class="k">Colgadores</div><div class="v">{{ _colgadores }}</div></div>
+          {% endif %}
           {% if p.control is defined and p.control %}
             <div class="kv"><div class="k">Control</div><div class="v">{{ p.control }}</div></div>
           {% endif %}
@@ -1086,16 +1112,54 @@
       }
     });
 
-    window.addEventListener('DOMContentLoaded', function () {
-      // Load product reference table via AJAX
-      const _productContainer = document.getElementById('productTableContainer');
-      if (_productContainer) {
-        fetch('{{ path('configuration_product_table', { id: configuration.id }) }}')
-          .then(function (r) { return r.text(); })
-          .then(function (html) { _productContainer.innerHTML = html; bindIvaCheck(); })
-          .catch(function (e) { console.error('Error cargando referencias de producto:', e); });
+    const _saveUrl   = '{{ path('configuration_instalacion', { id: configuration.id }) }}';
+    const _tableUrl  = '{{ path('configuration_product_table', { id: configuration.id }) }}';
+    const _tableContainer = () => document.getElementById('productTableContainer');
+
+    async function saveAndReloadFromIva() {
+      const precioEl = document.getElementById('instalacionPrecio');
+      const ivaEl    = document.getElementById('ivaCheck');
+      const precio   = parseFloat(precioEl?.value) || 0;
+      const iva      = ivaEl ? ivaEl.checked : false;
+      console.log('saveAndReloadFromIva', { precio, iva, saveUrl: _saveUrl });
+      await fetch(_saveUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ precio, iva })
+      });
+      const c = _tableContainer();
+      if (c) {
+        const html = await fetch(_tableUrl + '?_=' + Date.now()).then(r => r.text());
+        c.innerHTML = html;
+        bindIvaCheck();
+      }
+    }
+
+    function bindIvaCheck() {}
+
+    document.addEventListener('change', function (e) {
+      console.log('change event', e.target?.id);
+      if (e.target && e.target.id === 'ivaCheck') {
+        saveAndReloadFromIva();
       }
     });
+    console.log('IVA listener registered');
+
+    // Load product reference table via AJAX
+    function loadProductTable() {
+      const _productContainer = document.getElementById('productTableContainer');
+      if (_productContainer) {
+        fetch('{{ path('configuration_product_table', { id: configuration.id }) }}?_=' + Date.now())
+          .then(function (r) { return r.text(); })
+          .then(function (html) { _productContainer.innerHTML = html; })
+          .catch(function (e) { console.error('Error cargando referencias de producto:', e); });
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadProductTable);
+    } else {
+      loadProductTable();
+    }
 
     window.addEventListener('DOMContentLoaded', function () {
       const btn = document.getElementById('btnIA');
@@ -1197,14 +1261,17 @@
         }
       }
 
-      function bindIvaCheck() {
-        const chk = document.getElementById('ivaCheck');
-        if (chk) chk.addEventListener('change', saveAndReloadTable);
+      window.saveAndReloadTable = saveAndReloadTable;
+
+      if (precioInput) {
+        precioInput.addEventListener('change', saveAndReloadTable);
+        precioInput.addEventListener('blur', saveAndReloadTable);
+        let _debounceTimer = null;
+        precioInput.addEventListener('input', function () {
+          clearTimeout(_debounceTimer);
+          _debounceTimer = setTimeout(saveAndReloadTable, 800);
+        });
       }
-
-      if (precioInput) precioInput.addEventListener('change', saveAndReloadTable);
-
-      // bind after initial AJAX load (handled below)
     });
 
     document.addEventListener('DOMContentLoaded', function () {

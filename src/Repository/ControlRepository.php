@@ -13,6 +13,23 @@ class ControlRepository extends ServiceEntityRepository
         parent::__construct($registry, Control::class);
     }
 
+    public function findByTipo(?string $tipo, ?bool $aceroInoxidable = null): array
+    {
+        $qb = $this->createQueryBuilder('c')->orderBy('c.reference', 'ASC');
+
+        if ($tipo !== null) {
+            $qb->andWhere('c.tipo = :tipo OR c.tipo IS NULL')
+               ->setParameter('tipo', $tipo);
+        }
+
+        if ($aceroInoxidable !== null) {
+            $qb->andWhere('c.aceroInoxidable = :acero')
+               ->setParameter('acero', $aceroInoxidable);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     public function findByPlace(string $place, ?string $tipo = null): array
     {
         $qb = $this->createQueryBuilder('c')

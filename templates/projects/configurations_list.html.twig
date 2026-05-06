@@ -906,15 +906,19 @@
                                 <div class="col-shell">
 
                                   <div class="col-card">
+                                    {% if isEmpotrado and instalacion == 'colgado' %}
+                                      {% set colSingleSum = 0 %}
+                                      {% for blk in (col.single.blocks ?? []) %}{% set colSingleSum = colSingleSum + (blk.h|default(blk)) %}{% endfor %}
+                                    {% endif %}
                                     <div class="col-body"
                                       {% if isEmpotrado %}
-                                        style="height: calc({{ singleCap }}px * var(--hscale));"
+                                        style="height: calc({{ instalacion == 'colgado' ? colSingleSum : singleCap }}px * var(--hscale));"
                                       {% elseif type == 'home' and instalacion == 'zocalo' %}
                                         style="height: calc({{ (topCap + bottomCap) }}px * var(--hscale));"
                                       {% endif %}>
 
                                       {% if isEmpotrado %}
-                                        <div class="col-half" style="height: calc({{ singleCap }}px * var(--hscale));">
+                                        <div class="col-half" style="height: calc({{ instalacion == 'colgado' ? colSingleSum : singleCap }}px * var(--hscale));">
                                           {% for blk in (col.single.blocks ?? []) %}
                                             {% set hh = blk.h|default(blk) %}
                                             {% set btype = blk.type|default('door') %}
@@ -933,7 +937,10 @@
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                               {% elseif btype == 'mailbox' %}
-                                                <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                                {% set _elec = blk.electronico ?? false %}
+                                                {% set _tarj = blk.tarjetero ?? false %}
+                                                {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}
@@ -960,7 +967,10 @@
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                               {% elseif btype == 'mailbox' %}
-                                                <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                                {% set _elec = blk.electronico ?? false %}
+                                                {% set _tarj = blk.tarjetero ?? false %}
+                                                {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}
@@ -990,7 +1000,10 @@
                                               {% if btype == 'screen' %}
                                                 <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
                                               {% elseif btype == 'mailbox' %}
-                                                <img src="{{ asset('assets/buzon_kuik.png') }}" alt="Buzón">
+                                                {% set _elec = blk.electronico ?? false %}
+                                                {% set _tarj = blk.tarjetero ?? false %}
+                                                {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
+                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}

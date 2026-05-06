@@ -825,6 +825,7 @@
               {% elseif size starts with 'lateral_' %}Par de laterales H{{ size|replace({'lateral_': ''}) }}
               {% elseif size == 'lateral' %}Par de laterales
               {% elseif size == 'placa' %}Placa
+              {% elseif size == 'colgador' %}Colgador
               {% elseif size == 'buzon_group' %}Buzones (agrupación)
               {% elseif size == 'envolvente_buzon' %}Envolvente buzones ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m
               {% elseif size starts with 'tejado_' %}Tejado {{ size|replace({'tejado_': ''}) }} col.
@@ -833,7 +834,7 @@
             </td>
             {% if product %}
               <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">
-                {{ (size in ['placa','buzon_group']) ? product : product.reference }}
+                {{ (size in ['placa','buzon_group','colgador']) ? product : product.reference }}
                 {% if size == 'buzon_group' and info._descripcion is defined and info._descripcion %}
                   <div style="font-weight:400; color:#6b7280; font-size:10px; margin-top:2px;">{{ info._descripcion }}</div>
                 {% endif %}

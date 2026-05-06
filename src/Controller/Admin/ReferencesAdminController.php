@@ -3,19 +3,23 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Bandeja;
+use App\Entity\Brazo;
 use App\Entity\Columna;
 use App\Entity\Control;
 use App\Entity\Door;
 use App\Entity\Envolvente;
 use App\Entity\Mailbox;
+use App\Entity\Pata;
 use App\Entity\Roof;
 use App\Entity\Side;
 use App\Repository\BandejaRepository;
+use App\Repository\BrazoRepository;
 use App\Repository\ColumnaRepository;
 use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
 use App\Repository\EnvolventeRepository;
 use App\Repository\MailboxRepository;
+use App\Repository\PataRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,7 +44,9 @@ class ReferencesAdminController extends AbstractController
         MailboxRepository $mailboxRepo,
         EnvolventeRepository $envolventeRepo,
         ControlRepository $controlRepo,
-        BandejaRepository $bandejaRepo
+        BandejaRepository $bandejaRepo,
+        BrazoRepository $brazoRepo,
+        PataRepository $pataRepo
     ): Response {
         return $this->render('admin/references/index.html.twig', [
             'doors'       => $doorRepo->findBy([], ['serie' => 'ASC', 'place' => 'ASC', 'size' => 'ASC']),
@@ -51,6 +57,8 @@ class ReferencesAdminController extends AbstractController
             'envolventes' => $envolventeRepo->findBy([], ['tipo' => 'ASC', 'rango' => 'ASC']),
             'controles'   => $controlRepo->findBy([], ['reference' => 'ASC']),
             'bandejas'    => $bandejaRepo->findBy([], ['serie' => 'ASC']),
+            'brazos'      => $brazoRepo->findBy([], ['altura' => 'ASC', 'reference' => 'ASC']),
+            'patas'       => $pataRepo->findBy([], ['numColumnas' => 'ASC', 'reference' => 'ASC']),
         ]);
     }
 
@@ -67,7 +75,9 @@ class ReferencesAdminController extends AbstractController
         MailboxRepository $mailboxRepo,
         EnvolventeRepository $envolventeRepo,
         ControlRepository $controlRepo,
-        BandejaRepository $bandejaRepo
+        BandejaRepository $bandejaRepo,
+        BrazoRepository $brazoRepo,
+        PataRepository $pataRepo
     ): Response {
         if (!$this->isCsrfTokenValid('bulk_delete_refs', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -93,6 +103,8 @@ class ReferencesAdminController extends AbstractController
                 case 'envolvente': $entity = $envolventeRepo->find($id); break;
                 case 'control':    $entity = $controlRepo->find($id); break;
                 case 'bandeja':    $entity = $bandejaRepo->find($id); break;
+                case 'brazo':      $entity = $brazoRepo->find($id); break;
+                case 'pata':       $entity = $pataRepo->find($id); break;
                 default:           $entity = null;
             }
 
@@ -199,8 +211,12 @@ class ReferencesAdminController extends AbstractController
         $ancho       = trim((string) $request->request->get('ancho'));
         $fondo       = trim((string) $request->request->get('fondo'));
         $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
-        $tipo = trim((string) $request->request->get('tipo'));
-        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $tipo        = trim((string) $request->request->get('tipo'));
+        $tipoVal     = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $agrupacion      = (bool) $request->request->get('agrupacion');
+        $electronico     = (bool) $request->request->get('electronico');
+        $tarjetero       = (bool) $request->request->get('tarjetero');
+        $aceroInoxidable = (bool) $request->request->get('acero_inoxidable');
 
         if ($reference === '' || $alto === '' || $ancho === '' || $fondo === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
@@ -213,7 +229,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
         }
 
-        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion)->setTipo($tipoVal));
+        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion)->setTipo($tipoVal)->setAgrupacion($agrupacion)->setElectronico($electronico)->setTarjetero($tarjetero)->setAceroInoxidable($aceroInoxidable));
         $em->flush();
 
         $this->addFlash('success', 'Buzón añadido correctamente.');
@@ -233,7 +249,8 @@ class ReferencesAdminController extends AbstractController
         $serie        = trim((string) $request->request->get('serie'));
         $place        = trim((string) $request->request->get('place'));
         $size         = trim((string) $request->request->get('size'));
-        $methacrylate = (bool) $request->request->get('methacrylate');
+        $methacrylate    = (bool) $request->request->get('methacrylate');
+        $aceroInoxidable = (bool) $request->request->get('acero_inoxidable');
         $tipo = trim((string) $request->request->get('tipo'));
         $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
 
@@ -242,13 +259,13 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'door']);
         }
 
-        $existing = $repo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $place, $size, $methacrylate);
+        $existing = $repo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $place, $size, $methacrylate, $tipoVal, $aceroInoxidable);
         if ($existing) {
             $this->addFlash('error', sprintf('Ya existe una puerta con esa combinación (ref. %s).', $existing->getReference()));
             return $this->redirectToRoute('admin_references_index', ['tab' => 'door']);
         }
 
-        $em->persist((new Door())->setReference($reference)->setSerie($serie)->setPlace($place)->setSize($size)->setMethacrylate($methacrylate)->setTipo($tipoVal));
+        $em->persist((new Door())->setReference($reference)->setSerie($serie)->setPlace($place)->setSize($size)->setMethacrylate($methacrylate)->setAceroInoxidable($aceroInoxidable)->setTipo($tipoVal));
         $em->flush();
 
         $this->addFlash('success', 'Puerta añadida correctamente.');
@@ -311,7 +328,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'roof']);
         }
 
-        $existing = $repo->findOneRoofBySerieAndPlaceAndColumns($serie, $place, $columns);
+        $existing = $repo->findOneRoofBySerieAndPlaceAndColumns($serie, $place, $columns, $tipoVal);
         if ($existing) {
             $this->addFlash('error', sprintf('Ya existe un tejado con esa combinación (ref. %s).', $existing->getReference()));
             return $this->redirectToRoute('admin_references_index', ['tab' => 'roof']);
@@ -466,18 +483,19 @@ class ReferencesAdminController extends AbstractController
             throw $this->createAccessDeniedException('Token CSRF inválido');
         }
 
-        $reference   = trim((string) $request->request->get('reference'));
-        $place       = trim((string) $request->request->get('place'));
-        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
-        $tipo = trim((string) $request->request->get('tipo'));
-        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $reference       = trim((string) $request->request->get('reference'));
+        $place           = trim((string) $request->request->get('place'));
+        $descripcion     = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipo            = trim((string) $request->request->get('tipo'));
+        $tipoVal         = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $aceroInoxidable = (bool) $request->request->get('acero_inoxidable');
 
         if ($reference === '' || $place === '') {
             $this->addFlash('error', 'La referencia y el lugar son obligatorios.');
             return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
         }
 
-        $em->persist((new Control())->setReference($reference)->setPlace($place)->setDescripcion($descripcion)->setTipo($tipoVal));
+        $em->persist((new Control())->setReference($reference)->setPlace($place)->setDescripcion($descripcion)->setTipo($tipoVal)->setAceroInoxidable($aceroInoxidable));
         $em->flush();
 
         $this->addFlash('success', 'Control añadido correctamente.');
@@ -520,5 +538,99 @@ class ReferencesAdminController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
+    }
+
+    /**
+     * @Route("/brazo/create", name="brazo_create", methods={"POST"})
+     */
+    public function createBrazo(Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_brazo', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference   = trim((string) $request->request->get('reference'));
+        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipo        = trim((string) $request->request->get('tipo'));
+        $tipoVal     = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $alturaRaw   = trim((string) $request->request->get('altura'));
+        $altura      = $alturaRaw !== '' ? $alturaRaw : null;
+
+        if ($reference === '') {
+            $this->addFlash('error', 'La referencia es obligatoria.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'brazo']);
+        }
+
+        $em->persist((new Brazo())->setReference($reference)->setDescripcion($descripcion)->setTipo($tipoVal)->setAltura($altura));
+        $em->flush();
+
+        $this->addFlash('success', 'Brazo añadido correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'brazo']);
+    }
+
+    /**
+     * @Route("/brazo/{id}/delete", name="brazo_delete", methods={"POST"})
+     */
+    public function deleteBrazo(int $id, Request $request, BrazoRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Brazo eliminado.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'brazo']);
+    }
+
+    /**
+     * @Route("/pata/create", name="pata_create", methods={"POST"})
+     */
+    public function createPata(Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('create_ref_pata', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $reference   = trim((string) $request->request->get('reference'));
+        $descripcion = trim((string) $request->request->get('descripcion')) ?: null;
+        $tipo        = trim((string) $request->request->get('tipo'));
+        $tipoVal     = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $numColRaw   = trim((string) $request->request->get('num_columnas'));
+        $numColumnas = $numColRaw !== '' ? (int) $numColRaw : null;
+
+        if ($reference === '') {
+            $this->addFlash('error', 'La referencia es obligatoria.');
+            return $this->redirectToRoute('admin_references_index', ['tab' => 'pata']);
+        }
+
+        $em->persist((new Pata())->setReference($reference)->setDescripcion($descripcion)->setTipo($tipoVal)->setNumColumnas($numColumnas));
+        $em->flush();
+
+        $this->addFlash('success', 'Pata añadida correctamente.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'pata']);
+    }
+
+    /**
+     * @Route("/pata/{id}/delete", name="pata_delete", methods={"POST"})
+     */
+    public function deletePata(int $id, Request $request, PataRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_ref_' . $id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+
+        $entity = $repo->find($id);
+        if ($entity) {
+            $em->remove($entity);
+            $em->flush();
+            $this->addFlash('success', 'Pata eliminada.');
+        }
+
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'pata']);
     }
 }

@@ -5,19 +5,21 @@
 {% block stylesheets %}
   {{ parent() }}
   <style>
-    .ref-wrap { max-width: 960px; margin: 32px auto 70px; padding: 0 14px; }
+    .ref-wrap { max-width: 1400px; margin: 32px auto 70px; padding: 0 14px; }
     .ref-title { font-size: 32px; font-weight: 900; margin: 0 0 6px; }
     .ref-sub   { color: #6b7280; font-size: 15px; margin-bottom: 24px; }
 
     .flash-success { background: #d1fae5; color: #065f46; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-weight: 600; }
     .flash-error   { background: #fee2e2; color: #991b1b; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-weight: 600; }
 
-    .tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(15,23,42,.10); margin-bottom: 24px; }
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid rgba(15,23,42,.10); margin-bottom: 24px; overflow-x: auto; overflow-y: visible; scrollbar-width: thin; }
+    .tabs::-webkit-scrollbar { height: 4px; }
+    .tabs::-webkit-scrollbar-thumb { background: rgba(15,23,42,.15); border-radius: 2px; }
     .tab-btn {
-      padding: 10px 22px; font-size: 15px; font-weight: 700;
+      padding: 10px 18px; font-size: 14px; font-weight: 700; white-space: nowrap;
       border: none; background: none; cursor: pointer; color: #6b7280;
       border-bottom: 3px solid transparent; margin-bottom: -2px;
-      border-radius: 8px 8px 0 0; transition: .15s;
+      border-radius: 8px 8px 0 0; transition: .15s; flex-shrink: 0;
     }
     .tab-btn:hover { color: #0b1220; background: rgba(15,23,42,.04); }
     .tab-btn.active { color: #0b76d8; border-bottom-color: #0b76d8; }
@@ -163,7 +165,7 @@
     <button class="btn-tipo"        id="btn-tipo-pro"  onclick="setGlobalTipo('profesional', this)">Profesional</button>
   </div>
 
-  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox','envolvente','control','bandeja'] ? app.request.query.get('tab') : 'door' %}
+  {% set activeTab = app.request.query.get('tab') in ['side','roof','columna','mailbox','envolvente','control','bandeja','brazo','pata'] ? app.request.query.get('tab') : 'door' %}
 
   <div class="tabs">
     <button class="tab-btn {{ activeTab == 'door' ? 'active' : '' }}" onclick="switchTab('door', this)">
@@ -189,6 +191,12 @@
     </button>
     <button class="tab-btn {{ activeTab == 'bandeja' ? 'active' : '' }}" onclick="switchTab('bandeja', this)">
       Bandejas <span class="count-badge">{{ bandejas|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'brazo' ? 'active' : '' }}" onclick="switchTab('brazo', this)">
+      Brazos <span class="count-badge">{{ brazos|length }}</span>
+    </button>
+    <button class="tab-btn {{ activeTab == 'pata' ? 'active' : '' }}" onclick="switchTab('pata', this)">
+      Patas <span class="count-badge">{{ patas|length }}</span>
     </button>
   </div>
 
@@ -229,7 +237,7 @@
           <div class="empty-msg">No hay puertas registradas.</div>
         {% else %}
           <table class="ref-table" id="table-door">
-            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th>Tipo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th>Acero inox.</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for door in doors %}
                 <tr data-tipo="{{ door.tipo ?? '' }}">
@@ -239,6 +247,7 @@
                   <td>{{ door.place }}</td>
                   <td>{{ door.size }}</td>
                   <td>{% if door.methacrylate %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if door.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>{% if door.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif door.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     {# El botón apunta al formulario individual por id (fuera del bulk form) #}
@@ -446,7 +455,7 @@
           <div class="empty-msg">No hay buzones registrados.</div>
         {% else %}
           <table class="ref-table" id="table-mailbox">
-            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Tipo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Agrupación</th><th>Electrónico</th><th>Tarjetero</th><th>Acero inox.</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for mailbox in mailboxes %}
                 <tr data-tipo="{{ mailbox.tipo ?? '' }}">
@@ -456,6 +465,10 @@
                   <td>{{ mailbox.alto }}</td>
                   <td>{{ mailbox.ancho }}</td>
                   <td>{{ mailbox.fondo }}</td>
+                  <td>{% if mailbox.agrupacion %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if mailbox.electronico %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if mailbox.tarjetero %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if mailbox.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>{% if mailbox.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif mailbox.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
@@ -554,7 +567,7 @@
           <div class="empty-msg">No hay controles registrados.</div>
         {% else %}
           <table class="ref-table" id="table-control">
-            <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th>Tipo</th><th>Acero inox.</th><th></th></tr></thead>
             <tbody>
               {% for ctrl in controles %}
                 <tr data-tipo="{{ ctrl.tipo ?? '' }}">
@@ -563,6 +576,7 @@
                   <td>{{ ctrl.place }}</td>
                   <td>{{ ctrl.descripcion }}</td>
                   <td>{% if ctrl.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif ctrl.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
+                  <td>{% if ctrl.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-control-{{ ctrl.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este control?')">Eliminar</button>
@@ -667,6 +681,118 @@
       <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ bandeja.id) }}">
     </form>
   {% endfor %}
+  {% for brazo in brazos %}
+    <form id="del-brazo-{{ brazo.id }}" method="post" action="{{ path('admin_references_brazo_delete', {id: brazo.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ brazo.id) }}">
+    </form>
+  {% endfor %}
+  {% for pata in patas %}
+    <form id="del-pata-{{ pata.id }}" method="post" action="{{ path('admin_references_pata_delete', {id: pata.id}) }}" style="display:none">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_ref_' ~ pata.id) }}">
+    </form>
+  {% endfor %}
+
+  {# ── TAB BRAZO ── #}
+  <div class="tab-panel {{ activeTab == 'brazo' ? 'active' : '' }}" id="tab-brazo">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-brazo"
+            onsubmit="return confirmBulk('brazo')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="brazo">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-brazo" onchange="toggleAll('brazo', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-brazo"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('brazo')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-brazo">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if brazos is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia" oninput="filterTable('brazo')" id="f-brazo-ref">
+            <input type="text" placeholder="Altura"     oninput="filterTable('brazo')" id="f-brazo-altura">
+            <span class="filter-count" id="fc-brazo"></span>
+          </div>
+        {% endif %}
+        {% if brazos is empty %}
+          <div class="empty-msg">No hay brazos registrados.</div>
+        {% else %}
+          <table class="ref-table" id="table-brazo">
+            <thead><tr><th></th><th>Referencia</th><th>Altura</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
+            <tbody>
+              {% for brazo in brazos %}
+                <tr data-tipo="{{ brazo.tipo ?? '' }}">
+                  <td><input type="checkbox" name="ids[]" value="{{ brazo.id }}" class="row-check check-brazo" onchange="updateCount('brazo')"></td>
+                  <td><strong>{{ brazo.reference }}</strong></td>
+                  <td>{{ brazo.altura ?? '—' }}</td>
+                  <td>{{ brazo.descripcion ?? '—' }}</td>
+                  <td>{% if brazo.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif brazo.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
+                  <td>
+                    <button type="submit" form="del-brazo-{{ brazo.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar este brazo?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {# ── TAB PATA ── #}
+  <div class="tab-panel {{ activeTab == 'pata' ? 'active' : '' }}" id="tab-pata">
+    <div class="ref-card">
+      <form method="post" action="{{ path('admin_references_bulk_delete') }}" id="form-pata"
+            onsubmit="return confirmBulk('pata')">
+        <input type="hidden" name="_token" value="{{ csrf_token('bulk_delete_refs') }}">
+        <input type="hidden" name="type" value="pata">
+        <div class="bulk-bar">
+          <div class="bulk-bar-left">
+            <input type="checkbox" id="checkAll-pata" onchange="toggleAll('pata', this)">
+            <span>Seleccionar todo</span>
+            <span class="selected-count" id="count-pata"></span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-new" onclick="openModal('pata')">+ Nueva</button>
+            <button type="submit" class="btn-bulk-delete" id="bulkBtn-pata">Eliminar seleccionados</button>
+          </div>
+        </div>
+        {% if patas is not empty %}
+          <div class="filter-bar">
+            <input type="text" placeholder="Referencia"   oninput="filterTable('pata')" id="f-pata-ref">
+            <input type="text" placeholder="Nº columnas"  oninput="filterTable('pata')" id="f-pata-cols">
+            <span class="filter-count" id="fc-pata"></span>
+          </div>
+        {% endif %}
+        {% if patas is empty %}
+          <div class="empty-msg">No hay patas registradas.</div>
+        {% else %}
+          <table class="ref-table" id="table-pata">
+            <thead><tr><th></th><th>Referencia</th><th>Nº columnas</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
+            <tbody>
+              {% for pata in patas %}
+                <tr data-tipo="{{ pata.tipo ?? '' }}">
+                  <td><input type="checkbox" name="ids[]" value="{{ pata.id }}" class="row-check check-pata" onchange="updateCount('pata')"></td>
+                  <td><strong>{{ pata.reference }}</strong></td>
+                  <td>{{ pata.numColumnas ?? '—' }}</td>
+                  <td>{{ pata.descripcion ?? '—' }}</td>
+                  <td>{% if pata.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif pata.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
+                  <td>
+                    <button type="submit" form="del-pata-{{ pata.id }}" class="btn-delete"
+                            onclick="return confirm('¿Eliminar esta pata?')">Eliminar</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </form>
+    </div>
+  </div>
 
 </div>
 
@@ -687,6 +813,11 @@
       <input type="text" name="size" required>
       <label>Metacrilato</label>
       <select name="methacrylate">
+        <option value="0">No</option>
+        <option value="1">Sí</option>
+      </select>
+      <label>Acero inoxidable</label>
+      <select name="acero_inoxidable">
         <option value="0">No</option>
         <option value="1">Sí</option>
       </select>
@@ -820,6 +951,22 @@
         <option value="home">Home</option>
         <option value="profesional">Profesional</option>
       </select>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="agrupacion" value="1" style="width:16px;height:16px;">
+        Agrupación
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="electronico" value="1" style="width:16px;height:16px;">
+        Electrónico
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="tarjetero" value="1" style="width:16px;height:16px;">
+        Tarjetero
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="acero_inoxidable" value="1" style="width:16px;height:16px;">
+        Acero inoxidable
+      </label>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('mailbox')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -874,6 +1021,10 @@
         <option value="home">Home</option>
         <option value="profesional">Profesional</option>
       </select>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" name="acero_inoxidable" value="1" style="width:16px;height:16px;">
+        Acero inoxidable
+      </label>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('control')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
@@ -906,6 +1057,58 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('columna')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Brazo ── #}
+<div class="modal-overlay" id="modal-brazo">
+  <div class="modal">
+    <h3>Nuevo brazo</h3>
+    <form method="post" action="{{ path('admin_references_brazo_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_brazo') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Altura</label>
+      <input type="text" name="altura" placeholder="4H / 5H / 6H / 7H / 8H">
+      <label>Descripción</label>
+      <input type="text" name="descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('brazo')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Pata ── #}
+<div class="modal-overlay" id="modal-pata">
+  <div class="modal">
+    <h3>Nueva pata</h3>
+    <form method="post" action="{{ path('admin_references_pata_create') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('create_ref_pata') }}">
+      <label>Referencia</label>
+      <input type="text" name="reference" required>
+      <label>Nº columnas</label>
+      <input type="number" name="num_columnas" min="1" placeholder="ej. 2">
+      <label>Descripción</label>
+      <input type="text" name="descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo">
+        <option value="">Ambos</option>
+        <option value="home">Home</option>
+        <option value="profesional">Profesional</option>
+      </select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('pata')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
       </div>
     </form>
@@ -962,6 +1165,8 @@
     envolvente: [['f-envolvente-ref',1],['f-envolvente-tipo',2],['f-envolvente-rango',3],['f-envolvente-desc',4]],
     control:    [['f-control-ref',1],['f-control-place',2],['f-control-desc',3]],
     bandeja:    [['f-bandeja-ref',1],['f-bandeja-serie',2]],
+    brazo:      [['f-brazo-ref',1],['f-brazo-altura',2]],
+    pata:       [['f-pata-ref',1],['f-pata-cols',2]],
   };
 
   function filterTable(type) {

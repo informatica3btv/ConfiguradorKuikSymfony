@@ -36,6 +36,9 @@ class Door
     /** @ORM\Column(type="string", length=50, nullable=true) */
     private $tipo; // 'home' | 'profesional' | null (ambos)
 
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $aceroInoxidable = false;
+
     public function __construct()
     {
 
@@ -60,4 +63,7 @@ class Door
 
     public function getTipo(): ?string { return $this->tipo; }
     public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
+
+    public function getAceroInoxidable(): bool { return $this->aceroInoxidable ?? false; }
+    public function setAceroInoxidable(bool $v): self { $this->aceroInoxidable = $v; return $this; }
 }

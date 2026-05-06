@@ -3,18 +3,22 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Bandeja;
+use App\Entity\Brazo;
 use App\Entity\Columna;
 use App\Entity\Control;
 use App\Entity\Door;
 use App\Entity\Envolvente;
 use App\Entity\Mailbox;
+use App\Entity\Pata;
 use App\Entity\Roof;
 use App\Entity\Side;
 use App\Repository\BandejaRepository;
+use App\Repository\BrazoRepository;
 use App\Repository\ColumnaRepository;
 use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
 use App\Repository\MailboxRepository;
+use App\Repository\PataRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -49,7 +53,9 @@ class ImportAdminController extends AbstractController
         ColumnaRepository $columnaRepo,
         MailboxRepository $mailboxRepo,
         ControlRepository $controlRepo,
-        BandejaRepository $bandejaRepo
+        BandejaRepository $bandejaRepo,
+        BrazoRepository $brazoRepo,
+        PataRepository $pataRepo
     ): Response {
         if (!$this->isCsrfTokenValid('import_excel', $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF inválido');
@@ -80,7 +86,7 @@ class ImportAdminController extends AbstractController
         $tipoOverride = $request->request->get('tipo_override');
         $tipoOverride = in_array($tipoOverride, ['home', 'profesional'], true) ? $tipoOverride : null;
 
-        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0, 'control' => 0, 'bandeja' => 0];
+        $stats     = ['door' => 0, 'side' => 0, 'roof' => 0, 'columna' => 0, 'mailbox' => 0, 'control' => 0, 'bandeja' => 0, 'brazo' => 0, 'pata' => 0];
         $duplicates = [];
 
         // ── Hoja DOOR ──────────────────────────────────────────────
@@ -88,18 +94,19 @@ class ImportAdminController extends AbstractController
         if ($spreadsheet->getSheetByName('door')) {
             $sheet = $spreadsheet->getSheetByName('door');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 6);
-                [$reference, $serie, $place, $size, $meth, $tipo] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 7);
+                [$reference, $serie, $place, $size, $meth, $tipo, $aceroRaw] = $cells;
 
                 if (empty($reference) || empty($serie) || empty($place) || empty($size)) {
                     continue;
                 }
 
-                $methacrylate = filter_var($meth, FILTER_VALIDATE_BOOLEAN);
+                $methacrylate    = filter_var($meth, FILTER_VALIDATE_BOOLEAN);
+                $aceroInoxidable = filter_var($aceroRaw, FILTER_VALIDATE_BOOLEAN);
                 $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
 
                 $existing = $doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate(
-                    $serie, $place, $size, $methacrylate, $tipoVal
+                    $serie, $place, $size, $methacrylate, $tipoVal, $aceroInoxidable
                 );
 
                 if ($existing) {
@@ -113,6 +120,7 @@ class ImportAdminController extends AbstractController
                     ->setPlace($place)
                     ->setSize($size)
                     ->setMethacrylate($methacrylate)
+                    ->setAceroInoxidable($aceroInoxidable)
                     ->setTipo($tipoVal));
 
                 $stats['door']++;
@@ -215,19 +223,23 @@ class ImportAdminController extends AbstractController
         }
 
         // ── Hoja MAILBOX ────────────────────────────────────────────
-        // Columnas: reference | alto | ancho | fondo | tipo
+        // Columnas: reference | alto | ancho | fondo | tipo | agrupacion | electronico | tarjetero | acero_inoxidable
         if ($spreadsheet->getSheetByName('mailbox')) {
             $sheet = $spreadsheet->getSheetByName('mailbox');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
-                [$reference, $alto, $ancho, $fondo, $tipo] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 9);
+                [$reference, $alto, $ancho, $fondo, $tipo, $agrupacionRaw, $electronicoRaw, $tarjeteroRaw, $aceroRaw] = $cells;
 
                 if (empty($reference) || empty($alto) || empty($ancho) || empty($fondo)) {
                     continue;
                 }
 
-                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
-                $existing = $mailboxRepo->findOneMailboxByDimensions($alto, $ancho, $fondo);
+                $tipoVal     = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $agrupacion      = filter_var($agrupacionRaw, FILTER_VALIDATE_BOOLEAN);
+                $electronico     = filter_var($electronicoRaw, FILTER_VALIDATE_BOOLEAN);
+                $tarjetero       = filter_var($tarjeteroRaw, FILTER_VALIDATE_BOOLEAN);
+                $aceroInoxidable = filter_var($aceroRaw, FILTER_VALIDATE_BOOLEAN);
+                $existing    = $mailboxRepo->findOneMailboxByDimensions($alto, $ancho, $fondo);
 
                 if ($existing) {
                     $duplicates[] = sprintf('%s (buzón)', $reference);
@@ -239,31 +251,37 @@ class ImportAdminController extends AbstractController
                     ->setAlto($alto)
                     ->setAncho($ancho)
                     ->setFondo($fondo)
-                    ->setTipo($tipoVal));
+                    ->setTipo($tipoVal)
+                    ->setAgrupacion($agrupacion)
+                    ->setElectronico($electronico)
+                    ->setTarjetero($tarjetero)
+                    ->setAceroInoxidable($aceroInoxidable));
 
                 $stats['mailbox']++;
             }
         }
 
         // ── Hoja CONTROL ───────────────────────────────────────────
-        // Columnas: reference | place | descripcion | tipo
+        // Columnas: reference | place | descripcion | tipo | acero_inoxidable
         if ($spreadsheet->getSheetByName('control')) {
             $sheet = $spreadsheet->getSheetByName('control');
             foreach ($sheet->getRowIterator(2) as $row) {
-                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
-                [$reference, $place, $descripcion, $tipo] = $cells;
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 5);
+                [$reference, $place, $descripcion, $tipo, $aceroRaw] = $cells;
 
                 if (empty($reference) || empty($place)) {
                     continue;
                 }
 
-                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $tipoVal         = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $aceroInoxidable = filter_var($aceroRaw, FILTER_VALIDATE_BOOLEAN);
 
                 $em->persist((new Control())
                     ->setReference($reference)
                     ->setPlace($place)
                     ->setDescripcion($descripcion ?: null)
-                    ->setTipo($tipoVal));
+                    ->setTipo($tipoVal)
+                    ->setAceroInoxidable($aceroInoxidable));
 
                 $stats['control']++;
             }
@@ -319,12 +337,62 @@ class ImportAdminController extends AbstractController
             }
         }
 
+        // ── Hoja BRAZO ─────────────────────────────────────────────
+        // Columnas: reference | descripcion | tipo | altura
+        if ($spreadsheet->getSheetByName('brazo')) {
+            $sheet = $spreadsheet->getSheetByName('brazo');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
+                [$reference, $descripcion, $tipo, $altura] = $cells;
+
+                if (empty($reference)) {
+                    continue;
+                }
+
+                $tipoVal = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+
+                $em->persist((new Brazo())
+                    ->setReference($reference)
+                    ->setDescripcion($descripcion ?: null)
+                    ->setTipo($tipoVal)
+                    ->setAltura($altura ?: null));
+
+                $stats['brazo']++;
+            }
+        }
+
+        // ── Hoja PATA ──────────────────────────────────────────────
+        // Columnas: reference | descripcion | tipo | num_columnas
+        if ($spreadsheet->getSheetByName('pata')) {
+            $sheet = $spreadsheet->getSheetByName('pata');
+            foreach ($sheet->getRowIterator(2) as $row) {
+                $cells = $this->rowToArray($sheet, $row->getRowIndex(), 4);
+                [$reference, $descripcion, $tipo, $numColRaw] = $cells;
+
+                if (empty($reference)) {
+                    continue;
+                }
+
+                $tipoVal     = $tipoOverride ?? (in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+                $numColumnas = $numColRaw !== '' ? (int) $numColRaw : null;
+
+                $em->persist((new Pata())
+                    ->setReference($reference)
+                    ->setDescripcion($descripcion ?: null)
+                    ->setTipo($tipoVal)
+                    ->setNumColumnas($numColumnas));
+
+                $stats['pata']++;
+            }
+        }
+
         $em->flush();
 
         $this->addFlash('success', sprintf(
-            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas, %d envolventes.',
+            'Importación completada: %d puertas, %d laterales, %d tejados, %d columnas, %d buzones, %d controles, %d bandejas, %d envolventes, %d brazos, %d patas.',
             $stats['door'], $stats['side'], $stats['roof'], $stats['columna'],
-            $stats['mailbox'], $stats['control'], $stats['bandeja'], $stats['envolvente']
+            $stats['mailbox'], $stats['control'], $stats['bandeja'], $stats['envolvente'],
+            $stats['brazo'], $stats['pata']
         ));
 
         if (!empty($duplicates)) {

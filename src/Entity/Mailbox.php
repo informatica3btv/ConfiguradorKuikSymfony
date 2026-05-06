@@ -35,6 +35,18 @@ class Mailbox
     /** @ORM\Column(type="string", length=50, nullable=true) */
     private $tipo;
 
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $agrupacion = false;
+
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $electronico = false;
+
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $tarjetero = false;
+
+    /** @ORM\Column(type="boolean", options={"default": false}) */
+    private $aceroInoxidable = false;
+
     public function getId(): ?int { return $this->id; }
 
     public function getReference(): ?string { return $this->reference; }
@@ -54,4 +66,16 @@ class Mailbox
 
     public function getTipo(): ?string { return $this->tipo; }
     public function setTipo(?string $v): self { $this->tipo = $v; return $this; }
+
+    public function isAgrupacion(): bool { return (bool) $this->agrupacion; }
+    public function setAgrupacion(bool $v): self { $this->agrupacion = $v; return $this; }
+
+    public function isElectronico(): bool { return (bool) $this->electronico; }
+    public function setElectronico(bool $v): self { $this->electronico = $v; return $this; }
+
+    public function isTarjetero(): bool { return (bool) $this->tarjetero; }
+    public function setTarjetero(bool $v): self { $this->tarjetero = $v; return $this; }
+
+    public function isAceroInoxidable(): bool { return (bool) $this->aceroInoxidable; }
+    public function setAceroInoxidable(bool $v): self { $this->aceroInoxidable = $v; return $this; }
 }
