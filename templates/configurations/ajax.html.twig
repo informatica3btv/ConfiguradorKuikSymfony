@@ -48,6 +48,8 @@
               Buzón {{ _mbParts[0] == '1' ? 'electrónico' : 'mecánico' }}{{ _mbParts[1] == '1' ? ' con tarjetero' : ' sin tarjetero' }}
             {% elseif size starts with 'brazo_' %}
               Brazos H{{ size|replace({'brazo_': ''}) }}
+            {% elseif size starts with 'pata_' %}
+              Patas ({{ size|replace({'pata_': ''}) }} col.)
             {% elseif size == 'placa' %}
               Placa
             {% elseif size == 'colgador' %}
@@ -69,6 +71,7 @@
             <td style="padding:10px 12px; font-size:14px; color:#6b7280; {{ border }}">
               {% if size in ['buzon_group', 'envolvente_buzon', 'control'] and info._descripcion is defined and info._descripcion %}{{ info._descripcion }}
               {% elseif size starts with 'brazo_' and product.descripcion is defined and product.descripcion %}{{ product.descripcion }}
+              {% elseif size starts with 'pata_' and product.descripcion is defined and product.descripcion %}{{ product.descripcion }}
               {% else %}—{% endif %}
             </td>
             <td style="padding:10px 12px; font-size:14px; text-align:right; {{ border }}">{{ count }}</td>

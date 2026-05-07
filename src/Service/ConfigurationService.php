@@ -9,6 +9,7 @@ use App\Repository\ControlRepository;
 use App\Repository\DoorRepository;
 use App\Repository\EnvolventeRepository;
 use App\Repository\MailboxRepository;
+use App\Repository\PataRepository;
 use App\Repository\RoofRepository;
 use App\Repository\SideRepository;
 
@@ -20,6 +21,7 @@ class ConfigurationService
     private EnvolventeRepository $envolventeRepo;
     private BandejaRepository    $bandejaRepo;
     private BrazoRepository      $brazoRepo;
+    private PataRepository       $pataRepo;
     private ColumnaRepository    $columnaRepo;
     private ControlRepository    $controlRepo;
     private MailboxRepository    $mailboxRepo;
@@ -35,6 +37,7 @@ class ConfigurationService
         EnvolventeRepository $envolventeRepo,
         BandejaRepository $bandejaRepo,
         BrazoRepository $brazoRepo,
+        PataRepository $pataRepo,
         ColumnaRepository $columnaRepo,
         ControlRepository $controlRepo,
         MailboxRepository $mailboxRepo,
@@ -49,6 +52,7 @@ class ConfigurationService
         $this->envolventeRepo = $envolventeRepo;
         $this->bandejaRepo    = $bandejaRepo;
         $this->brazoRepo      = $brazoRepo;
+        $this->pataRepo       = $pataRepo;
         $this->columnaRepo    = $columnaRepo;
         $this->controlRepo    = $controlRepo;
         $this->mailboxRepo    = $mailboxRepo;
@@ -307,6 +311,27 @@ class ConfigurationService
         $isBrazos = $tipo === 'home'
             && ($payload['instalacion'] ?? '') === 'soporte_suelo'
             && ($payload['bracketType'] ?? '') === 'brazos';
+
+        $isPatas = $tipo === 'home'
+            && ($payload['instalacion'] ?? '') === 'soporte_suelo'
+            && ($payload['bracketType'] ?? '') === 'patas';
+
+        // Para Home con patas: 1 kit de patas por agrupación según número de columnas
+        if ($isPatas && !empty($groups)) {
+            foreach ($groups as $groupCols) {
+                if (!is_array($groupCols)) continue;
+                $numCols = count($groupCols);
+                $pata = $this->pataRepo->findOneBy(['numColumnas' => $numCols, 'tipo' => $tipo])
+                     ?? $this->pataRepo->findOneBy(['numColumnas' => $numCols]);
+                $pataKey = 'pata_' . $numCols;
+                $sizeCounts[$pataKey] = ($sizeCounts[$pataKey] ?? 0) + 1;
+                $products[$pataKey]   = $pata;
+                if ($pata) {
+                    $qty = $sizeCounts[$pataKey];
+                    $productInfo[$pataKey] = $this->btvApi->getProductInfo($pata->getReference(), $qty);
+                }
+            }
+        }
 
         // Para Home con brazos: sin laterales, 1 brazo por agrupación según altura
         if ($isBrazos && !empty($groups)) {

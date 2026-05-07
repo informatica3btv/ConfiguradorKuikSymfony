@@ -792,12 +792,8 @@
 
                         {% if n == 1 %}
                           {% set legPositions = [1] %}
-                        {% elseif n <= 3 %}
-                          {% set legPositions = [1, n] %}
-                        {% elseif n == 4 %}
-                          {% set legPositions = [1, 3, 4] %}
                         {% else %}
-                          {% set legPositions = [1, 3, 5] %}
+                          {% set legPositions = [1, n] %}
                         {% endif %}
 
                         <div class="legs-under">
