@@ -28,6 +28,7 @@ class ConfigurationService
     private BtvApiService        $btvApi;
     private string               $placaReference;
     private string               $colgadorReference;
+    private string               $instalacionReference;
     private int                  $doorsPerPlate;
 
     public function __construct(
@@ -44,6 +45,7 @@ class ConfigurationService
         BtvApiService  $btvApi,
         string         $placaReference,
         string         $colgadorReference = '',
+        string         $instalacionReference = '',
         int            $doorsPerPlate = 16
     ) {
         $this->doorRepo       = $doorRepo;
@@ -57,9 +59,10 @@ class ConfigurationService
         $this->controlRepo    = $controlRepo;
         $this->mailboxRepo    = $mailboxRepo;
         $this->btvApi         = $btvApi;
-        $this->placaReference    = $placaReference;
-        $this->colgadorReference = $colgadorReference;
-        $this->doorsPerPlate     = $doorsPerPlate;
+        $this->placaReference       = $placaReference;
+        $this->colgadorReference    = $colgadorReference;
+        $this->instalacionReference = $instalacionReference;
+        $this->doorsPerPlate        = $doorsPerPlate;
     }
 
     /**
@@ -243,6 +246,11 @@ class ConfigurationService
         return $blk;
     }
 
+    public function getInstalacionReference(): string
+    {
+        return $this->instalacionReference;
+    }
+
     /**
      * Builds the product table data (products, productInfo, sizeCounts).
      */
@@ -251,6 +259,8 @@ class ConfigurationService
         $serie     = $payload['fondo'] ?? '';
         $placement = $payload['placement'] ?? '';
         $tipo      = $payload['type'] ?? null; // 'home' | 'profesional'
+        // Home: interior/exterior solo distingue el tejado; para el resto de refs no filtrar por placement
+        $refPlacement = ($tipo === 'home') ? null : $placement;
         $addons    = $payload['addons'] ?? [];
         $doorIndex = 0;
         $sizeCounts = [];
@@ -299,7 +309,7 @@ class ConfigurationService
         foreach ($sizeCounts as $key => $count) {
             $meth    = str_ends_with($key, '_meth');
             $size    = $meth ? substr($key, 0, -5) : $key;
-            $product = $this->doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $placement, $size, $meth, $tipo);
+            $product = $this->doorRepo->findOneDoorBySerieAndPlaceAndSizeAndMethacrylate($serie, $refPlacement, $size, $meth, $tipo);
             $products[$key] = $product;
             if ($product) {
                 $productInfo[$key] = $this->btvApi->getProductInfo($product->getReference(), $count);
@@ -376,7 +386,7 @@ class ConfigurationService
                 }
                 $alturaKey  = (string)$maxH;
                 $lateralKey = 'lateral_' . $alturaKey;
-                $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement, $tipo, $alturaKey);
+                $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $refPlacement, $tipo, $alturaKey);
                 $sizeCounts[$lateralKey] = ($sizeCounts[$lateralKey] ?? 0) + 1;
                 $products[$lateralKey]   = $side;
                 if ($side) {
@@ -385,14 +395,14 @@ class ConfigurationService
                 }
             }
         } else {
-            $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $placement, $tipo);
+            $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $refPlacement, $tipo);
             $sizeCounts['lateral'] = $groupCount;
             $products['lateral']   = $side;
             if ($side) {
                 $productInfo['lateral'] = $this->btvApi->getProductInfo($side->getReference(), $groupCount);
             }
         }
-
+        
         // Columnas: una por columna en total.
         // Para Home, agrupar columnas por altura total (suma de h de sus bloques) y buscar referencia por altura.
         $totalCols = count($allCols);
@@ -412,7 +422,7 @@ class ConfigurationService
                 }
                 foreach ($colsByAltura as $alturaVal => $count) {
                     $key     = 'columna_' . $alturaVal;
-                    $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement, $tipo, $alturaVal);
+                    $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $refPlacement, $tipo, $alturaVal);
                     $sizeCounts[$key] = $count;
                     $products[$key]   = $columna;
                     if ($columna) {
@@ -420,7 +430,7 @@ class ConfigurationService
                     }
                 }
             } else {
-                $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $placement, $tipo);
+                $columna = $this->columnaRepo->findOneColumnaBySerieAndPlace($serie, $refPlacement, $tipo);
                 $sizeCounts['columna'] = $totalCols;
                 $products['columna']   = $columna;
                 if ($columna) {
@@ -483,8 +493,10 @@ class ConfigurationService
             if (!is_array($groupCols)) continue;
             $numCols = count($groupCols);
             if ($tipo === 'home') {
-                // Home: un tejado individual por columna
-                $roofCounts[1] = ($roofCounts[1] ?? 0) + $numCols;
+                // Home interior: tejado incluido en columnas, no se añade línea
+                if ($placement === 'exterior') {
+                    $roofCounts[1] = ($roofCounts[1] ?? 0) + $numCols;
+                }
             } else {
                 // Profesional: agrupar en pares de 2 + sueltos
                 $pairs   = intdiv($numCols, 2);
@@ -530,6 +542,8 @@ class ConfigurationService
             $products['placa']   = $this->placaReference;
             $productInfo['placa'] = $this->btvApi->getProductInfo($this->placaReference, $extraPlates);
         }
+
+        // Instalación (referencia fija, 1 unidad siempre)
 
         // Colgadores: solo para instalación 'colgado' en Home
         if ($tipo === 'home' && ($payload['instalacion'] ?? '') === 'colgado' && $totalCols > 0) {

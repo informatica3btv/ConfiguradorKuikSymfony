@@ -827,8 +827,9 @@ class ConfigurationController extends AbstractController
             $table = $this->configService->buildProductTable($payload);
         }
 
-        $table['instalacionPrecio'] = (float) ($payload['_instalacion_precio'] ?? 0);
-        $table['instalacionIva']    = (bool)  ($payload['_instalacion_iva']    ?? false);
+        $table['instalacionPrecio']    = (float) ($payload['_instalacion_precio'] ?? 0);
+        $table['instalacionIva']       = (bool)  ($payload['_instalacion_iva']    ?? false);
+        $table['instalacionReference'] = $this->configService->getInstalacionReference();
 
         return $this->render('configurations/ajax.html.twig', $table);
     }

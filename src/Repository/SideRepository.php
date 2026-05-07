@@ -13,13 +13,15 @@ class SideRepository extends ServiceEntityRepository
         parent::__construct($registry, Side::class);
     }
 
-    public function findOneSideBySerieAndPlace(string $serie, string $place, ?string $tipo = null, ?string $altura = null): ?Side
+    public function findOneSideBySerieAndPlace(string $serie, ?string $place, ?string $tipo = null, ?string $altura = null): ?Side
     {
         $qb = $this->createQueryBuilder('p')
             ->andWhere('p.serie = :serie')
-            ->andWhere('p.place = :place')
-            ->setParameter('serie', $serie)
-            ->setParameter('place', $place);
+            ->setParameter('serie', $serie);
+
+        if ($place !== null) {
+            $qb->andWhere('p.place = :place')->setParameter('place', $place);
+        }
 
         if ($tipo !== null) {
             $qb->andWhere('p.tipo = :tipo OR p.tipo IS NULL')
