@@ -1929,6 +1929,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Si hay pantalla en alguna columna, el periférico es obligatorio
+    const hasScreen = state.columns.some(c =>
+      [...(c.single?.blocks ?? []), ...(c.top?.blocks ?? []), ...(c.bottom?.blocks ?? [])]
+        .some(b => b.type === 'screen')
+    );
+    const controlSel = document.getElementById('control-select');
+    if (hasScreen && controlSel && !controlSel.value) {
+      e.preventDefault();
+      error.textContent = 'Si hay una pantalla debes seleccionar un periférico.';
+      return;
+    }
+
     let columnsPayload = [];
     if (layout.mode === 'home_empotrado') {
       columnsPayload = state.columns.map(c => ({
