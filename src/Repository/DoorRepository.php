@@ -34,6 +34,7 @@ class DoorRepository extends ServiceEntityRepository
                ->setParameter('tipo', $tipo);
         }
 
-        return $qb->getQuery()->getOneOrNullResult();
+        $results = $qb->setMaxResults(1)->getQuery()->getResult();
+        return $results[0] ?? null;
     }
 }

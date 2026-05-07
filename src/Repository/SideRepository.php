@@ -33,6 +33,7 @@ class SideRepository extends ServiceEntityRepository
                ->setParameter('altura', $altura);
         }
 
-        return $qb->getQuery()->getOneOrNullResult();
+        $results = $qb->setMaxResults(1)->getQuery()->getResult();
+        return $results[0] ?? null;
     }
 }
