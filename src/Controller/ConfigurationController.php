@@ -579,7 +579,7 @@ class ConfigurationController extends AbstractController
         if (isset($old['addons']) && !isset($payloadArr['addons'])) {
             $payloadArr['addons'] = $old['addons'];
         }
-        foreach (['_instalacion_precio', '_instalacion_iva', '_screenshots', '_acceptedProductTable'] as $internalKey) {
+        foreach (['_instalacion_precio', '_instalacion_iva', '_descuento', '_screenshots', '_acceptedProductTable'] as $internalKey) {
             if (isset($old[$internalKey]) && !isset($payloadArr[$internalKey])) {
                 $payloadArr[$internalKey] = $old[$internalKey];
             }
@@ -830,6 +830,7 @@ class ConfigurationController extends AbstractController
         $table['instalacionPrecio']    = (float) ($payload['_instalacion_precio'] ?? 0);
         $table['instalacionIva']       = (bool)  ($payload['_instalacion_iva']    ?? false);
         $table['instalacionReference'] = $this->configService->getInstalacionReference();
+        $table['descuento']            = (float) ($payload['_descuento']           ?? 0);
 
         return $this->render('configurations/ajax.html.twig', $table);
     }
@@ -1162,12 +1163,14 @@ class ConfigurationController extends AbstractController
         }
 
         $data  = json_decode($request->getContent(), true);
-        $precio = isset($data['precio']) ? (float) $data['precio'] : 0.0;
-        $iva    = !empty($data['iva']);
+        $precio    = isset($data['precio'])    ? (float) $data['precio']    : 0.0;
+        $iva       = !empty($data['iva']);
+        $descuento = isset($data['descuento']) ? (float) $data['descuento'] : 0.0;
 
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         $payloadArr['_instalacion_precio'] = $precio;
         $payloadArr['_instalacion_iva']    = $iva;
+        $payloadArr['_descuento']          = $descuento;
         $configuration->setPayload(json_encode($payloadArr));
 
         $em->persist($configuration);

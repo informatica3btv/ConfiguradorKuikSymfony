@@ -1128,6 +1128,7 @@
         const html = await fetch(_tableUrl + '?_=' + Date.now()).then(r => r.text());
         c.innerHTML = html;
         bindIvaCheck();
+        initProductTable();
       }
     }
 
@@ -1141,13 +1142,73 @@
     });
     console.log('IVA listener registered');
 
+    function initProductTable() {
+      const table = document.getElementById('productTable');
+      if (!table) return;
+      const subtotal    = parseFloat(table.dataset.subtotal) || 0;
+      const ivaCheck    = document.getElementById('ivaCheck');
+      const discountInp = document.getElementById('discountPct');
+      if (!discountInp) return;
+
+      function fmt(n) {
+        return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      }
+
+      function recalc() {
+        const pct      = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
+        const iva      = ivaCheck ? ivaCheck.checked : false;
+        const discount = subtotal * pct / 100;
+        const base     = subtotal - discount;
+        const total    = iva ? base * 1.21 : base;
+
+        const rSub = document.getElementById('rowSubtotal');
+        const rIva = document.getElementById('rowIva');
+        if (rSub) document.getElementById('cellSubtotal').textContent = fmt(subtotal);
+        if (rIva) document.getElementById('cellIva').textContent      = fmt(base * 0.21);
+
+        const totalBefore = iva ? subtotal * 1.21 : subtotal;
+        const rBefore = document.getElementById('rowTotalBefore');
+        const rDisc   = document.getElementById('rowDiscount');
+        if (pct > 0) {
+          if (rBefore) {
+            rBefore.style.display = '';
+            document.getElementById('cellTotalBefore').textContent = fmt(totalBefore);
+          }
+          rDisc.style.display = '';
+          document.getElementById('discountPctLabel').textContent = pct % 1 === 0 ? pct : pct.toFixed(1);
+          document.getElementById('cellDiscount').textContent = '−' + fmt(discount);
+        } else {
+          if (rBefore) rBefore.style.display = 'none';
+          rDisc.style.display = 'none';
+        }
+
+        const lbl = document.getElementById('cellTotalLabel');
+        if (lbl) lbl.textContent = (pct > 0 ? 'Total con descuento' : 'Total') + (iva ? ' (IVA incl.)' : '');
+        document.getElementById('cellTotal').textContent = fmt(total);
+      }
+
+      let _discountTimer = null;
+      discountInp.addEventListener('input', function() {
+        recalc();
+        clearTimeout(_discountTimer);
+        _discountTimer = setTimeout(function() {
+          if (typeof window.saveInstalacion === 'function') window.saveInstalacion();
+        }, 800);
+      });
+      discountInp.addEventListener('change', function() {
+        if (typeof window.saveInstalacion === 'function') window.saveInstalacion();
+      });
+      if (ivaCheck) ivaCheck.addEventListener('change', recalc);
+      recalc();
+    }
+
     // Load product reference table via AJAX
     function loadProductTable() {
       const _productContainer = document.getElementById('productTableContainer');
       if (_productContainer) {
         fetch('{{ path('configuration_product_table', { id: configuration.id }) }}?_=' + Date.now())
           .then(function (r) { return r.text(); })
-          .then(function (html) { _productContainer.innerHTML = html; })
+          .then(function (html) { _productContainer.innerHTML = html; initProductTable(); })
           .catch(function (e) { console.error('Error cargando referencias de producto:', e); });
       }
     }
@@ -1238,12 +1299,14 @@
       }
 
       async function saveInstalacion() {
-        const precio = parseFloat(precioInput?.value) || 0;
-        const iva    = getIvaChecked();
+        const precio     = parseFloat(precioInput?.value) || 0;
+        const iva        = getIvaChecked();
+        const discountEl = document.getElementById('discountPct');
+        const descuento  = discountEl ? (parseFloat(discountEl.value) || 0) : 0;
         await fetch(saveUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ precio, iva })
+          body: JSON.stringify({ precio, iva, descuento })
         });
         if (statusEl) { statusEl.style.display = 'inline'; setTimeout(() => { statusEl.style.display = 'none'; }, 2000); }
       }
@@ -1258,6 +1321,7 @@
       }
 
       window.saveAndReloadTable = saveAndReloadTable;
+      window.saveInstalacion    = saveInstalacion;
 
       if (precioInput) {
         precioInput.addEventListener('change', saveAndReloadTable);
