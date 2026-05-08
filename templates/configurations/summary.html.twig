@@ -1317,6 +1317,7 @@
           const html = await fetch(tableUrl).then(r => r.text());
           productContainer.innerHTML = html;
           bindIvaCheck();
+          initProductTable();
         }
       }
 
