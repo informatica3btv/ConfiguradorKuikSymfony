@@ -760,7 +760,7 @@ class ConfigurationController extends AbstractController
 
         $configuration = $repo->find($id);
         if (!$configuration) {
-            throw $this->createNotFoundException('Configuration not found');
+            return $this->redirectToRoute('project_list');
         }
 
         $p = $configuration->getProject();
