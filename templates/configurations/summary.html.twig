@@ -201,6 +201,13 @@
       text-align:center;
     }
 
+    .cols-and-mb{
+      display:flex;
+      flex-direction:row;
+      align-items:flex-start;
+      gap:0;
+    }
+
     .cols{
       display:grid;
       grid-template-columns: repeat(var(--colsN), 135px);
@@ -462,11 +469,10 @@
       position:absolute;
       top: 60px;
       width: var(--armW);
-      height: calc(90px * var(--hscale) + 16px);
+      height: calc({{ (singleCap * kuik.scale_arm) }}px + 86px);
       object-fit: contain;
       z-index: 1;
       pointer-events:none;
-      padding-bottom: 40px;
       user-select:none;
     }
 
@@ -487,7 +493,7 @@
       pointer-events:none;
       user-select:none;
       z-index:1;
-      margin-top:-10px;
+      padding: 0 18px;
     }
 
     .leg-img{
@@ -495,6 +501,7 @@
       height:175px;
       object-fit:contain;
       justify-self:center;
+      flex:0 0 auto;
     }
 
     .group-roof {
@@ -608,7 +615,7 @@
                         <div class="group-roof"></div>
                       {% endif %}
 
-                      <div style="display:flex;flex-direction:row;align-items:flex-start;gap:0;">
+                      <div class="cols-and-mb">
 
                         {# ── Buzones IZQUIERDA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
@@ -785,17 +792,11 @@
                           </div>
                         {% endif %}
 
-                      </div>{# /flex row #}
+                      </div>{# /cols-and-mb #}
 
                       {% if isSoporteSuelo and selectedType == 'patas' %}
                         {% set n = groupCols|length %}
-
-                        {% if n == 1 %}
-                          {% set legPositions = [1] %}
-                        {% else %}
-                          {% set legPositions = [1, n] %}
-                        {% endif %}
-
+                        {% set legPositions = (n == 1) ? [1] : [1, n] %}
                         <div class="legs-under">
                           {% for pos in legPositions %}
                             <img class="leg-img"

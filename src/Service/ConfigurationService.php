@@ -387,7 +387,11 @@ class ConfigurationService
                 $alturaKey  = (string)$maxH;
                 $lateralKey = 'lateral_' . $alturaKey;
                 $side = $this->sideRepo->findOneSideBySerieAndPlace($serie, $refPlacement, $tipo, $alturaKey);
-                $sizeCounts[$lateralKey] = ($sizeCounts[$lateralKey] ?? 0) + 1;
+                $instalacion = $payload['instalacion'] ?? '';
+                $lateralPairs = in_array($instalacion, ['empotrado', 'colgado'], true)
+                    ? (int)ceil(count($groupCols) / 5)
+                    : 1;
+                $sizeCounts[$lateralKey] = ($sizeCounts[$lateralKey] ?? 0) + $lateralPairs;
                 $products[$lateralKey]   = $side;
                 if ($side) {
                     $qty = $sizeCounts[$lateralKey];
