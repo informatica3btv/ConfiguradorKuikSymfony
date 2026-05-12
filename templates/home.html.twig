@@ -764,7 +764,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (input) input.value = value;
   }
 
+  const _isHome = {{ type|default('')|json_encode }} === 'home';
+
   function filterControlByPlacement(placement) {
+    if (_isHome) return; // En home el placement no afecta a los periféricos
     const sel = document.getElementById('control-select');
     if (!sel) return;
     const current = sel.value;
