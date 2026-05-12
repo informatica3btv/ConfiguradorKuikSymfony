@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (input) input.value = value;
   }
 
-  const _isHome = {{ type|default('')|json_encode }} === 'home';
+  const _isHome = {{ type|default('')|json_encode|raw }} === 'home';
 
   function filterControlByPlacement(placement) {
     if (_isHome) return; // En home el placement no afecta a los periféricos
@@ -1880,6 +1880,14 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   }
 
+  // Auto-seleccionar si solo hay una opción en un option-row
+  document.querySelectorAll('.option-row').forEach(function(row) {
+    const cards = row.querySelectorAll('.option-card');
+    if (cards.length === 1 && !cards[0].classList.contains('selected')) {
+      cards[0].click();
+    }
+  });
+
   // =========================
   // SUBMIT
   // =========================
@@ -1894,6 +1902,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const error = document.getElementById('formError');
     error.textContent = '';
+
+    // Validar que todos los option-row tienen una opción seleccionada
+    let missingAttr = null;
+    document.querySelectorAll('.option-row').forEach(function(row) {
+      if (missingAttr) return;
+      const group = row.getAttribute('data-group');
+      const hidden = document.getElementById(group);
+      if (hidden && !hidden.value) {
+        const card = document.querySelector('.section-card[data-attr-key="' + group + '"] .section-title');
+        missingAttr = card ? card.textContent.trim() : group;
+      }
+    });
+    if (missingAttr) {
+      e.preventDefault();
+      error.textContent = 'Selecciona ' + missingAttr + '.';
+      return;
+    }
 
     if (!pl || !colorDoor || !colorBody) {
       e.preventDefault();
