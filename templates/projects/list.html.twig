@@ -522,8 +522,8 @@
     </div>
 
     <div class="view-switch" id="viewSwitch">
-      <button type="button" class="view-btn active" data-view="cards">🗂 Tarjetas</button>
-      <button type="button" class="view-btn" data-view="table">📋 Tabla</button>
+      <button type="button" class="view-btn active" data-view="table">🗂 Tarjetas</button>
+      <button type="button" class="view-btn" data-view="cards">📋 Tabla</button>
     </div>
   </div>
 
@@ -542,7 +542,7 @@
       <div>Acción</div>
     </div>
 
-    <div class="grid view-cards" id="projectsGrid">
+    <div class="grid view-table" id="projectsGrid">
       {% for project in projects %}
         {% set configsCount = project.totalConfigurations|default(0) %}
 
@@ -638,7 +638,7 @@
           });
         });
 
-        const savedView = localStorage.getItem('projectsView') || 'cards';
+        const savedView = localStorage.getItem('projectsView') || 'table';
         setView(savedView);
 
         viewButtons.forEach(btn => {

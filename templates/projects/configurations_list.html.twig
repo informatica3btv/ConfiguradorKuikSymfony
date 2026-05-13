@@ -830,7 +830,7 @@
 
               {% set isHome = (type == 'home') %}
               {% set isZocalo = (isHome and instalacion == 'zocalo') %}
-              {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}
+              {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo' or instalacion == 'colgado')) %}
               {% set topCap = isZocalo ? (p.topCap|default(kuik.default_top_cap)) : kuik.default_top_cap %}
               {% set bottomCap = isZocalo ? kuik.bottom_cap_zocalo : kuik.default_bottom_cap %}
               {% set singleCap = isEmpotradoLike ? (p.singleCap|default(40)) : kuik.default_single_cap %}
