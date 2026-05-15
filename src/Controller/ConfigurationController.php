@@ -731,6 +731,10 @@ class ConfigurationController extends AbstractController
         $payloadArr['bracketType']  = $bracketType;
         $payloadArr['bracketColor'] = $bracketColor;
 
+        $mbLegRaw = trim((string) $request->request->get('mbLegPositions', '[]'));
+        $mbLegDecoded = json_decode($mbLegRaw, true);
+        $payloadArr['mbLegPositions'] = is_array($mbLegDecoded) ? array_values(array_filter($mbLegDecoded, 'is_int')) : [];
+
         // si quieres, aseguras instalación
         if (!isset($payloadArr['instalacion'])) {
             $payloadArr['instalacion'] = 'soporte_suelo';

@@ -378,7 +378,7 @@
       pointer-events:none;
       user-select:none;
       z-index:1;
-      padding: 0 8px;
+      //padding: 0 8px;
     }
 
     .mini-leg-img{
@@ -1042,12 +1042,31 @@
 
                               {% if n == 1 %}
                                 {% set legPositions = [1] %}
-                              {% elseif n <= 3 %}
-                                {% set legPositions = [1, n] %}
+                              {% elseif n == 2 %}
+                                {% set legPositions = [1, 2] %}
+                              {% elseif n == 3 %}
+                                {% set legPositions = [1, 3] %}
                               {% elseif n == 4 %}
-                                {% set legPositions = [1, 3, 4] %}
+                                {% set legPositions = [2, 3] %}
+                              {% elseif n == 5 %}
+                                {% set legPositions = [2, 4] %}
+                              {% elseif n == 6 %}
+                                {% set legPositions = [2, 4, 6] %}
+                              {% elseif n == 7 %}
+                                {% set legPositions = [2, 4, 6, 7] %}
+                              {% elseif n == 8 %}
+                                {% set legPositions = [2, 4, 6, 8] %}
+                              {% elseif n == 9 %}
+                                {% set legPositions = [2, 4, 7, 8] %}
                               {% else %}
-                                {% set legPositions = [1, 3, 5] %}
+                                {% set legPositions = [2, 4, 7, 9] %}
+                              {% endif %}
+                              {% if agrupacionCombinada and mbSide == 'left' and n > 5 %}
+                                {% if n == 6 %}{% set legPositions = [1, 3, 5] %}
+                                {% elseif n == 7 %}{% set legPositions = [1, 2, 4, 6] %}
+                                {% elseif n == 8 %}{% set legPositions = [1, 3, 5, 7] %}
+                                {% elseif n == 9 %}{% set legPositions = [2, 3, 6, 8] %}
+                                {% endif %}
                               {% endif %}
 
                               {% set legSrc =

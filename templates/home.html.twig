@@ -611,7 +611,7 @@
           </select>
         </div>
 
-        <div class="field" {% if type|default('') == 'home' %}style="display:none;"{% endif %}>
+        <div class="field" id="colorBodyField" {% if type|default('') == 'home' %}style="display:none;"{% endif %}>
           <label for="color-body">Color Cuerpo</label>
           <select name="color-body" id="color-body">
             <option value="" selected disabled>Selecciona un color</option>
@@ -1026,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   function getGroupMax() {
     if (layout.mode === 'professional') return 13;
-    if (layout.mode === 'home_zocalo') return 3;
+    if (layout.mode === 'home_zocalo') return 10;
     if (layout.mode === 'home_empotrado') return 8;
     return 1;
   }
@@ -1676,12 +1676,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const ACERO_HEX = '#878581';
   const ACERO_RAL = '9007';
 
+  const colorBodyField = document.getElementById('colorBodyField');
+
   function applyAceroInoxidable() {
     if (!chkAceroInoxidable) return;
     if (chkAceroInoxidable.checked) {
       if (colorDoorSelect) {
         colorDoorSelect.disabled = true;
-        // Selecciona la opción de acero inoxidable si existe, si no la simula
         let found = false;
         for (const opt of colorDoorSelect.options) {
           if (opt.value === ACERO_HEX) { colorDoorSelect.value = ACERO_HEX; found = true; break; }
@@ -1696,6 +1697,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       state.selectedColor = ACERO_HEX;
       setColumnsBorderColor(ACERO_HEX);
+      // Mostrar selector de color cuerpo y seleccionar el primero por defecto
+      if (colorBodyField) colorBodyField.style.display = '';
+      if (colorBodySelect && !colorBodySelect.value) {
+        const firstReal = Array.from(colorBodySelect.options).find(o => o.value);
+        if (firstReal) {
+          colorBodySelect.value = firstReal.value;
+          setColumnsBorderColor(firstReal.value);
+        }
+      }
     } else {
       if (colorDoorSelect) {
         colorDoorSelect.disabled = false;
@@ -1703,6 +1713,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tmp) tmp.remove();
         colorDoorSelect.value = '';
       }
+      if (colorBodyField) colorBodyField.style.display = 'none';
+      if (colorBodySelect) colorBodySelect.value = '';
       state.selectedColor = colorDoorSelect?.value || '';
       syncBodyToDoor();
     }
@@ -1835,6 +1847,11 @@ document.addEventListener('DOMContentLoaded', () => {
       chkAceroInoxidable.checked = true;
       applyAceroInoxidable();
       filterControlesByAcero();
+      // Restaurar color cuerpo guardado si existe
+      if (pre.colorBody && colorBodySelect) {
+        colorBodySelect.value = pre.colorBody;
+        setColumnsBorderColor(pre.colorBody);
+      }
     } else {
       setSelectValue(colorDoorSelect, pre.colorDoor);
       state.selectedColor = pre.colorDoor || '';
@@ -1894,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('configForm').addEventListener('submit', function(e) {
     const pl = document.getElementById('placement').value;
     const colorDoor = document.getElementById('color-door').value;
-    syncBodyToDoor();
+    if (!chkAceroInoxidable?.checked) syncBodyToDoor();
     const colorBody = document.getElementById('color-body').value;
 
     const colorDoorRal = getSelectedRal(colorDoorSelect);
@@ -2076,6 +2093,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       ...(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.bracketType  ? { bracketType:  window.PRELOADED_CONFIG.bracketType }  : {}),
       ...(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.bracketColor ? { bracketColor: window.PRELOADED_CONFIG.bracketColor } : {}),
+      ...(window.PRELOADED_CONFIG && window.PRELOADED_CONFIG.mbLegPositions ? { mbLegPositions: window.PRELOADED_CONFIG.mbLegPositions } : {}),
     }));
   });
 

@@ -52,7 +52,7 @@
       --hscale: {{ kuik.scale }};
     }
 
-    .page-wrap{ max-width: 1200px; margin: 22px auto 50px; padding: 0 14px; }
+    .page-wrap{ max-width: 100%; padding: 0 14px; }
     .page-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
     .page-title{ margin:0; font-size:34px; font-weight:900; letter-spacing:-0.02em; }
     .page-sub{ margin-top:6px; color:var(--muted); font-size:15px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -70,6 +70,8 @@
       background:#fff; border:1px solid var(--line);
       border-radius:16px; padding:16px;
       box-shadow: 0 1px 0 rgba(15,23,42,.04);
+      min-width: 0;
+      overflow: hidden;
     }
     .card h3{ margin:0 0 12px; font-size:16px; font-weight:900; letter-spacing:-0.01em; }
     .muted{ color:var(--muted); font-size:15px; }
@@ -166,8 +168,19 @@
       border-radius:16px;
       background:#fbfcfe;
       padding:14px;
+      overflow: hidden;
+      min-width: 0;
     }
     .preview-title{ font-weight:900; color:var(--ink); margin-bottom:10px; }
+
+    .preview-scroll{
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      cursor: grab;
+      user-select: none;
+    }
+    .preview-scroll.is-dragging{ cursor: grabbing; }
 
     .preview-stage{
       position:relative;
@@ -178,8 +191,10 @@
       padding-bottom:160px;
       overflow:visible;
       display:flex;
-      justify-content:center;
+      justify-content:flex-start;
       align-items:flex-start;
+      width: max-content;
+      min-width: 100%;
     }
 
     /* ✅ contenedor de todos los grupos */
@@ -301,13 +316,13 @@
       pointer-events:none;
       user-select:none;
       z-index:1;
-      padding: 0 18px;
+      //padding: 0 18px;
     }
 
     .leg-img{
-      width:60px;
-      height:175px;
-      object-fit:contain;
+      width:65px;
+      height:{{ (132 + singleCap * (scaleArm - scale))|round }}px;
+      object-fit:fill;
       justify-self:center;
       flex:0 0 auto;
     }
@@ -377,7 +392,7 @@
       border-bottom-width: 8px;
       border-radius: 7px;
       overflow: hidden;
-      box-shadow: var(--shadow);
+      //box-shadow: var(--shadow);
       position: relative;
       z-index: 2;
       flex-shrink: 0;
@@ -392,6 +407,77 @@
       border: none;
       border-radius: 0;
     }
+
+    /* Picker de patas para agrupación de buzones */
+    .mb-leg-picker-wrap{
+      position: relative;
+      flex-shrink: 0;
+    }
+    .mb-leg-picker-row{
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      height: 28px;
+      z-index: 6;
+    }
+    .mb-leg-btn{
+      position: absolute;
+      top: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #0b76d8;
+      background: #fff;
+      color: #0b76d8;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      padding: 0;
+      transition: .15s;
+    }
+    .mb-legs-display{
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 5;
+      display: none;
+      background: transparent;
+    }
+    .mb-leg-slot{
+      position: absolute;
+      top: 0;
+      display: none;
+      background: transparent;
+      width: 80px;
+    }
+    .mb-leg-remove{
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      background: #ef4444;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .mb-leg-slot:hover .mb-leg-remove{ opacity: 1; }
 
     /* Wrapper flex para taquillas + buzones en fila */
     .cols-and-mb {
@@ -470,6 +556,7 @@
         <div class="preview-area">
           <div class="preview-title">Vista previa</div>
 
+          <div class="preview-scroll">
           <div class="preview-stage">
             <div class="groups-stage" id="previewGroups" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
               {# Agrupación de buzones #}
@@ -531,18 +618,47 @@
 
                         {# ── Buzones IZQUIERDA (solo en último grupo) ── #}
                         {% if isLastGroup and mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
-                          <div class="mb-group-block">
-                            {% for c in 0..(mbCols - 1) %}
-                              <div class="mb-group-col">
-                                {% for r in 0..(mbRows - 1) %}
-                                  {% set cellIdx = r * mbCols + c %}
-                                  {% set filled = mbCells[cellIdx] ?? true %}
-                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                          {% set mbTotalW = mbCols * kuik.mb_col_width_px %}
+                          {% set mbLegH = (132 + singleCap * (scaleArm - scale))|round %}
+                          <div class="mb-leg-picker-wrap">
+                            <div class="mb-group-block">
+                              {% for c in 0..(mbCols - 1) %}
+                                <div class="mb-group-col">
+                                  {% for r in 0..(mbRows - 1) %}
+                                    {% set cellIdx = r * mbCols + c %}
+                                    {% set filled = mbCells[cellIdx] ?? true %}
+                                    <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endfor %}
+                            </div>
+                            {% if instalacion == 'soporte_suelo' %}
+                              <div class="mb-leg-picker-row" style="width:{{ mbTotalW }}px;" data-mb-cols="{{ mbCols }}">
+                                {% for i in 0..(mbCols * 2 - 2) %}
+                                  {% if i is even %}
+                                    {% set xCenter = ((i / 2) + 0.5) * kuik.mb_col_width_px %}
+                                  {% else %}
+                                    {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
+                                  {% endif %}
+                                  <button type="button" class="mb-leg-btn" data-pos="{{ i }}" style="left:{{ (xCenter - 12)|round }}px;">+</button>
+                                {% endfor %}
+                              </div>
+                              <div class="mb-legs-display" style="width:{{ mbTotalW }}px; height:{{ mbLegH }}px;">
+                                {% for i in 0..(mbCols * 2 - 2) %}
+                                  {% if i is even %}
+                                    {% set xCenter = ((i / 2) + 0.5) * kuik.mb_col_width_px %}
+                                  {% else %}
+                                    {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
+                                  {% endif %}
+                                  <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <button type="button" class="mb-leg-remove" title="Quitar pata">×</button>
                                   </div>
                                 {% endfor %}
                               </div>
-                            {% endfor %}
+                            {% endif %}
                           </div>
                         {% endif %}
 
@@ -590,40 +706,156 @@
 
                         {# ── Buzones DERECHA (solo en último grupo) ── #}
                         {% if isLastGroup and mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
-                          <div class="mb-group-block">
-                            {% for c in 0..(mbCols - 1) %}
-                              <div class="mb-group-col">
-                                {% for r in 0..(mbRows - 1) %}
-                                  {% set cellIdx = r * mbCols + c %}
-                                  {% set filled = mbCells[cellIdx] ?? true %}
-                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                          {% set mbTotalW = mbCols * kuik.mb_col_width_px %}
+                          {% set mbLegH = (132 + singleCap * (scaleArm - scale))|round %}
+                          <div class="mb-leg-picker-wrap">
+                            <div class="mb-group-block">
+                              {% for c in 0..(mbCols - 1) %}
+                                <div class="mb-group-col">
+                                  {% for r in 0..(mbRows - 1) %}
+                                    {% set cellIdx = r * mbCols + c %}
+                                    {% set filled = mbCells[cellIdx] ?? true %}
+                                    <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endfor %}
+                            </div>
+                            {% if instalacion == 'soporte_suelo' %}
+                              <div class="mb-leg-picker-row" style="width:{{ mbTotalW }}px;" data-mb-cols="{{ mbCols }}">
+                                {% for i in 0..(mbCols * 2 - 2) %}
+                                  {% if i is even %}
+                                    {% set xCenter = ((i / 2) + 0.5) * kuik.mb_col_width_px %}
+                                  {% else %}
+                                    {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
+                                  {% endif %}
+                                  <button type="button" class="mb-leg-btn" data-pos="{{ i }}" style="left:{{ (xCenter - 12)|round }}px;">+</button>
+                                {% endfor %}
+                              </div>
+                              <div class="mb-legs-display" style="width:{{ mbTotalW }}px; height:{{ mbLegH }}px;">
+                                {% for i in 0..(mbCols * 2 - 2) %}
+                                  {% if i is even %}
+                                    {% set xCenter = ((i / 2) + 0.5) * kuik.mb_col_width_px %}
+                                  {% else %}
+                                    {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
+                                  {% endif %}
+                                  <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <button type="button" class="mb-leg-remove" title="Quitar pata">×</button>
                                   </div>
                                 {% endfor %}
                               </div>
-                            {% endfor %}
+                            {% endif %}
                           </div>
                         {% endif %}
 
                       </div>{# /cols-and-mb #}
+
+                      {# ✅ PATAS bajo taquillas cuando brazos + agrupacion combinada #}
+                      {% if isLastGroup and instalacion == 'soporte_suelo' and agrupacionCombinada and mbCols > 0 %}
+                        {% set n = groupCols|length %}
+                        {% if n == 1 %}
+                          {% set mbLegPositions = [1] %}
+                        {% elseif n == 2 %}
+                          {% set mbLegPositions = [1, 2] %}
+                        {% elseif n == 3 %}
+                          {% set mbLegPositions = [1, 3] %}
+                        {% elseif n == 4 %}
+                          {% set mbLegPositions = [2, 3] %}
+                        {% elseif n == 5 %}
+                          {% set mbLegPositions = [2, 4] %}
+                        {% elseif n == 6 %}
+                          {% set mbLegPositions = [2, 4, 6] %}
+                        {% elseif n == 7 %}
+                          {% set mbLegPositions = [2, 4, 6, 7] %}
+                        {% elseif n == 8 %}
+                          {% set mbLegPositions = [2, 4, 6, 8] %}
+                        {% elseif n == 9 %}
+                          {% set mbLegPositions = [2, 4, 7, 8] %}
+                        {% else %}
+                          {% set mbLegPositions = [2, 4, 7, 9] %}
+                        {% endif %}
+                        {% if mbSide == 'left' and n > 5 %}
+                          {% if n == 6 %}{% set mbLegPositions = [1, 3, 5] %}
+                          {% elseif n == 7 %}{% set mbLegPositions = [1, 2, 4, 6] %}
+                          {% elseif n == 8 %}{% set mbLegPositions = [1, 3, 5, 7] %}
+                          {% elseif n == 9 %}{% set mbLegPositions = [2, 3, 6, 8] %}
+                          {% endif %}
+                        {% endif %}
+                        {% set mbBlockWFull = mbCols * kuik.mb_col_width_px + 8 %}
+                        <div class="js-brazos-legs {% if selectedType != 'brazos' %}hidden{% endif %}" style="display:flex;flex-direction:row;width:100%;">
+                          {% if mbSide == 'left' %}
+                            <div style="width:{{ mbBlockWFull }}px;flex-shrink:0;"></div>
+                          {% endif %}
+                          <div class="legs-under" style="flex:1;">
+                            {% for pos in mbLegPositions %}
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                            {% endfor %}
+                          </div>
+                          {% if mbSide == 'right' %}
+                            <div style="width:{{ mbBlockWFull }}px;flex-shrink:0;"></div>
+                          {% endif %}
+                        </div>
+                      {% endif %}
 
                       {# ✅ PATAS por GRUPO -> posiciones alineadas (1,3,5 cuando son 5) #}
                       {% set n = groupCols|length %}
 
                       {% if n == 1 %}
                         {% set legPositions = [1] %}
+                      {% elseif n == 2 %}
+                        {% set legPositions = [1, 2] %}
+                      {% elseif n == 3 %}
+                        {% set legPositions = [1, 3] %}
+                      {% elseif n == 4 %}
+                        {% set legPositions = [2, 3] %}
+                      {% elseif n == 5 %}
+                        {% set legPositions = [2, 4] %}
+                      {% elseif n == 6 %}
+                        {% set legPositions = [2, 4, 6] %}
+                      {% elseif n == 7 %}
+                        {% set legPositions = [2, 4, 6, 7] %}
+                      {% elseif n == 8 %}
+                        {% set legPositions = [2, 4, 6, 8] %}
+                      {% elseif n == 9 %}
+                        {% set legPositions = [2, 4, 7, 8] %}
                       {% else %}
-                        {% set legPositions = [1, n] %}
+                        {% set legPositions = [2, 4, 7, 9] %}
+                      {% endif %}
+                      {% if agrupacionCombinada and mbSide == 'left' and n > 5 %}
+                        {% if n == 6 %}{% set legPositions = [1, 3, 5] %}
+                        {% elseif n == 7 %}{% set legPositions = [1, 2, 4, 6] %}
+                        {% elseif n == 8 %}{% set legPositions = [1, 3, 5, 7] %}
+                        {% elseif n == 9 %}{% set legPositions = [2, 3, 6, 8] %}
+                        {% endif %}
                       {% endif %}
 
-                      <div class="legs-under js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
-                        {% for pos in legPositions %}
-                          <img class="leg-img"
-                               style="grid-column: {{ pos }};"
-                               src="{{ asset(kuik.img_pie) }}"
-                               alt="Pata">
-                        {% endfor %}
-                      </div>
+                      {% if isLastGroup and agrupacionCombinada and mbCols > 0 %}
+                        {% set mbBlockWFull = mbCols * kuik.mb_col_width_px + 8 %}
+                        <div style="display:flex;flex-direction:row;width:100%;" class="js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
+                          {% if mbSide == 'left' %}
+                            <div style="width:{{ mbBlockWFull }}px;flex-shrink:0;"></div>
+                          {% endif %}
+                          <div class="legs-under" style="flex:1;">
+                            {% for pos in legPositions %}
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                            {% endfor %}
+                          </div>
+                          {% if mbSide == 'right' %}
+                            <div style="width:{{ mbBlockWFull }}px;flex-shrink:0;"></div>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                        <div class="legs-under js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
+                          {% for pos in legPositions %}
+                            <img class="leg-img"
+                                 style="grid-column: {{ pos }};"
+                                 src="{{ asset(kuik.img_pie) }}"
+                                 alt="Pata">
+                          {% endfor %}
+                        </div>
+                      {% endif %}
 
                     </div>
                   </div>
@@ -631,6 +863,7 @@
               {% endif %}
             </div>
           </div>
+          </div>{# /preview-scroll #}
         </div>
 
         <form id="bracketForm" method="post" action="{{ path('save_brackets') }}" style="margin-top:16px;">
@@ -640,6 +873,7 @@
 
           <input type="hidden" name="bracketType" id="bracketType" value="{{ selectedType }}">
           <input type="hidden" name="bracketColor" id="bracketColor" value="{{ selectedColor }}">
+          <input type="hidden" name="mbLegPositions" id="mbLegPositions" value="{{ (p.mbLegPositions is defined and p.mbLegPositions is iterable) ? p.mbLegPositions|json_encode : '[]' }}">
 
           <div class="btn-row">
             <a class="btn" style="text-decoration:none; color:#000"
@@ -710,6 +944,12 @@
           else armList.forEach(x => x.classList.add('hidden'));
         }
 
+        // patas bajo taquillas cuando brazos + combinada
+        document.querySelectorAll('.js-brazos-legs').forEach(x => {
+          if (v === 'brazos') x.classList.remove('hidden');
+          else x.classList.add('hidden');
+        });
+
         // patas (todas)
         if (legsList.length){
           if (v === 'patas') legsList.forEach(x => x.classList.remove('hidden'));
@@ -735,6 +975,7 @@
           toggleSupports();
           updateSupportColor();
           updateContinue();
+          syncMbLegs();
         });
       });
 
@@ -752,6 +993,130 @@
       toggleSupports();
       updateSupportColor();
       updateContinue();
+
+      // ── Picker de patas en agrupación de buzones (selección única) ──
+      const mbLegInp = document.getElementById('mbLegPositions');
+      let mbSelected = [];
+      try {
+        const parsed = JSON.parse(mbLegInp ? mbLegInp.value : '[]');
+        mbSelected = Array.isArray(parsed) ? parsed.map(Number) : [];
+      } catch(e) {}
+
+      // Posiciones automáticas según número de columnas de buzones (misma lógica que taquillas)
+      // Devuelve slot-indices (0-indexed): col k (1-indexed) → slot (k-1)*2
+      function getMbAutoPositions(n) {
+        let cols;
+        if      (n === 1) cols = [1];
+        else if (n === 2) cols = [1, 2];
+        else if (n === 3) cols = [1, 3];
+        else if (n === 4) cols = [2, 3];
+        else if (n === 5) cols = [2, 4];
+        else if (n === 6) cols = [2, 4, 6];
+        else if (n === 7) cols = [2, 4, 6, 7];
+        else if (n === 8) cols = [2, 4, 6, 8];
+        else if (n === 9) cols = [2, 4, 7, 8];
+        else              cols = [2, 4, 7, 9];
+        return cols.map(c => (c - 1) * 2);
+      }
+
+      function isMbPatas() {
+        return inpType && inpType.value === 'patas';
+      }
+
+      function getMbCols() {
+        const row = document.querySelector('.mb-leg-picker-row');
+        return row ? parseInt(row.dataset.mbCols || '0') : 0;
+      }
+
+      function getMbMaxLegs() {
+        const n = getMbCols();
+        return n > 0 ? Math.ceil(n / 5) : 0;
+      }
+
+      function syncMbLegs() {
+        const patas = isMbPatas();
+        let activePositions;
+
+        if (patas) {
+          const n = getMbCols();
+          activePositions = n > 0 ? getMbAutoPositions(n) : [];
+          mbSelected = activePositions;
+        } else {
+          activePositions = mbSelected;
+        }
+
+        const hasSel = activePositions.length > 0;
+        const maxLegs = getMbMaxLegs();
+        const atLimit = !patas && mbSelected.length >= maxLegs;
+
+        // Picker: oculto en patas (auto) y cuando se alcanza el límite en brazos
+        document.querySelectorAll('.mb-leg-picker-row').forEach(row => {
+          row.style.display = (patas || atLimit) ? 'none' : '';
+        });
+        document.querySelectorAll('.mb-legs-display').forEach(disp => {
+          disp.style.display = hasSel ? 'block' : 'none';
+        });
+        document.querySelectorAll('.mb-leg-slot').forEach(slot => {
+          slot.style.display = activePositions.includes(parseInt(slot.dataset.pos)) ? 'block' : 'none';
+        });
+        document.querySelectorAll('.mb-leg-btn').forEach(btn => {
+          const pos = parseInt(btn.dataset.pos);
+          const selected = mbSelected.includes(pos);
+          btn.classList.toggle('active', selected);
+          btn.textContent = selected ? '✓' : '+';
+          // Ocultar todos los botones cuando se alcanza el límite (la pata ya es visible y el × sale al hover)
+          btn.style.display = (!patas && atLimit) ? 'none' : 'flex';
+        });
+        if (mbLegInp) mbLegInp.value = JSON.stringify(mbSelected);
+      }
+
+      document.querySelectorAll('.mb-leg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (isMbPatas()) return;
+          const pos = parseInt(btn.dataset.pos);
+          const idx = mbSelected.indexOf(pos);
+          if (idx >= 0) {
+            mbSelected.splice(idx, 1);
+          } else if (mbSelected.length < getMbMaxLegs()) {
+            mbSelected.push(pos);
+          }
+          syncMbLegs();
+        });
+      });
+
+      document.querySelectorAll('.mb-leg-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (isMbPatas()) return;
+          const slot = btn.closest('.mb-leg-slot');
+          if (slot) mbSelected = mbSelected.filter(p => p !== parseInt(slot.dataset.pos));
+          else mbSelected = [];
+          syncMbLegs();
+        });
+      });
+
+      syncMbLegs();
+
+      // drag-to-scroll en preview
+      var scroll = document.querySelector('.preview-scroll');
+      if (scroll) {
+        var isDragging = false, startX, scrollLeft;
+        scroll.addEventListener('mousedown', function(e) {
+          isDragging = true;
+          scroll.classList.add('is-dragging');
+          startX = e.pageX - scroll.getBoundingClientRect().left;
+          scrollLeft = scroll.scrollLeft;
+          e.preventDefault();
+        });
+        document.addEventListener('mouseup', function() {
+          isDragging = false;
+          scroll.classList.remove('is-dragging');
+        });
+        document.addEventListener('mousemove', function(e) {
+          if (!isDragging) return;
+          var x = e.pageX - scroll.getBoundingClientRect().left;
+          scroll.scrollLeft = scrollLeft - (x - startX) * 1.2;
+        });
+      }
     });
   </script>
 {% endblock %}

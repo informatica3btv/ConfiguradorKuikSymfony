@@ -44,6 +44,10 @@
 {% set selectedType  = p.bracketType ?? '' %}
 {% set selectedColor = p.bracketColor ?? '' %}
 {% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
+{% set mbLegPos = p.mbLegPositions ?? [] %}
+{% if mbLegPos is not iterable %}{% set mbLegPos = [] %}{% endif %}
+{% set mbLegPosSelected = mbLegPos|length > 0 ? mbLegPos[0] : null %}
+{# Para patas: posiciones automáticas según mbCols (se calcula al renderizar cada grupo) #}
 
 {% set bgLabel =
   bg == '300'  ? 'Serie 300' :
@@ -250,7 +254,7 @@
       border-bottom-width: 8px;
       border-radius: 7px;
       overflow: hidden;
-      box-shadow: var(--shadow);
+      //box-shadow: var(--shadow);
       position: relative;
       z-index: 2;
     }
@@ -455,7 +459,7 @@
     }
 
     .support-wrap{
-      --armW: 65px;
+      --armW: 60px;
       --armOverlap: 14px;
       --colW: {{ kuik.col_width_px }}px;
 
@@ -493,15 +497,23 @@
       pointer-events:none;
       user-select:none;
       z-index:1;
-      padding: 0 18px;
+      //padding: 0 18px;
     }
 
     .leg-img{
-      width:60px;
-      height:175px;
-      object-fit:contain;
+      width:65px;
+      height: {{ (120 + singleCap * (kuik.scale_arm - kuik.scale))|round }}px;
+      object-fit:fill;
       justify-self:center;
       flex:0 0 auto;
+    }
+    .mb-leg-wrap{ position:relative; flex-shrink:0; }
+    .mb-leg-summary{
+      position:absolute;
+      top:100%;
+      left:0;
+      z-index:5;
+      background:transparent;
     }
 
     .group-roof {
@@ -619,18 +631,52 @@
 
                         {# ── Buzones IZQUIERDA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
-                          <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
-                            {% for c in 0..(mbCols - 1) %}
-                              <div class="mb-group-col">
-                                {% for r in 0..(mbRows - 1) %}
-                                  {% set cellIdx = r * mbCols + c %}
-                                  {% set filled = mbCells[cellIdx] ?? true %}
-                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
-                                  </div>
-                                {% endfor %}
-                              </div>
-                            {% endfor %}
+                          <div class="mb-leg-wrap">
+                            <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                              {% for c in 0..(mbCols - 1) %}
+                                <div class="mb-group-col">
+                                  {% for r in 0..(mbRows - 1) %}
+                                    {% set cellIdx = r * mbCols + c %}
+                                    {% set filled = mbCells[cellIdx] ?? true %}
+                                    <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endfor %}
+                            </div>
+                            {% if isSoporteSuelo %}
+                              {% set _mbLegH = (120 + singleCap * (kuik.scale_arm - kuik.scale))|round %}
+                              {% if selectedType == 'patas' %}
+                                {# Posiciones automáticas según mbCols #}
+                                {% set _n = mbCols %}
+                                {% if _n == 1 %}{% set _autoCols = [1] %}
+                                {% elseif _n == 2 %}{% set _autoCols = [1, 2] %}
+                                {% elseif _n == 3 %}{% set _autoCols = [1, 3] %}
+                                {% elseif _n == 4 %}{% set _autoCols = [2, 3] %}
+                                {% elseif _n == 5 %}{% set _autoCols = [2, 4] %}
+                                {% elseif _n == 6 %}{% set _autoCols = [2, 4, 6] %}
+                                {% elseif _n == 7 %}{% set _autoCols = [2, 4, 6, 7] %}
+                                {% elseif _n == 8 %}{% set _autoCols = [2, 4, 6, 8] %}
+                                {% elseif _n == 9 %}{% set _autoCols = [2, 4, 7, 8] %}
+                                {% else %}{% set _autoCols = [2, 4, 7, 9] %}
+                                {% endif %}
+                                <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
+                                  {% for _c in _autoCols %}
+                                    {% set _xCenter = (_c - 0.5) * kuik.mb_col_width_px %}
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:65px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                  {% endfor %}
+                                </div>
+                              {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
+                                {# Posiciones manuales guardadas (una por cada 5 columnas) #}
+                                <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
+                                  {% for _i in mbLegPos %}
+                                    {% set _xCenter = (_i is even) ? ((_i / 2) + 0.5) * kuik.mb_col_width_px : ((_i + 1) / 2) * kuik.mb_col_width_px %}
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:65px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+                            {% endif %}
                           </div>
                         {% endif %}
 
@@ -777,26 +823,136 @@
 
                         {# ── Buzones DERECHA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
-                          <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
-                            {% for c in 0..(mbCols - 1) %}
-                              <div class="mb-group-col">
-                                {% for r in 0..(mbRows - 1) %}
-                                  {% set cellIdx = r * mbCols + c %}
-                                  {% set filled = mbCells[cellIdx] ?? true %}
-                                  <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                    {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
-                                  </div>
-                                {% endfor %}
-                              </div>
-                            {% endfor %}
+                          <div class="mb-leg-wrap">
+                            <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                              {% for c in 0..(mbCols - 1) %}
+                                <div class="mb-group-col">
+                                  {% for r in 0..(mbRows - 1) %}
+                                    {% set cellIdx = r * mbCols + c %}
+                                    {% set filled = mbCells[cellIdx] ?? true %}
+                                    <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
+                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endfor %}
+                            </div>
+                            {% if isSoporteSuelo %}
+                              {% set _mbLegH = (120 + singleCap * (kuik.scale_arm - kuik.scale))|round %}
+                              {% if selectedType == 'patas' %}
+                                {# Posiciones automáticas según mbCols #}
+                                {% set _n = mbCols %}
+                                {% if _n == 1 %}{% set _autoCols = [1] %}
+                                {% elseif _n == 2 %}{% set _autoCols = [1, 2] %}
+                                {% elseif _n == 3 %}{% set _autoCols = [1, 3] %}
+                                {% elseif _n == 4 %}{% set _autoCols = [2, 3] %}
+                                {% elseif _n == 5 %}{% set _autoCols = [2, 4] %}
+                                {% elseif _n == 6 %}{% set _autoCols = [2, 4, 6] %}
+                                {% elseif _n == 7 %}{% set _autoCols = [2, 4, 6, 7] %}
+                                {% elseif _n == 8 %}{% set _autoCols = [2, 4, 6, 8] %}
+                                {% elseif _n == 9 %}{% set _autoCols = [2, 4, 7, 8] %}
+                                {% else %}{% set _autoCols = [2, 4, 7, 9] %}
+                                {% endif %}
+                                <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
+                                  {% for _c in _autoCols %}
+                                    {% set _xCenter = (_c - 0.5) * kuik.mb_col_width_px %}
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:65px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                  {% endfor %}
+                                </div>
+                              {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
+                                {# Posiciones manuales guardadas (una por cada 5 columnas) #}
+                                <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
+                                  {% for _i in mbLegPos %}
+                                    {% set _xCenter = (_i is even) ? ((_i / 2) + 0.5) * kuik.mb_col_width_px : ((_i + 1) / 2) * kuik.mb_col_width_px %}
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:65px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+                            {% endif %}
                           </div>
                         {% endif %}
 
                       </div>{# /cols-and-mb #}
 
+                      {% if isSoporteSuelo and selectedType == 'brazos' and agrupacionCombinada and mbCols > 0 %}
+                        {% set n = totalCols %}
+                        {% if n == 1 %}
+                          {% set mbLegPositions = [1] %}
+                        {% elseif n == 2 %}
+                          {% set mbLegPositions = [1, 2] %}
+                        {% elseif n == 3 %}
+                          {% set mbLegPositions = [1, 3] %}
+                        {% elseif n == 4 %}
+                          {% set mbLegPositions = [2, 3] %}
+                        {% elseif n == 5 %}
+                          {% set mbLegPositions = [2, 4] %}
+                        {% elseif n == 6 %}
+                          {% set mbLegPositions = [2, 4, 6] %}
+                        {% elseif n == 7 %}
+                          {% set mbLegPositions = [2, 4, 6, 7] %}
+                        {% elseif n == 8 %}
+                          {% set mbLegPositions = [2, 4, 6, 8] %}
+                        {% elseif n == 9 %}
+                          {% set mbLegPositions = [2, 4, 7, 8] %}
+                        {% else %}
+                          {% set mbLegPositions = [2, 4, 7, 9] %}
+                        {% endif %}
+                        {% if mbSide == 'left' and n > 5 %}
+                          {% if n == 6 %}{% set mbLegPositions = [1, 3, 5] %}
+                          {% elseif n == 7 %}{% set mbLegPositions = [1, 2, 4, 6] %}
+                          {% elseif n == 8 %}{% set mbLegPositions = [1, 3, 5, 7] %}
+                          {% elseif n == 9 %}{% set mbLegPositions = [2, 3, 6, 8] %}
+                          {% endif %}
+                        {% endif %}
+                        {% set mbBlockW = mbCols * kuik.mb_col_width_px + 8 %}
+                        <div style="display:flex; flex-direction:row; width:100%;">
+                          {% if mbSide == 'left' %}
+                            <div style="width:{{ mbBlockW }}px; flex-shrink:0;"></div>
+                          {% endif %}
+                          <div class="legs-under" style="flex:1;">
+                            {% for pos in mbLegPositions %}
+                              <img class="leg-img"
+                                   style="grid-column: {{ pos }};"
+                                   src="{{ asset(kuik.img_pie) }}"
+                                   alt="Pata">
+                            {% endfor %}
+                          </div>
+                          {% if mbSide == 'right' %}
+                            <div style="width:{{ mbBlockW }}px; flex-shrink:0;"></div>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+
                       {% if isSoporteSuelo and selectedType == 'patas' %}
                         {% set n = groupCols|length %}
-                        {% set legPositions = (n == 1) ? [1] : [1, n] %}
+                        {% if n == 1 %}
+                          {% set legPositions = [1] %}
+                        {% elseif n == 2 %}
+                          {% set legPositions = [1, 2] %}
+                        {% elseif n == 3 %}
+                          {% set legPositions = [1, 3] %}
+                        {% elseif n == 4 %}
+                          {% set legPositions = [2, 3] %}
+                        {% elseif n == 5 %}
+                          {% set legPositions = [2, 4] %}
+                        {% elseif n == 6 %}
+                          {% set legPositions = [2, 4, 6] %}
+                        {% elseif n == 7 %}
+                          {% set legPositions = [2, 4, 6, 7] %}
+                        {% elseif n == 8 %}
+                          {% set legPositions = [2, 4, 6, 8] %}
+                        {% elseif n == 9 %}
+                          {% set legPositions = [2, 4, 7, 8] %}
+                        {% else %}
+                          {% set legPositions = [2, 4, 7, 9] %}
+                        {% endif %}
+                        {% if agrupacionCombinada and mbSide == 'left' and n > 5 %}
+                          {% if n == 6 %}{% set legPositions = [1, 3, 5] %}
+                          {% elseif n == 7 %}{% set legPositions = [1, 2, 4, 6] %}
+                          {% elseif n == 8 %}{% set legPositions = [1, 3, 5, 7] %}
+                          {% elseif n == 9 %}{% set legPositions = [2, 3, 6, 8] %}
+                          {% endif %}
+                        {% endif %}
                         <div class="legs-under">
                           {% for pos in legPositions %}
                             <img class="leg-img"
@@ -845,9 +1001,18 @@
           <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
           <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
           <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
+          {% if isSoporteSuelo and selectedType == 'brazos' %}
+            <div class="kv"><div class="k">Altura brazos</div><div class="v">1500 mm</div></div>
+          {% elseif isSoporteSuelo and selectedType == 'patas' %}
+            <div class="kv"><div class="k">Altura patas</div><div class="v">800/900 mm</div></div>
+          {% endif %}
           {% if instalacion == 'colgado' %}
-            {% set _ncols = columnsAll|length %}
-            {% set _colgadores = _ncols <= 1 ? 1 : ((_ncols - 2) // 3 + 2) %}
+            {% set _colgadores = 0 %}
+            {% for _grp in groups %}
+              {% set _n = _grp|length %}
+              {% set _grpColgadores = _n <= 2 ? _n : ((_n + 1) // 2) %}
+              {% set _colgadores = _colgadores + _grpColgadores %}
+            {% endfor %}
             <div class="kv"><div class="k">Colgadores</div><div class="v">{{ _colgadores }}</div></div>
           {% endif %}
           {% if p.control is defined and p.control %}
@@ -1114,15 +1279,16 @@
     const _tableContainer = () => document.getElementById('productTableContainer');
 
     async function saveAndReloadFromIva() {
-      const precioEl = document.getElementById('instalacionPrecio');
-      const ivaEl    = document.getElementById('ivaCheck');
-      const precio   = parseFloat(precioEl?.value) || 0;
-      const iva      = ivaEl ? ivaEl.checked : false;
-      console.log('saveAndReloadFromIva', { precio, iva, saveUrl: _saveUrl });
+      const precioEl    = document.getElementById('instalacionPrecio');
+      const ivaEl       = document.getElementById('ivaCheck');
+      const discountEl  = document.getElementById('discountPct');
+      const precio      = parseFloat(precioEl?.value) || 0;
+      const iva         = ivaEl ? ivaEl.checked : false;
+      const descuento   = discountEl ? (parseFloat(discountEl.value) || 0) : 0;
       await fetch(_saveUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precio, iva })
+        body: JSON.stringify({ precio, iva, descuento })
       });
       const c = _tableContainer();
       if (c) {
