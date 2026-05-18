@@ -863,22 +863,45 @@
       </tbody>
       {% set instalacionPrecio = p._instalacion_precio ?? 0 %}
       {% set instalacionIva    = p._instalacion_iva ?? false %}
-      {% set totalConInstalacion = grandTotal + instalacionPrecio %}
-      {% set totalConIva = instalacionIva ? totalConInstalacion * 1.21 : totalConInstalacion %}
+      {% set descuento         = p._descuento ?? 0 %}
+      {% set subtotalBase      = grandTotal + instalacionPrecio %}
+      {% set totalAntesDesc    = instalacionIva ? subtotalBase * 1.21 : subtotalBase %}
+      {% set descuentoImporte  = totalAntesDesc * descuento / 100 %}
+      {% set totalFinal        = totalAntesDesc - descuentoImporte %}
       <tfoot>
         {% if instalacionPrecio > 0 %}
         <tr>
           <td colspan="4" style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">Instalación</td>
           <td style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
         </tr>
+        {% endif %}
+        {% if instalacionIva %}
         <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incluido)' : '' }}</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalConIva|number_format(2, ',', '.') }} €</td>
+          <td colspan="4" style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb; color:#6b7280;">Subtotal</td>
+          <td style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb; color:#6b7280;">{{ subtotalBase|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="padding:7px 8px; text-align:right; color:#6b7280;">IVA (21%)</td>
+          <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ (subtotalBase * 0.21)|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% endif %}
+        {% if descuento > 0 %}
+        <tr>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right;">Descuento ({{ descuento % 1 == 0 ? descuento|number_format(0) : descuento|number_format(1) }}%)</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right;">−{{ descuentoImporte|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total con descuento{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalFinal|number_format(2, ',', '.') }} €</td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ grandTotal|number_format(2, ',', '.') }} €</td>
+          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
         </tr>
         {% endif %}
       </tfoot>
