@@ -1322,18 +1322,17 @@
       }
 
       function recalc() {
-        const pct      = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
-        const iva      = ivaCheck ? ivaCheck.checked : false;
-        const discount = subtotal * pct / 100;
-        const base     = subtotal - discount;
-        const total    = iva ? base * 1.21 : base;
+        const pct         = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
+        const iva         = ivaCheck ? ivaCheck.checked : false;
+        const totalBefore = iva ? subtotal * 1.21 : subtotal;
+        const discount    = totalBefore * pct / 100;
+        const total       = totalBefore - discount;
 
         const rSub = document.getElementById('rowSubtotal');
         const rIva = document.getElementById('rowIva');
         if (rSub) document.getElementById('cellSubtotal').textContent = fmt(subtotal);
-        if (rIva) document.getElementById('cellIva').textContent      = fmt(base * 0.21);
+        if (rIva) document.getElementById('cellIva').textContent      = fmt(subtotal * 0.21);
 
-        const totalBefore = iva ? subtotal * 1.21 : subtotal;
         const rBefore = document.getElementById('rowTotalBefore');
         const rDisc   = document.getElementById('rowDiscount');
         if (pct > 0) {

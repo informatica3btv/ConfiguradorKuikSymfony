@@ -824,6 +824,12 @@
               {% elseif size == 'bandeja' %}Bandeja Intermedia
               {% elseif size starts with 'lateral_' %}Par de laterales H{{ size|replace({'lateral_': ''}) }}
               {% elseif size == 'lateral' %}Par de laterales
+              {% elseif size starts with 'mailbox_col_' %}
+                {% set _mbParts = size|replace({'mailbox_col_': ''})|split('_') %}
+                Buzón {{ _mbParts[0] == '1' ? 'electrónico' : 'mecánico' }}{{ _mbParts[1] == '1' ? ' con tarjetero' : ' sin tarjetero' }}
+              {% elseif size starts with 'brazo_' %}Brazos H{{ size|replace({'brazo_': ''}) }}
+              {% elseif size starts with 'pata_' %}Patas ({{ size|replace({'pata_': ''}) }} col.)
+              {% elseif size == 'instalacion_ref' %}Instalación
               {% elseif size == 'placa' %}Placa
               {% elseif size == 'colgador' %}Colgador
               {% elseif size == 'buzon_group' %}Buzones (agrupación)
@@ -834,7 +840,7 @@
             </td>
             {% if product %}
               <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">
-                {{ (size in ['placa','buzon_group','colgador']) ? product : product.reference }}
+                {{ (size in ['placa','buzon_group','colgador','instalacion_ref']) ? product : product.reference }}
                 {% if size == 'buzon_group' and info._descripcion is defined and info._descripcion %}
                   <div style="font-weight:400; color:#6b7280; font-size:10px; margin-top:2px;">{{ info._descripcion }}</div>
                 {% endif %}
