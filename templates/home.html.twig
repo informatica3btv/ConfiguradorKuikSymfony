@@ -1382,6 +1382,20 @@ document.addEventListener('DOMContentLoaded', () => {
               render();
               return;
             }
+            if (itemType === 'mailbox' && layout.mode === 'home_zocalo') {
+              const bottomDoorSum = col.bottom.blocks.reduce((s, b) => normalizeBlock(b).type !== 'mailbox' ? s + blockHeight(normalizeBlock(b)) : s, 0);
+              if (bottomDoorSum >= 30 && col.bottom.sum + h <= layout.bottomCap) {
+                col.bottom.blocks.unshift(newBlock);
+                col.bottom.sum += h;
+                builderMsg.textContent = '';
+                render();
+                return;
+              }
+              builderMsg.textContent = bottomDoorSum < 30
+                ? `El buzón en la zona inferior requiere mín. H30 de puertas debajo (actualmente H${bottomDoorSum}).`
+                : `No cabe el buzón en la zona inferior (libres: ${layout.bottomCap - col.bottom.sum}).`;
+              return;
+            }
             const topLeft = layout.topCap - col.top.sum;
             builderMsg.textContent = `El elemento solo puede ir arriba y no cabe. Libres arriba: ${topLeft}.`;
             return;
@@ -1486,6 +1500,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (to < 0) to = 0;
           if (to > arr.length) to = arr.length;
           arr.splice(to, 0, moved);
+        }
+
+        function bottomMailboxValid(blocks) {
+          let lastMailboxIdx = -1;
+          blocks.forEach((b, i) => { if (normalizeBlock(b).type === 'mailbox') lastMailboxIdx = i; });
+          if (lastMailboxIdx === -1) return true;
+          const belowSum = blocks.slice(lastMailboxIdx + 1).reduce((s, b) => s + blockHeight(normalizeBlock(b)), 0);
+          return belowSum >= 30;
         }
 
         function makeBlock(block, zoneName, fromIndex) {
@@ -1606,7 +1628,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const toIndex = getInsertIndex(zoneEl, e.clientY);
+            const blocksSnap = [...blocksArr];
             moveWithin(blocksArr, data.fromIndex, toIndex);
+            if (layout.mode === 'home_zocalo' && zoneName === 'bottom' && !bottomMailboxValid(blocksArr)) {
+              blocksArr.splice(0, blocksArr.length, ...blocksSnap);
+              cleanupIndicator();
+              render();
+              builderMsg.textContent = 'Los buzones deben dejar mín. H30 de puertas al fondo de la zona inferior.';
+              return;
+            }
             cleanupIndicator();
             render();
           });
