@@ -64,7 +64,7 @@ class ProjectController extends AbstractController
 
         $configurations = $configRepo->findBy(
             ['project' => $project],
-            ['id' => 'DESC']
+            ['status' => 'DESC', 'id' => 'DESC']
         );
         
         $items = [];
