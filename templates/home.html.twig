@@ -1995,11 +1995,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (layout.mode === 'home_empotrado') {
         const left = layout.singleCap - state.columns[incompleteIndex].single.sum;
-        error.textContent = `La columna ${colNum} no está completa. Falta: H${Math.max(0, left)}.`;
+        error.textContent = left > 0
+          ? `La columna ${colNum} no está completa. Falta: H${left}.`
+          : `La columna ${colNum} excede la capacidad (H${layout.singleCap}). Elimina H${-left} de bloques.`;
       } else {
         const topLeft = layout.topCap - state.columns[incompleteIndex].top.sum;
         const botLeft = layout.bottomCap - state.columns[incompleteIndex].bottom.sum;
-        error.textContent = `La columna ${colNum} no está completa. Falta: arriba H${Math.max(0, topLeft)}, abajo H${Math.max(0, botLeft)}.`;
+        const parts = [];
+        if (topLeft !== 0) parts.push(topLeft > 0 ? `arriba falta H${topLeft}` : `arriba sobra H${-topLeft}`);
+        if (botLeft !== 0) parts.push(botLeft > 0 ? `abajo falta H${botLeft}` : `abajo sobra H${-botLeft}`);
+        error.textContent = `La columna ${colNum} no está completa: ${parts.join(', ')}.`;
       }
       return;
     }
@@ -2091,7 +2096,7 @@ document.addEventListener('DOMContentLoaded', () => {
       extraLayout.topCap = layout.topCap;
     }
 
-    if (type === 'home' && (instalacion === 'empotrado' || instalacion === 'soporte_suelo')) {
+    if (type === 'home' && (instalacion === 'empotrado' || instalacion === 'soporte_suelo' || instalacion === 'colgado')) {
       extraLayout.singleCap = layout.singleCap;
     }
 
