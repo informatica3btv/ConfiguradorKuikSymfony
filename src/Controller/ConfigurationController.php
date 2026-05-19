@@ -24,10 +24,12 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 class ConfigurationController extends AbstractController
 {
     private ConfigurationService $configService;
+    private \App\Service\BtvApiService $btvApi;
 
-    public function __construct(ConfigurationService $configService)
+    public function __construct(ConfigurationService $configService, \App\Service\BtvApiService $btvApi)
     {
         $this->configService = $configService;
+        $this->btvApi = $btvApi;
     }
 
     /**
@@ -1069,21 +1071,31 @@ class ConfigurationController extends AbstractController
 
         $configuration = $repo->find($id);
 
-        $payloadArr = $configuration->getDecodedPayload() ?? [];
-        $payloadArr['_acceptedProductTable'] = $this->buildProductSnapshot($payloadArr);
-        $configuration->setPayload(json_encode($payloadArr));
-
-        $configuration->setStatus(Configuration::STATUS_ACCEPTED);
-
         $project = $repoProject->find($configuration->getProject()->getId());
 
+        // Primero intentar crear la oferta en NAV
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        $snapshot = $this->buildProductSnapshot($payloadArr);
+        $offerResult = $this->createNavOffer($snapshot, $project);
+
+        $navOfferNumber = $offerResult['result']['Cabecera']['NumeroOfertaNav'] ?? null;
+        if ($offerResult === null || empty($navOfferNumber)) {
+            $this->addFlash('error', 'No se pudo crear la oferta en NAV. La configuración no ha sido aceptada.');
+            return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+        }
+
+        // Solo si la oferta se creó correctamente, aceptar la configuración
+        $payloadArr['_acceptedProductTable'] = $snapshot;
+        $payloadArr['_navOfferResult'] = $offerResult;
+        $configuration->setPayload(json_encode($payloadArr));
+        $configuration->setStatus(Configuration::STATUS_ACCEPTED);
         $project->setStatus(1);
 
         $em->persist($configuration);
         $em->persist($project);
         $em->flush();
 
-        $this->addFlash('success', 'Configuración aceptada. Proyecto finalizado.');
+        $this->addFlash('success', sprintf('Configuración aceptada. Oferta NAV creada: %s.', $navOfferNumber));
 
         return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
     }
@@ -1130,6 +1142,84 @@ class ConfigurationController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['ok' => true]);
+    }
+
+    private function createNavOffer(array $snapshot, \App\Entity\Project $project): ?array
+    {
+        $items = [];
+        $cartId = 1;
+        $products  = $snapshot['products']  ?? [];
+        $sizeCounts = $snapshot['sizeCounts'] ?? [];
+        $productInfo = $snapshot['productInfo'] ?? [];
+
+        foreach ($products as $key => $product) {
+            $reference = is_array($product) ? ($product['reference'] ?? null) : $product;
+            if (!$reference) {
+                continue;
+            }
+            $quantity = (int) ($sizeCounts[$key] ?? 1);
+            $name = $productInfo[$key]['_descripcion'] ?? $reference;
+
+            $items[] = [
+                'cartId'                  => $cartId,
+                'type'                    => 1,
+                'id'                      => $cartId,
+                'productCode'             => $reference,
+                'name'                    => $name,
+                'productQuantity'         => $quantity,
+                'productDescription'      => '',
+                'discount'                => '',
+                'price'                   => '',
+                'productTotalPrice'       => 0,
+                'productSellingPrice'     => 0,
+                'productDiscountPerc1'    => '',
+                'productDiscountPerc2'    => 0,
+                'productItemPrice'        => 0,
+                'productDisponibility'    => '',
+                'productDisponibilityDate'=> '',
+                'comments'               => '',
+                'errorMessage'           => '',
+            ];
+            $cartId++;
+        }
+
+        if (empty($items)) {
+            return null;
+        }
+
+        $user = $this->getUser();
+        $email = $user instanceof \App\Entity\User ? $user->getEmail() : '';
+
+        $orderData = [
+            'codCliente'              => '99990',
+            'suplantado'              => true,
+            'emailTradeRepresentative'=> $email,
+            'email'                   => $email,
+            'codOrder'                => 0,
+            'codCenter'               => 1,
+            'codSendAddress'          => false,
+            'codSeller'               => $this->btvApi->getCodSeller(),
+            'addressName'             => $project->getClientName() ?? '',
+            'receiver'                => null,
+            'receiverPhone'           => $project->getPhone() ?? null,
+            'street'                  => $project->getAddress() ?? '',
+            'street2'                 => '',
+            'postalCode'              => '',
+            'locality'                => $project->getCity() ?? '',
+            'region'                  => '',
+            'country'                 => 'ES',
+            'codGroup'                => false,
+            'authorizationNumber'     => 0,
+            'sellingPrice'            => '',
+            'comments'                => '',
+            'purchaseOrder'           => '',
+            'requestType'             => 'Grabación',
+            'documentType'            => 'Oferta',
+            'SusMedios'               => 0,
+            'items'                   => $items,
+        ];
+
+        return $this->btvApi->createOffer($orderData);
     }
 
     private function buildProductSnapshot(array $payload): array

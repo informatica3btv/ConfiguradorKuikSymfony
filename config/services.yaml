@@ -26,6 +26,8 @@ services:
             $baseUrl:   '%env(BTV_BASE_URL)%'
             $username:  '%env(BTV_USERNAME)%'
             $password:  '%env(BTV_PASSWORD)%'
+            $codSeller: '%env(BTV_COD_SELLER)%'
+            $verifySsl: '%env(bool:BTV_VERIFY_SSL)%'
             # $cache and $logger are autowired automatically
 
     App\Service\ConfigurationService:

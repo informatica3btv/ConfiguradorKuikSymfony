@@ -24,19 +24,26 @@ class BtvApiService
         'verify_host' => true,
     ];
 
+    private string $codSeller;
+
     public function __construct(
         HttpClientInterface $httpClient,
         CacheInterface $cache,
         LoggerInterface $logger,
         string $baseUrl,
         string $username,
-        string $password
+        string $password,
+        string $codSeller = '',
+        bool $verifySsl = true
     ) {
         $this->httpClient = $httpClient;
         $this->cache      = $cache;
         $this->logger     = $logger;
         $this->baseUrl    = $baseUrl;
         $this->username   = $username;
+        $this->codSeller  = $codSeller;
+        $this->httpOptions['verify_peer'] = $verifySsl;
+        $this->httpOptions['verify_host'] = $verifySsl;
         $this->password   = $password;
     }
 
@@ -67,6 +74,43 @@ class BtvApiService
      *
      * @return array|null  Keys: CodigoProducto, PrecioVenta, Disponibilidad, CantidadDisponible, FechaProximaDisponibilidad
      */
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function getCodSeller(): string
+    {
+        return $this->codSeller;
+    }
+
+    public function createOffer(array $orderData): ?array
+    {
+        try {
+            $token = $this->getToken();
+
+            $response = $this->httpClient->request('POST', $this->baseUrl . '/api/sales/order-create', array_merge($this->httpOptions, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                ],
+                'json' => $orderData,
+            ]));
+
+            $data = $response->toArray(false);
+            $this->logger->info('BTV createOffer response: {body}', ['body' => json_encode($data)]);
+            return $data;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('BTV createOffer transport error: {msg}', ['msg' => $e->getMessage()]);
+            return null;
+        } catch (\Throwable $e) {
+            $this->logger->error('BTV createOffer error: {msg}', ['msg' => $e->getMessage()]);
+            if (str_contains($e->getMessage(), '401') || str_contains($e->getMessage(), 'token')) {
+                $this->cache->delete('btv_api_token');
+            }
+            return null;
+        }
+    }
+
     public function getProductInfo(string $reference, int $quantity = 1): ?array
     {
         try {

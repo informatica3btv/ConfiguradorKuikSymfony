@@ -738,6 +738,10 @@
               {% if c.createdAt is defined and c.createdAt %}
                 · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
               {% endif %}
+              {% set navOfferNum = p._navOfferResult.result.Cabecera.NumeroOfertaNav ?? null %}
+              {% if navOfferNum %}
+                · Oferta NAV: <b style="color:#16a34a;">{{ navOfferNum }}</b>
+              {% endif %}
             </div>
           </div>
 
