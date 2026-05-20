@@ -1076,7 +1076,7 @@ class ConfigurationController extends AbstractController
         // Primero intentar crear la oferta en NAV
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         $snapshot = $this->buildProductSnapshot($payloadArr);
-        $offerResult = $this->createNavOffer($snapshot, $project);
+        $offerResult = $this->createNavOffer($snapshot, $project, $payloadArr);
 
         $navOfferNumber = $offerResult['result']['Cabecera']['NumeroOfertaNav'] ?? null;
         if ($offerResult === null || empty($navOfferNumber)) {
@@ -1144,7 +1144,7 @@ class ConfigurationController extends AbstractController
         return new JsonResponse(['ok' => true]);
     }
 
-    private function createNavOffer(array $snapshot, \App\Entity\Project $project): ?array
+    private function createNavOffer(array $snapshot, \App\Entity\Project $project, array $payload = []): ?array
     {
         $items = [];
         $cartId = 1;
@@ -1181,6 +1181,32 @@ class ConfigurationController extends AbstractController
                 'errorMessage'           => '',
             ];
             $cartId++;
+        }
+
+        // Añadir instalación si tiene precio configurado
+        $instalacionPrecio = $payload['_instalacion_precio'] ?? 0;
+        if ($instalacionPrecio > 0) {
+            $instalacionRef = $this->configService->getInstalacionReference();
+            $items[] = [
+                'cartId'                  => $cartId,
+                'type'                    => 1,
+                'id'                      => $cartId,
+                'productCode'             => $instalacionRef,
+                'name'                    => 'Instalación',
+                'productQuantity'         => 1,
+                'productDescription'      => '',
+                'discount'                => '',
+                'price'                   => '',
+                'productTotalPrice'       => 0,
+                'productSellingPrice'     => 0,
+                'productDiscountPerc1'    => '',
+                'productDiscountPerc2'    => 0,
+                'productItemPrice'        => 0,
+                'productDisponibility'    => '',
+                'productDisponibilityDate'=> '',
+                'comments'               => '',
+                'errorMessage'           => '',
+            ];
         }
 
         if (empty($items)) {
