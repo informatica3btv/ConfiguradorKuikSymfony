@@ -286,9 +286,12 @@ class ConfigurationService
                     if ($btype === 'mailbox') {
                         $elec = !empty($blk['electronico']);
                         $tarj = !empty($blk['tarjetero']);
-                        $mbKey = 'mailbox_col_' . ($elec ? '1' : '0') . '_' . ($tarj ? '1' : '0');
+                        $ref  = $blk['reference'] ?? null;
+                        $mbKey = $ref
+                            ? 'mailbox_col_ref_' . $ref
+                            : 'mailbox_col_' . ($elec ? '1' : '0') . '_' . ($tarj ? '1' : '0');
                         if (!isset($mailboxBlockCounts[$mbKey])) {
-                            $mailboxBlockCounts[$mbKey] = ['electronico' => $elec, 'tarjetero' => $tarj, 'count' => 0];
+                            $mailboxBlockCounts[$mbKey] = ['electronico' => $elec, 'tarjetero' => $tarj, 'reference' => $ref, 'count' => 0];
                         }
                         $mailboxBlockCounts[$mbKey]['count']++;
                     } elseif ($btype !== 'screen') {
@@ -445,11 +448,13 @@ class ConfigurationService
 
         // Buzones integrados en columnas (home)
         foreach ($mailboxBlockCounts as $mbKey => $mbData) {
-            $mbEntity = $this->mailboxRepo->findOneBy([
-                'agrupacion'  => false,
-                'electronico' => $mbData['electronico'],
-                'tarjetero'   => $mbData['tarjetero'],
-            ]);
+            $mbEntity = !empty($mbData['reference'])
+                ? $this->mailboxRepo->findOneBy(['reference' => $mbData['reference']])
+                : $this->mailboxRepo->findOneBy([
+                    'agrupacion'  => false,
+                    'electronico' => $mbData['electronico'],
+                    'tarjetero'   => $mbData['tarjetero'],
+                  ]);
             $sizeCounts[$mbKey] = $mbData['count'];
             $products[$mbKey]   = $mbEntity;
             if ($mbEntity) {

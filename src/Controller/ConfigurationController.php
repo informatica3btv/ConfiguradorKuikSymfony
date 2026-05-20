@@ -362,6 +362,7 @@ class ConfigurationController extends AbstractController
                 )
                 : $mailboxRepo->findBy([], ['reference' => 'ASC']),
             'mailboxesGrupo'       => $mailboxRepo->findBy(['agrupacion' => true], ['reference' => 'ASC']),
+            'mailboxesSingle'      => $mailboxRepo->findBy(['reference' => '70778'], ['reference' => 'ASC']),
             'controles'            => $controlRepo->findByTipo(
                 $type !== '' ? $type : null
             ),

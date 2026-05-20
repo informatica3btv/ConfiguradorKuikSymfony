@@ -636,7 +636,12 @@
             <option value="door" selected>Puerta</option>
             <option value="screen">Pantalla</option>
             {% if type|default('') == 'home' %}
-              <option value="mailbox">Buzón (H10)</option>
+              <option value="mailbox">Buzón integrado (H10)</option>
+              {% for mb in mailboxesSingle %}
+                <option value="mailbox" data-mailbox-id="{{ mb.id }}" data-ref="{{ mb.reference }}">
+                  {{ mb.reference }}{% if mb.descripcion %} — {{ mb.descripcion }}{% endif %} (H10)
+                </option>
+              {% endfor %}
             {% endif %}
           </select>
 
@@ -645,6 +650,7 @@
             <option value="30">H30</option>
             <option value="40">H40</option>
           </select>
+
 
           <label for="hSizeSelect">Tamaño a añadir:</label>
           <select id="hSizeSelect" style="max-width:180px;">
@@ -989,6 +995,17 @@ document.addEventListener('DOMContentLoaded', () => {
       hSizeSelect.disabled = fixedHeight;
       if (isScreen)  hSizeSelect.value = screenSizeSelect ? screenSizeSelect.value : '30';
       if (isMailbox) hSizeSelect.value = '10';
+    }
+
+    const selOpt  = itemTypeSelect?.selectedOptions[0];
+    const isViena = isMailbox && selOpt?.dataset.ref === '70778';
+    if (chkTarjetero) {
+      if (isViena) { chkTarjetero.checked = true;  chkTarjetero.disabled  = true; }
+      else         { chkTarjetero.disabled = false; }
+    }
+    if (chkElectronico) {
+      if (isViena) { chkElectronico.checked = false; chkElectronico.disabled = true; }
+      else         { chkElectronico.disabled = false; }
     }
 
   }
@@ -1359,6 +1376,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (itemType === 'mailbox') {
             if (chkTarjetero?.checked)  newBlock.tarjetero  = true;
             if (chkElectronico?.checked) newBlock.electronico = true;
+            const selOpt = itemTypeSelect?.selectedOptions[0];
+            if (selOpt?.dataset.mailboxId) {
+              newBlock.mailboxId = parseInt(selOpt.dataset.mailboxId, 10);
+              newBlock.reference = selOpt.dataset.ref || null;
+            }
           }
 
           if (layout.mode === 'home_empotrado') {
@@ -1371,6 +1393,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const left = layout.singleCap - col.single.sum;
             builderMsg.textContent = `No cabe ${h} en Columna ${globalIdx + 1}. Libre: ${left}.`;
+            return;
+          }
+
+          const isVienaBlock = itemType === 'mailbox' && newBlock.reference === '70778';
+
+          if (isVienaBlock && layout.mode === 'home_zocalo') {
+            const slotsNeeded = layout.topCap / 10;
+            if (col.top.sum > 0) {
+              builderMsg.textContent = `El buzón Viena ocupa todo el módulo superior (H${layout.topCap}) y debe estar vacío.`;
+              return;
+            }
+            for (let i = 0; i < slotsNeeded; i++) {
+              col.top.blocks.push({ ...newBlock });
+            }
+            col.top.sum = layout.topCap;
+            builderMsg.textContent = '';
+            render();
             return;
           }
 
