@@ -217,6 +217,7 @@ class ReferencesAdminController extends AbstractController
         $electronico     = (bool) $request->request->get('electronico');
         $tarjetero       = (bool) $request->request->get('tarjetero');
         $aceroInoxidable = (bool) $request->request->get('acero_inoxidable');
+        $imageUrl        = trim((string) $request->request->get('image_url')) ?: null;
 
         if ($reference === '' || $alto === '' || $ancho === '' || $fondo === '') {
             $this->addFlash('error', 'Todos los campos son obligatorios.');
@@ -229,7 +230,7 @@ class ReferencesAdminController extends AbstractController
             return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
         }
 
-        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion)->setTipo($tipoVal)->setAgrupacion($agrupacion)->setElectronico($electronico)->setTarjetero($tarjetero)->setAceroInoxidable($aceroInoxidable));
+        $em->persist((new Mailbox())->setReference($reference)->setAlto($alto)->setAncho($ancho)->setFondo($fondo)->setDescripcion($descripcion)->setTipo($tipoVal)->setAgrupacion($agrupacion)->setElectronico($electronico)->setTarjetero($tarjetero)->setAceroInoxidable($aceroInoxidable)->setImageUrl($imageUrl));
         $em->flush();
 
         $this->addFlash('success', 'Buzón añadido correctamente.');

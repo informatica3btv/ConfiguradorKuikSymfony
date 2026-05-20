@@ -47,6 +47,9 @@ class Mailbox
     /** @ORM\Column(type="boolean", options={"default": false}) */
     private $aceroInoxidable = false;
 
+    /** @ORM\Column(type="string", length=1000, nullable=true) */
+    private $imageUrl;
+
     public function getId(): ?int { return $this->id; }
 
     public function getReference(): ?string { return $this->reference; }
@@ -78,4 +81,7 @@ class Mailbox
 
     public function isAceroInoxidable(): bool { return (bool) $this->aceroInoxidable; }
     public function setAceroInoxidable(bool $v): self { $this->aceroInoxidable = $v; return $this; }
+
+    public function getImageUrl(): ?string { return $this->imageUrl; }
+    public function setImageUrl(?string $v): self { $this->imageUrl = $v; return $this; }
 }

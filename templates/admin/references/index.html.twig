@@ -455,7 +455,7 @@
           <div class="empty-msg">No hay buzones registrados.</div>
         {% else %}
           <table class="ref-table" id="table-mailbox">
-            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Agrupación</th><th>Electrónico</th><th>Tarjetero</th><th>Acero inox.</th><th>Tipo</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Agrupación</th><th>Electrónico</th><th>Tarjetero</th><th>Acero inox.</th><th>Imagen</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for mailbox in mailboxes %}
                 <tr data-tipo="{{ mailbox.tipo ?? '' }}">
@@ -469,6 +469,7 @@
                   <td>{% if mailbox.electronico %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>{% if mailbox.tarjetero %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>{% if mailbox.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
+                  <td>{% if mailbox.imageUrl %}<a href="{{ mailbox.imageUrl }}" target="_blank" style="font-size:12px;color:#0b76d8;" title="{{ mailbox.imageUrl }}">Ver</a>{% else %}—{% endif %}</td>
                   <td>{% if mailbox.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif mailbox.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
                     <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
@@ -967,6 +968,8 @@
         <input type="checkbox" name="acero_inoxidable" value="1" style="width:16px;height:16px;">
         Acero inoxidable
       </label>
+      <label>URL imagen <span style="font-weight:400;color:#6b7280;">(opcional)</span></label>
+      <input type="url" name="image_url" placeholder="https://…">
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal('mailbox')">Cancelar</button>
         <button type="submit" class="btn-save">Guardar</button>
