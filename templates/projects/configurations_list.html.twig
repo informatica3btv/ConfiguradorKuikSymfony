@@ -392,7 +392,7 @@
       position:absolute;
       top: var(--armTop, 14px);
       width: var(--armW);
-      height:140px;
+      height: var(--armH, 140px);
       object-fit:contain;
       pointer-events:none;
       z-index:1;
@@ -876,7 +876,7 @@
                         <div class="mini-group-label">Grupo {{ loop.index }}</div>
 
                         <div class="mini-support-center">
-                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ singleCap > 50 ? '40px' : '14px' }};">
+                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ singleCap > 50 ? '40px' : '14px' }};--armH:{{ (singleCap * 1.65 + 60)|round }}px;">
 
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                               <img class="mini-arm left"  src="{{ armSrc }}" alt="Brazo izq">
@@ -906,7 +906,7 @@
                                     {% endfor %}
                                   </div>
                                   {% if isSoporteSuelo %}
-                                    {% set _mbMiniLegH = 60 %}
+                                    {% set _mbMiniLegH = 80 %}
                                     {% set _mbMiniCellW = mbCellW %}
                                     {% if selectedType == 'patas' %}
                                       {% set _n = mbCols %}
@@ -923,14 +923,14 @@
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _c in _autoCols %}
                                           {% set _xC = (_c - 0.5) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 30)|round }}px;top:0;width:60px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                         {% endfor %}
                                       </div>
                                     {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _i in mbLegPos %}
                                           {% set _xC = (_i is even) ? ((_i / 2) + 0.5) * _mbMiniCellW : ((_i + 1) / 2) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 30)|round }}px;top:0;width:60px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                         {% endfor %}
                                       </div>
                                     {% endif %}
@@ -1073,7 +1073,7 @@
                                     {% endfor %}
                                   </div>
                                   {% if isSoporteSuelo %}
-                                    {% set _mbMiniLegH = 60 %}
+                                    {% set _mbMiniLegH = 80 %}
                                     {% set _mbMiniCellW = mbCellW %}
                                     {% if selectedType == 'patas' %}
                                       {% set _n = mbCols %}
@@ -1090,14 +1090,14 @@
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _c in _autoCols %}
                                           {% set _xC = (_c - 0.5) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 30)|round }}px;top:0;width:60px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                         {% endfor %}
                                       </div>
                                     {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _i in mbLegPos %}
                                           {% set _xC = (_i is even) ? ((_i / 2) + 0.5) * _mbMiniCellW : ((_i + 1) / 2) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 30)|round }}px;top:0;width:60px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                         {% endfor %}
                                       </div>
                                     {% endif %}
@@ -1127,10 +1127,10 @@
                                 {% endif %}
                               {% endif %}
                               {% set _taqLegLeft = (isLastGroup and mbBlockPx > 0 and mbSide == 'left') ? mbBlockPx : 0 %}
-                              <div style="position:relative; height:60px; margin-left:{{ _taqLegLeft }}px; width:{{ n * 60 }}px; pointer-events:none; flex-shrink:0;">
+                              <div style="position:relative; height:80px; margin-left:{{ _taqLegLeft }}px; width:{{ n * 60 }}px; pointer-events:none; flex-shrink:0;">
                                 {% for pos in legPositions %}
                                   {% set _xC = (pos - 0.5) * 60 %}
-                                  <img style="position:absolute; left:{{ (_xC - 30)|round }}px; top:0; width:60px; height:60px; object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                  <img style="position:absolute; left:{{ (_xC - 40)|round }}px; top:0; width:80px; height:80px; object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                 {% endfor %}
                               </div>
                             {% endif %}

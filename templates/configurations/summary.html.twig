@@ -473,7 +473,7 @@
       position:absolute;
       top: 60px;
       width: var(--armW);
-      height: calc({{ (singleCap * kuik.scale_arm) }}px + 86px);
+      height: calc({{ (singleCap * kuik.scale_arm + (singleCap >= 80 ? (singleCap - 70) * 4.5 : 0))|round }}px + 86px);
       object-fit: contain;
       z-index: 1;
       pointer-events:none;
