@@ -59,6 +59,8 @@
               Par de laterales H{{ size|replace({'lateral_': ''}) }}
             {% elseif size == 'lateral' %}
               Par de laterales
+            {% elseif size starts with 'mailbox_col_ref_' %}
+              {{ info.descripcion ?? size|replace({'mailbox_col_ref_': ''}) }}
             {% elseif size starts with 'mailbox_col_' %}
               {% set _mbParts = size|replace({'mailbox_col_': ''})|split('_') %}
               Buzón {{ _mbParts[0] == '1' ? 'electrónico' : 'mecánico' }}{{ _mbParts[1] == '1' ? ' con tarjetero' : ' sin tarjetero' }}

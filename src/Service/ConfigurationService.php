@@ -458,7 +458,11 @@ class ConfigurationService
             $sizeCounts[$mbKey] = $mbData['count'];
             $products[$mbKey]   = $mbEntity;
             if ($mbEntity) {
-                $productInfo[$mbKey] = $this->btvApi->getProductInfo($mbEntity->getReference(), $mbData['count']);
+                $apiInfo = $this->btvApi->getProductInfo($mbEntity->getReference(), $mbData['count']) ?? [];
+                if ($mbEntity->getDescripcion()) {
+                    $apiInfo['descripcion'] = $mbEntity->getDescripcion();
+                }
+                $productInfo[$mbKey] = $apiInfo;
             }
         }
 

@@ -1400,10 +1400,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (isVienaBlock && layout.mode === 'home_zocalo') {
             const slotsNeeded = layout.topCap / 10;
-            if (col.top.sum > 0) {
-              builderMsg.textContent = `El buzón Viena ocupa todo el módulo superior (H${layout.topCap}) y debe estar vacío.`;
-              return;
-            }
+            col.top.blocks = [];
+            col.top.sum    = 0;
             for (let i = 0; i < slotsNeeded; i++) {
               col.top.blocks.push({ ...newBlock });
             }
@@ -2058,6 +2056,27 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       error.textContent = 'Si hay una pantalla debes seleccionar un periférico.';
       return;
+    }
+
+    // Normalizar todos los bloques mailbox al tipo actualmente seleccionado
+    if (itemTypeSelect?.value === 'mailbox' || (itemTypeSelect?.selectedOptions[0]?.dataset.mailboxId)) {
+      const selOpt       = itemTypeSelect.selectedOptions[0];
+      const mbId         = selOpt?.dataset.mailboxId ? parseInt(selOpt.dataset.mailboxId, 10) : null;
+      const mbRef        = selOpt?.dataset.ref || null;
+      const mbTarjetero  = chkTarjetero?.checked  ?? false;
+      const mbElectronico= chkElectronico?.checked ?? false;
+      state.columns.forEach(col => {
+        ['top', 'bottom', 'single'].forEach(part => {
+          if (!col[part]) return;
+          col[part].blocks = col[part].blocks.map(b => {
+            if (b.type !== 'mailbox') return b;
+            const nb = { type: 'mailbox', h: 10, tarjetero: mbTarjetero, electronico: mbElectronico };
+            if (mbId)  nb.mailboxId = mbId;
+            if (mbRef) nb.reference = mbRef;
+            return nb;
+          });
+        });
+      });
     }
 
     let columnsPayload = [];
