@@ -1218,10 +1218,10 @@ class ConfigurationController extends AbstractController
         $email = $user instanceof \App\Entity\User ? $user->getEmail() : '';
 
         $orderData = [
-            'codCliente'              => '99990',
+            'codCliente'              => '32285',
             'suplantado'              => true,
-            'emailTradeRepresentative'=> $email,
-            'email'                   => $email,
+            'emailTradeRepresentative'=> 'logsistemas.it@btv.es',
+            'email'                   => 'logsistemas.it@btv.es',
             'codOrder'                => 0,
             'codCenter'               => 1,
             'codSendAddress'          => false,
