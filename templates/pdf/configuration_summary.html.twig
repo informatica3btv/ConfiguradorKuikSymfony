@@ -830,6 +830,8 @@
               {% elseif size starts with 'brazo_' %}Brazos H{{ size|replace({'brazo_': ''}) }}
               {% elseif size starts with 'pata_' %}Patas ({{ size|replace({'pata_': ''}) }} col.)
               {% elseif size == 'instalacion_ref' %}Instalación
+              {% elseif size == 'color_door' %}Color puerta
+              {% elseif size == 'color_body' %}Color cuerpo
               {% elseif size == 'placa' %}Placa
               {% elseif size == 'colgador' %}Colgador
               {% elseif size == 'buzon_group' %}Buzones (agrupación)
@@ -840,7 +842,7 @@
             </td>
             {% if product %}
               <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">
-                {{ (size in ['placa','buzon_group','colgador','instalacion_ref']) ? product : product.reference }}
+                {{ (size in ['placa','buzon_group','colgador','instalacion_ref','color_door','color_body']) ? product : product.reference }}
                 {% if size == 'buzon_group' and info._descripcion is defined and info._descripcion %}
                   <div style="font-weight:400; color:#6b7280; font-size:10px; margin-top:2px;">{{ info._descripcion }}</div>
                 {% endif %}

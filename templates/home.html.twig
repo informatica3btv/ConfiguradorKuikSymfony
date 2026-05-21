@@ -606,7 +606,7 @@
           <select name="color-door" id="color-door">
             <option value="" selected disabled>Selecciona un color</option>
             {% for color in coloresPuerta %}
-              <option value="{{ color.hex }}" data-ral="{{ color.ral }}">{{ color.name }}</option>
+              <option value="{{ color.hex }}" data-ral="{{ color.ral }}" data-ref="{{ color.reference }}">{{ color.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -616,7 +616,7 @@
           <select name="color-body" id="color-body">
             <option value="" selected disabled>Selecciona un color</option>
             {% for color in coloresCuerpo %}
-              <option value="{{ color.hex }}" data-ral="{{ color.ral }}">{{ color.name }}</option>
+              <option value="{{ color.hex }}" data-ral="{{ color.ral }}" data-ref="{{ color.reference }}">{{ color.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -1983,6 +1983,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const colorDoorRal = getSelectedRal(colorDoorSelect);
     const colorBodyRal = getSelectedRal(colorBodySelect);
+    const colorDoorRef = colorDoorSelect?.selectedOptions[0]?.dataset.ref || null;
+    const colorBodyRef = colorBodySelect?.selectedOptions[0]?.dataset.ref || null;
 
     const error = document.getElementById('formError');
     error.textContent = '';
@@ -2173,12 +2175,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       colorDoor: colorDoor,
       colorDoorRal: colorDoorRal,
+      colorDoorRef: colorDoorRef,
       aceroInoxidable: !!(chkAceroInoxidable?.checked),
       electronico: !!(chkElectronico?.checked),
       tarjetero:   !!(chkTarjetero?.checked),
 
       colorBody: colorBody,
       colorBodyRal: colorBodyRal,
+      colorBodyRef: colorBodyRef,
 
       ...(window.MB_STATE ? { mailboxGroup: window.MB_STATE } : {}),
 

@@ -70,6 +70,10 @@
               Patas ({{ size|replace({'pata_': ''}) }} col.)
             {% elseif size == 'instalacion_ref' %}
               Instalación
+            {% elseif size == 'color_door' %}
+              Color puerta
+            {% elseif size == 'color_body' %}
+              Color cuerpo
             {% elseif size == 'placa' %}
               Placa
             {% elseif size == 'colgador' %}
@@ -87,7 +91,7 @@
             {% endif %}
           </td>
           {% if product %}
-            <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">{{ (size in ['placa','buzon_group','colgador','instalacion_ref']) ? product : product.reference }}</td>
+            <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">{{ (size in ['placa','buzon_group','colgador','instalacion_ref','color_door','color_body']) ? product : product.reference }}</td>
             <td style="padding:10px 12px; font-size:14px; color:#6b7280; {{ border }}">
               {% if size in ['buzon_group', 'envolvente_buzon', 'control'] and info._descripcion is defined and info._descripcion %}{{ info._descripcion }}
               {% elseif size starts with 'brazo_' and product.descripcion is defined and product.descripcion %}{{ product.descripcion }}

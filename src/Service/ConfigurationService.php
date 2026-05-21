@@ -622,6 +622,24 @@ class ConfigurationService
             }
         }
 
+        // Color de puerta
+        $colorDoorRef = $payload['colorDoorRef'] ?? null;
+        if ($colorDoorRef) {
+            $sizeCounts['color_door'] = 1;
+            $products['color_door']   = $colorDoorRef;
+            $apiInfo = $this->btvApi->getProductInfo($colorDoorRef, 1) ?? [];
+            $productInfo['color_door'] = $apiInfo;
+        }
+
+        // Color de cuerpo (solo si es diferente al de puerta)
+        $colorBodyRef = $payload['colorBodyRef'] ?? null;
+        if ($colorBodyRef && $colorBodyRef !== $colorDoorRef) {
+            $sizeCounts['color_body'] = 1;
+            $products['color_body']   = $colorBodyRef;
+            $apiInfo = $this->btvApi->getProductInfo($colorBodyRef, 1) ?? [];
+            $productInfo['color_body'] = $apiInfo;
+        }
+
         return [
             'products'    => $products,
             'productInfo' => $productInfo,
