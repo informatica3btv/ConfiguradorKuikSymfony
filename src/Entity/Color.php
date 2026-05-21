@@ -37,6 +37,9 @@ class Color
      */
     private string $type = 'door'; // 'door' o 'body'
 
+    /** @ORM\Column(type="string", length=255, nullable=true) */
+    private ?string $reference = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -79,6 +82,9 @@ class Color
     {
         return $this->type;
     }
+
+    public function getReference(): ?string { return $this->reference; }
+    public function setReference(?string $v): self { $this->reference = $v; return $this; }
 
     public function setType(string $type): self
     {

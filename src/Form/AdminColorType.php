@@ -30,6 +30,11 @@ class AdminColorType extends AbstractType
                     'placeholder' => '20002',
                 ]
             ])
+            ->add('reference', TextType::class, [
+                'label'    => 'Referencia',
+                'required' => false,
+                'attr'     => ['placeholder' => 'ej. 61234'],
+            ])
             ->add('type', ChoiceType::class, [
                 'label' => 'Tipo',
                 'choices' => [
