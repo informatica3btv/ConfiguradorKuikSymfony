@@ -1219,7 +1219,7 @@ class ConfigurationController extends AbstractController
 
         $orderData = [
             'codCliente'              => '32285',
-            'suplantado'              => true,
+            'suplantado'              => false,
             'emailTradeRepresentative'=> 'logsistemas.it@btv.es',
             'email'                   => 'logsistemas.it@btv.es',
             'codOrder'                => 0,

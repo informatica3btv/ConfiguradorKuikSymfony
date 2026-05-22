@@ -634,4 +634,224 @@ class ReferencesAdminController extends AbstractController
 
         return $this->redirectToRoute('admin_references_index', ['tab' => 'pata']);
     }
+
+    /**
+     * @Route("/door/{id}/edit", name="door_edit", methods={"POST"})
+     */
+    public function editDoor(int $id, Request $request, DoorRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_door', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setSerie(trim((string) $request->request->get('serie')))
+               ->setPlace(trim((string) $request->request->get('place')))
+               ->setSize(trim((string) $request->request->get('size')))
+               ->setMethacrylate((bool) $request->request->get('methacrylate'))
+               ->setAceroInoxidable((bool) $request->request->get('acero_inoxidable'))
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+        $em->flush();
+        $this->addFlash('success', 'Puerta actualizada.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'door']);
+    }
+
+    /**
+     * @Route("/side/{id}/edit", name="side_edit", methods={"POST"})
+     */
+    public function editSide(int $id, Request $request, SideRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_side', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $alturaRaw = trim((string) $request->request->get('altura'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setSerie(trim((string) $request->request->get('serie')))
+               ->setPlace(trim((string) $request->request->get('place')))
+               ->setAltura(($tipoVal === 'home' && $alturaRaw !== '') ? $alturaRaw : null)
+               ->setTipo($tipoVal);
+        $em->flush();
+        $this->addFlash('success', 'Lateral actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'side']);
+    }
+
+    /**
+     * @Route("/roof/{id}/edit", name="roof_edit", methods={"POST"})
+     */
+    public function editRoof(int $id, Request $request, RoofRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_roof', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setSerie(trim((string) $request->request->get('serie')))
+               ->setPlace(trim((string) $request->request->get('place')))
+               ->setColumns(trim((string) $request->request->get('columns')))
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+        $em->flush();
+        $this->addFlash('success', 'Tejado actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'roof']);
+    }
+
+    /**
+     * @Route("/columna/{id}/edit", name="columna_edit", methods={"POST"})
+     */
+    public function editColumna(int $id, Request $request, ColumnaRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_columna', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $tipoVal = in_array($tipo, ['home', 'profesional'], true) ? $tipo : null;
+        $alturaRaw = trim((string) $request->request->get('altura'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setSerie(trim((string) $request->request->get('serie')))
+               ->setPlace(trim((string) $request->request->get('place')))
+               ->setAltura(($tipoVal === 'home' && $alturaRaw !== '') ? $alturaRaw : null)
+               ->setTipo($tipoVal);
+        $em->flush();
+        $this->addFlash('success', 'Columna actualizada.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'columna']);
+    }
+
+    /**
+     * @Route("/mailbox/{id}/edit", name="mailbox_edit", methods={"POST"})
+     */
+    public function editMailbox(int $id, Request $request, MailboxRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_mailbox', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setAlto(trim((string) $request->request->get('alto')))
+               ->setAncho(trim((string) $request->request->get('ancho')))
+               ->setFondo(trim((string) $request->request->get('fondo')))
+               ->setDescripcion(trim((string) $request->request->get('descripcion')) ?: null)
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null)
+               ->setAgrupacion((bool) $request->request->get('agrupacion'))
+               ->setElectronico((bool) $request->request->get('electronico'))
+               ->setTarjetero((bool) $request->request->get('tarjetero'))
+               ->setAceroInoxidable((bool) $request->request->get('acero_inoxidable'))
+               ->setImageUrl(trim((string) $request->request->get('image_url')) ?: null);
+        $em->flush();
+        $this->addFlash('success', 'Buzón actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'mailbox']);
+    }
+
+    /**
+     * @Route("/envolvente/{id}/edit", name="envolvente_edit", methods={"POST"})
+     */
+    public function editEnvolvente(int $id, Request $request, EnvolventeRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_envolvente', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipoConfig = trim((string) $request->request->get('tipoConfig'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setTipo(trim((string) $request->request->get('tipo')))
+               ->setRango(trim((string) $request->request->get('rango')))
+               ->setDescripcion(trim((string) $request->request->get('descripcion')) ?: null)
+               ->setTipoConfig(in_array($tipoConfig, ['home', 'profesional'], true) ? $tipoConfig : null);
+        $em->flush();
+        $this->addFlash('success', 'Envolvente actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'envolvente']);
+    }
+
+    /**
+     * @Route("/control/{id}/edit", name="control_edit", methods={"POST"})
+     */
+    public function editControl(int $id, Request $request, ControlRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_control', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setPlace(trim((string) $request->request->get('place')))
+               ->setDescripcion(trim((string) $request->request->get('descripcion')) ?: null)
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null)
+               ->setAceroInoxidable((bool) $request->request->get('acero_inoxidable'));
+        $em->flush();
+        $this->addFlash('success', 'Control actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'control']);
+    }
+
+    /**
+     * @Route("/bandeja/{id}/edit", name="bandeja_edit", methods={"POST"})
+     */
+    public function editBandeja(int $id, Request $request, BandejaRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_bandeja', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setSerie(trim((string) $request->request->get('serie')))
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+        $em->flush();
+        $this->addFlash('success', 'Bandeja actualizada.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'bandeja']);
+    }
+
+    /**
+     * @Route("/brazo/{id}/edit", name="brazo_edit", methods={"POST"})
+     */
+    public function editBrazo(int $id, Request $request, BrazoRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_brazo', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $alturaRaw = trim((string) $request->request->get('altura'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setAltura($alturaRaw !== '' ? $alturaRaw : null)
+               ->setDescripcion(trim((string) $request->request->get('descripcion')) ?: null)
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+        $em->flush();
+        $this->addFlash('success', 'Brazo actualizado.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'brazo']);
+    }
+
+    /**
+     * @Route("/pata/{id}/edit", name="pata_edit", methods={"POST"})
+     */
+    public function editPata(int $id, Request $request, PataRepository $repo, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('edit_ref_pata', $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF inválido');
+        }
+        $entity = $repo->find($id);
+        if (!$entity) { throw $this->createNotFoundException(); }
+        $tipo = trim((string) $request->request->get('tipo'));
+        $numColRaw = trim((string) $request->request->get('num_columnas'));
+        $entity->setReference(trim((string) $request->request->get('reference')))
+               ->setNumColumnas($numColRaw !== '' ? (int) $numColRaw : null)
+               ->setDescripcion(trim((string) $request->request->get('descripcion')) ?: null)
+               ->setTipo(in_array($tipo, ['home', 'profesional'], true) ? $tipo : null);
+        $em->flush();
+        $this->addFlash('success', 'Pata actualizada.');
+        return $this->redirectToRoute('admin_references_index', ['tab' => 'pata']);
+    }
 }

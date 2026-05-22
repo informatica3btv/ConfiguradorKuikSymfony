@@ -64,6 +64,12 @@
     .badge-yes { background: #d1fae5; color: #065f46; }
     .badge-no  { background: #f3f4f6; color: #6b7280; }
 
+    .btn-edit {
+      padding: 5px 12px; background: #dbeafe; color: #1d4ed8;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: .15s; margin-right: 4px;
+    }
+    .btn-edit:hover { background: #bfdbfe; }
     .btn-delete {
       padding: 5px 12px; background: #fee2e2; color: #991b1b;
       border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
@@ -240,7 +246,15 @@
             <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Talla</th><th>Metacrilato</th><th>Acero inox.</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for door in doors %}
-                <tr data-tipo="{{ door.tipo ?? '' }}">
+                <tr data-tipo="{{ door.tipo ?? '' }}"
+                    data-id="{{ door.id }}"
+                    data-reference="{{ door.reference|e('html_attr') }}"
+                    data-serie="{{ door.serie|e('html_attr') }}"
+                    data-place="{{ door.place|e('html_attr') }}"
+                    data-size="{{ door.size|e('html_attr') }}"
+                    data-methacrylate="{{ door.methacrylate ? '1' : '0' }}"
+                    data-acero="{{ door.aceroInoxidable ? '1' : '0' }}"
+                    data-tipo-val="{{ door.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ door.id }}" class="row-check check-door" onchange="updateCount('door')"></td>
                   <td><strong>{{ door.reference }}</strong></td>
                   <td>{{ door.serie }}</td>
@@ -250,7 +264,7 @@
                   <td>{% if door.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>{% if door.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif door.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
-                    {# El botón apunta al formulario individual por id (fuera del bulk form) #}
+                    <button type="button" class="btn-edit" onclick="openEditModal('door', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-door-{{ door.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
                   </td>
@@ -296,7 +310,13 @@
             <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Altura</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for side in sides %}
-                <tr data-tipo="{{ side.tipo ?? '' }}">
+                <tr data-tipo="{{ side.tipo ?? '' }}"
+                    data-id="{{ side.id }}"
+                    data-reference="{{ side.reference|e('html_attr') }}"
+                    data-serie="{{ side.serie|e('html_attr') }}"
+                    data-place="{{ side.place|e('html_attr') }}"
+                    data-altura="{{ side.altura ?? '' }}"
+                    data-tipo-val="{{ side.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ side.id }}" class="row-check check-side" onchange="updateCount('side')"></td>
                   <td><strong>{{ side.reference }}</strong></td>
                   <td>{{ side.serie }}</td>
@@ -304,6 +324,7 @@
                   <td>{{ side.altura ?? '—' }}</td>
                   <td>{% if side.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif side.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('side', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-side-{{ side.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
                   </td>
@@ -350,7 +371,13 @@
             <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Columnas</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for roof in roofs %}
-                <tr data-tipo="{{ roof.tipo ?? '' }}">
+                <tr data-tipo="{{ roof.tipo ?? '' }}"
+                    data-id="{{ roof.id }}"
+                    data-reference="{{ roof.reference|e('html_attr') }}"
+                    data-serie="{{ roof.serie|e('html_attr') }}"
+                    data-place="{{ roof.place|e('html_attr') }}"
+                    data-columns="{{ roof.columns }}"
+                    data-tipo-val="{{ roof.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ roof.id }}" class="row-check check-roof" onchange="updateCount('roof')"></td>
                   <td><strong>{{ roof.reference }}</strong></td>
                   <td>{{ roof.serie }}</td>
@@ -358,6 +385,7 @@
                   <td>{{ roof.columns }}</td>
                   <td>{% if roof.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif roof.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('roof', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-roof-{{ roof.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
                   </td>
@@ -403,7 +431,13 @@
             <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Lugar</th><th>Altura</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for columna in columnas %}
-                <tr data-tipo="{{ columna.tipo ?? '' }}">
+                <tr data-tipo="{{ columna.tipo ?? '' }}"
+                    data-id="{{ columna.id }}"
+                    data-reference="{{ columna.reference|e('html_attr') }}"
+                    data-serie="{{ columna.serie|e('html_attr') }}"
+                    data-place="{{ columna.place|e('html_attr') }}"
+                    data-altura="{{ columna.altura ?? '' }}"
+                    data-tipo-val="{{ columna.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ columna.id }}" class="row-check check-columna" onchange="updateCount('columna')"></td>
                   <td><strong>{{ columna.reference }}</strong></td>
                   <td>{{ columna.serie }}</td>
@@ -411,6 +445,7 @@
                   <td>{{ columna.altura ?? '—' }}</td>
                   <td>{% if columna.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif columna.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('columna', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-columna-{{ columna.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta referencia?')">Eliminar</button>
                   </td>
@@ -458,7 +493,19 @@
             <thead><tr><th></th><th>Referencia</th><th>Descripción</th><th>Alto</th><th>Ancho</th><th>Fondo</th><th>Agrupación</th><th>Electrónico</th><th>Tarjetero</th><th>Acero inox.</th><th>Imagen</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for mailbox in mailboxes %}
-                <tr data-tipo="{{ mailbox.tipo ?? '' }}">
+                <tr data-tipo="{{ mailbox.tipo ?? '' }}"
+                    data-id="{{ mailbox.id }}"
+                    data-reference="{{ mailbox.reference|e('html_attr') }}"
+                    data-alto="{{ mailbox.alto|e('html_attr') }}"
+                    data-ancho="{{ mailbox.ancho|e('html_attr') }}"
+                    data-fondo="{{ mailbox.fondo|e('html_attr') }}"
+                    data-descripcion="{{ mailbox.descripcion|e('html_attr') }}"
+                    data-tipo-val="{{ mailbox.tipo ?? '' }}"
+                    data-agrupacion="{{ mailbox.agrupacion ? '1' : '0' }}"
+                    data-electronico="{{ mailbox.electronico ? '1' : '0' }}"
+                    data-tarjetero="{{ mailbox.tarjetero ? '1' : '0' }}"
+                    data-acero="{{ mailbox.aceroInoxidable ? '1' : '0' }}"
+                    data-image-url="{{ mailbox.imageUrl|e('html_attr') }}">
                   <td><input type="checkbox" name="ids[]" value="{{ mailbox.id }}" class="row-check check-mailbox" onchange="updateCount('mailbox')"></td>
                   <td><strong>{{ mailbox.reference }}</strong></td>
                   <td>{{ mailbox.descripcion }}</td>
@@ -472,6 +519,7 @@
                   <td>{% if mailbox.imageUrl %}<a href="{{ mailbox.imageUrl }}" target="_blank" style="font-size:12px;color:#0b76d8;" title="{{ mailbox.imageUrl }}">Ver</a>{% else %}—{% endif %}</td>
                   <td>{% if mailbox.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif mailbox.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('mailbox', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-mailbox-{{ mailbox.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este buzón?')">Eliminar</button>
                   </td>
@@ -518,7 +566,13 @@
             <thead><tr><th></th><th>Referencia</th><th>Tipo</th><th>Rango</th><th>Descripción</th><th>Config</th><th></th></tr></thead>
             <tbody>
               {% for env in envolventes %}
-                <tr data-tipo="{{ env.tipoConfig ?? '' }}">
+                <tr data-tipo="{{ env.tipoConfig ?? '' }}"
+                    data-id="{{ env.id }}"
+                    data-reference="{{ env.reference|e('html_attr') }}"
+                    data-tipo-val="{{ env.tipoConfig ?? '' }}"
+                    data-tipo-env="{{ env.tipo|e('html_attr') }}"
+                    data-rango="{{ env.rango|e('html_attr') }}"
+                    data-descripcion="{{ env.descripcion|e('html_attr') }}">
                   <td><input type="checkbox" name="ids[]" value="{{ env.id }}" class="row-check check-envolvente" onchange="updateCount('envolvente')"></td>
                   <td><strong>{{ env.reference }}</strong></td>
                   <td>{{ env.tipo }}</td>
@@ -526,6 +580,7 @@
                   <td>{{ env.descripcion }}</td>
                   <td>{% if env.tipoConfig == 'home' %}<span class="badge badge-home">Home</span>{% elseif env.tipoConfig == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('envolvente', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-envolvente-{{ env.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este envolvente?')">Eliminar</button>
                   </td>
@@ -571,7 +626,13 @@
             <thead><tr><th></th><th>Referencia</th><th>Lugar</th><th>Descripción</th><th>Tipo</th><th>Acero inox.</th><th></th></tr></thead>
             <tbody>
               {% for ctrl in controles %}
-                <tr data-tipo="{{ ctrl.tipo ?? '' }}">
+                <tr data-tipo="{{ ctrl.tipo ?? '' }}"
+                    data-id="{{ ctrl.id }}"
+                    data-reference="{{ ctrl.reference|e('html_attr') }}"
+                    data-place="{{ ctrl.place|e('html_attr') }}"
+                    data-descripcion="{{ ctrl.descripcion|e('html_attr') }}"
+                    data-tipo-val="{{ ctrl.tipo ?? '' }}"
+                    data-acero="{{ ctrl.aceroInoxidable ? '1' : '0' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ ctrl.id }}" class="row-check check-control" onchange="updateCount('control')"></td>
                   <td><strong>{{ ctrl.reference }}</strong></td>
                   <td>{{ ctrl.place }}</td>
@@ -579,6 +640,7 @@
                   <td>{% if ctrl.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif ctrl.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>{% if ctrl.aceroInoxidable %}<span class="badge badge-yes">Sí</span>{% else %}<span class="badge badge-no">No</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('control', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-control-{{ ctrl.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este control?')">Eliminar</button>
                   </td>
@@ -623,12 +685,17 @@
             <thead><tr><th></th><th>Referencia</th><th>Serie</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for bandeja in bandejas %}
-                <tr data-tipo="{{ bandeja.tipo ?? '' }}">
+                <tr data-tipo="{{ bandeja.tipo ?? '' }}"
+                    data-id="{{ bandeja.id }}"
+                    data-reference="{{ bandeja.reference|e('html_attr') }}"
+                    data-serie="{{ bandeja.serie|e('html_attr') }}"
+                    data-tipo-val="{{ bandeja.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ bandeja.id }}" class="row-check check-bandeja" onchange="updateCount('bandeja')"></td>
                   <td><strong>{{ bandeja.reference }}</strong></td>
                   <td>{{ bandeja.serie }}</td>
                   <td>{% if bandeja.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif bandeja.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('bandeja', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-bandeja-{{ bandeja.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta bandeja?')">Eliminar</button>
                   </td>
@@ -725,13 +792,19 @@
             <thead><tr><th></th><th>Referencia</th><th>Altura</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for brazo in brazos %}
-                <tr data-tipo="{{ brazo.tipo ?? '' }}">
+                <tr data-tipo="{{ brazo.tipo ?? '' }}"
+                    data-id="{{ brazo.id }}"
+                    data-reference="{{ brazo.reference|e('html_attr') }}"
+                    data-altura="{{ brazo.altura ?? '' }}"
+                    data-descripcion="{{ brazo.descripcion|e('html_attr') }}"
+                    data-tipo-val="{{ brazo.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ brazo.id }}" class="row-check check-brazo" onchange="updateCount('brazo')"></td>
                   <td><strong>{{ brazo.reference }}</strong></td>
                   <td>{{ brazo.altura ?? '—' }}</td>
                   <td>{{ brazo.descripcion ?? '—' }}</td>
                   <td>{% if brazo.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif brazo.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('brazo', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-brazo-{{ brazo.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar este brazo?')">Eliminar</button>
                   </td>
@@ -776,13 +849,19 @@
             <thead><tr><th></th><th>Referencia</th><th>Nº columnas</th><th>Descripción</th><th>Tipo</th><th></th></tr></thead>
             <tbody>
               {% for pata in patas %}
-                <tr data-tipo="{{ pata.tipo ?? '' }}">
+                <tr data-tipo="{{ pata.tipo ?? '' }}"
+                    data-id="{{ pata.id }}"
+                    data-reference="{{ pata.reference|e('html_attr') }}"
+                    data-num-columnas="{{ pata.numColumnas ?? '' }}"
+                    data-descripcion="{{ pata.descripcion|e('html_attr') }}"
+                    data-tipo-val="{{ pata.tipo ?? '' }}">
                   <td><input type="checkbox" name="ids[]" value="{{ pata.id }}" class="row-check check-pata" onchange="updateCount('pata')"></td>
                   <td><strong>{{ pata.reference }}</strong></td>
                   <td>{{ pata.numColumnas ?? '—' }}</td>
                   <td>{{ pata.descripcion ?? '—' }}</td>
                   <td>{% if pata.tipo == 'home' %}<span class="badge badge-home">Home</span>{% elseif pata.tipo == 'profesional' %}<span class="badge badge-pro">Profesional</span>{% else %}<span class="badge badge-ambos">Ambos</span>{% endif %}</td>
                   <td>
+                    <button type="button" class="btn-edit" onclick="openEditModal('pata', this.closest('tr').dataset)">Editar</button>
                     <button type="submit" form="del-pata-{{ pata.id }}" class="btn-delete"
                             onclick="return confirm('¿Eliminar esta pata?')">Eliminar</button>
                   </td>
@@ -1118,6 +1197,244 @@
   </div>
 </div>
 
+{# ══════════════════════════════════════════════════════════════
+   MODALES DE EDICIÓN
+═══════════════════════════════════════════════════════════════ #}
+
+{# ── Edit: Puerta ── #}
+<div class="modal-overlay" id="modal-edit-door">
+  <div class="modal">
+    <h3>Editar puerta</h3>
+    <form method="post" id="form-edit-door">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_door') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-door-reference" required>
+      <label>Serie</label><input type="text" name="serie" id="edit-door-serie" required>
+      <label>Lugar</label><input type="text" name="place" id="edit-door-place" required>
+      <label>Talla</label><input type="text" name="size" id="edit-door-size" required>
+      <label>Metacrilato</label>
+      <select name="methacrylate" id="edit-door-methacrylate"><option value="0">No</option><option value="1">Sí</option></select>
+      <label>Acero inoxidable</label>
+      <select name="acero_inoxidable" id="edit-door-acero"><option value="0">No</option><option value="1">Sí</option></select>
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-door-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-door')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Lateral ── #}
+<div class="modal-overlay" id="modal-edit-side">
+  <div class="modal">
+    <h3>Editar lateral</h3>
+    <form method="post" id="form-edit-side">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_side') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-side-reference" required>
+      <label>Serie</label><input type="text" name="serie" id="edit-side-serie" required>
+      <label>Lugar</label><input type="text" name="place" id="edit-side-place" required>
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-side-tipo" onchange="document.getElementById('edit-side-altura-wrap').style.display=this.value==='home'?'block':'none'">
+        <option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option>
+      </select>
+      <div id="edit-side-altura-wrap">
+        <label>Altura (H total)</label><input type="text" name="altura" id="edit-side-altura">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-side')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Tejado ── #}
+<div class="modal-overlay" id="modal-edit-roof">
+  <div class="modal">
+    <h3>Editar tejado</h3>
+    <form method="post" id="form-edit-roof">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_roof') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-roof-reference" required>
+      <label>Serie</label><input type="text" name="serie" id="edit-roof-serie" required>
+      <label>Lugar</label><input type="text" name="place" id="edit-roof-place" required>
+      <label>Columnas</label><input type="number" name="columns" id="edit-roof-columns" required min="1">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-roof-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-roof')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Columna ── #}
+<div class="modal-overlay" id="modal-edit-columna">
+  <div class="modal">
+    <h3>Editar columna</h3>
+    <form method="post" id="form-edit-columna">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_columna') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-columna-reference" required>
+      <label>Serie</label><input type="text" name="serie" id="edit-columna-serie" required>
+      <label>Lugar</label><input type="text" name="place" id="edit-columna-place" required>
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-columna-tipo" onchange="document.getElementById('edit-columna-altura-wrap').style.display=this.value==='home'?'block':'none'">
+        <option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option>
+      </select>
+      <div id="edit-columna-altura-wrap">
+        <label>Altura (H total)</label><input type="text" name="altura" id="edit-columna-altura">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-columna')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Buzón ── #}
+<div class="modal-overlay" id="modal-edit-mailbox">
+  <div class="modal">
+    <h3>Editar buzón</h3>
+    <form method="post" id="form-edit-mailbox">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_mailbox') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-mailbox-reference" required>
+      <label>Alto</label><input type="text" name="alto" id="edit-mailbox-alto" required>
+      <label>Ancho</label><input type="text" name="ancho" id="edit-mailbox-ancho" required>
+      <label>Fondo</label><input type="text" name="fondo" id="edit-mailbox-fondo" required>
+      <label>Descripción</label><input type="text" name="descripcion" id="edit-mailbox-descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-mailbox-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;">
+        <input type="checkbox" name="agrupacion" value="1" id="edit-mailbox-agrupacion" style="width:16px;height:16px;"> Agrupación
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;">
+        <input type="checkbox" name="electronico" value="1" id="edit-mailbox-electronico" style="width:16px;height:16px;"> Electrónico
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;">
+        <input type="checkbox" name="tarjetero" value="1" id="edit-mailbox-tarjetero" style="width:16px;height:16px;"> Tarjetero
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">
+        <input type="checkbox" name="acero_inoxidable" value="1" id="edit-mailbox-acero" style="width:16px;height:16px;"> Acero inoxidable
+      </label>
+      <label>URL imagen <span style="font-weight:400;color:#6b7280;">(opcional)</span></label>
+      <input type="url" name="image_url" id="edit-mailbox-image-url" placeholder="https://…">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-mailbox')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Envolvente ── #}
+<div class="modal-overlay" id="modal-edit-envolvente">
+  <div class="modal">
+    <h3>Editar envolvente</h3>
+    <form method="post" id="form-edit-envolvente">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_envolvente') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-envolvente-reference" required>
+      <label>Tipo</label>
+      <select name="tipo" id="edit-envolvente-tipo" style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="buzon">Buzón</option><option value="taquilla">Taquilla</option>
+      </select>
+      <label>Rango</label>
+      <select name="rango" id="edit-envolvente-rango" style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="pequeño">Pequeño</option><option value="grande">Grande</option>
+      </select>
+      <label>Descripción</label><input type="text" name="descripcion" id="edit-envolvente-descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipoConfig" id="edit-envolvente-tipoconfig"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-envolvente')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Control ── #}
+<div class="modal-overlay" id="modal-edit-control">
+  <div class="modal">
+    <h3>Editar control</h3>
+    <form method="post" id="form-edit-control">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_control') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-control-reference" required>
+      <label>Lugar</label>
+      <select name="place" id="edit-control-place" style="width:100%;padding:9px 12px;border:1px solid rgba(15,23,42,.2);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+        <option value="interior">Interior</option><option value="exterior">Exterior</option>
+      </select>
+      <label>Descripción</label><input type="text" name="descripcion" id="edit-control-descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-control-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">
+        <input type="checkbox" name="acero_inoxidable" value="1" id="edit-control-acero" style="width:16px;height:16px;"> Acero inoxidable
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-control')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Bandeja ── #}
+<div class="modal-overlay" id="modal-edit-bandeja">
+  <div class="modal">
+    <h3>Editar bandeja</h3>
+    <form method="post" id="form-edit-bandeja">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_bandeja') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-bandeja-reference" required>
+      <label>Serie</label><input type="text" name="serie" id="edit-bandeja-serie" required>
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-bandeja-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-bandeja')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Brazo ── #}
+<div class="modal-overlay" id="modal-edit-brazo">
+  <div class="modal">
+    <h3>Editar brazo</h3>
+    <form method="post" id="form-edit-brazo">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_brazo') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-brazo-reference" required>
+      <label>Altura</label><input type="text" name="altura" id="edit-brazo-altura" placeholder="4H / 5H / 6H / 7H / 8H">
+      <label>Descripción</label><input type="text" name="descripcion" id="edit-brazo-descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-brazo-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-brazo')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Edit: Pata ── #}
+<div class="modal-overlay" id="modal-edit-pata">
+  <div class="modal">
+    <h3>Editar pata</h3>
+    <form method="post" id="form-edit-pata">
+      <input type="hidden" name="_token" value="{{ csrf_token('edit_ref_pata') }}">
+      <label>Referencia</label><input type="text" name="reference" id="edit-pata-reference" required>
+      <label>Nº columnas</label><input type="number" name="num_columnas" id="edit-pata-num-columnas" min="1">
+      <label>Descripción</label><input type="text" name="descripcion" id="edit-pata-descripcion">
+      <label>Tipo configuración</label>
+      <select name="tipo" id="edit-pata-tipo"><option value="">Ambos</option><option value="home">Home</option><option value="profesional">Profesional</option></select>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal('edit-pata')">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   let globalTipo = 'all';
   let activeTabName = '{{ activeTab }}';
@@ -1223,5 +1540,86 @@
       if (e.target === overlay) overlay.classList.remove('open');
     });
   });
+
+  const baseUrl = '/admin/references';
+
+  function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val ?? ''; }
+  function setChk(id, val) { const el = document.getElementById(id); if (el) el.checked = val === '1'; }
+  function setSel(id, val) { const el = document.getElementById(id); if (el) el.value = val ?? ''; }
+
+  function openEditModal(type, d) {
+    const form = document.getElementById('form-edit-' + type);
+    form.action = baseUrl + '/' + type + '/' + d.id + '/edit';
+
+    if (type === 'door') {
+      setVal('edit-door-reference', d.reference);
+      setVal('edit-door-serie', d.serie);
+      setVal('edit-door-place', d.place);
+      setVal('edit-door-size', d.size);
+      setSel('edit-door-methacrylate', d.methacrylate);
+      setSel('edit-door-acero', d.acero);
+      setSel('edit-door-tipo', d.tipoVal);
+    } else if (type === 'side') {
+      setVal('edit-side-reference', d.reference);
+      setVal('edit-side-serie', d.serie);
+      setVal('edit-side-place', d.place);
+      setSel('edit-side-tipo', d.tipoVal);
+      setVal('edit-side-altura', d.altura);
+      document.getElementById('edit-side-altura-wrap').style.display = d.tipoVal === 'home' ? 'block' : 'none';
+    } else if (type === 'roof') {
+      setVal('edit-roof-reference', d.reference);
+      setVal('edit-roof-serie', d.serie);
+      setVal('edit-roof-place', d.place);
+      setVal('edit-roof-columns', d.columns);
+      setSel('edit-roof-tipo', d.tipoVal);
+    } else if (type === 'columna') {
+      setVal('edit-columna-reference', d.reference);
+      setVal('edit-columna-serie', d.serie);
+      setVal('edit-columna-place', d.place);
+      setSel('edit-columna-tipo', d.tipoVal);
+      setVal('edit-columna-altura', d.altura);
+      document.getElementById('edit-columna-altura-wrap').style.display = d.tipoVal === 'home' ? 'block' : 'none';
+    } else if (type === 'mailbox') {
+      setVal('edit-mailbox-reference', d.reference);
+      setVal('edit-mailbox-alto', d.alto);
+      setVal('edit-mailbox-ancho', d.ancho);
+      setVal('edit-mailbox-fondo', d.fondo);
+      setVal('edit-mailbox-descripcion', d.descripcion);
+      setSel('edit-mailbox-tipo', d.tipoVal);
+      setChk('edit-mailbox-agrupacion', d.agrupacion);
+      setChk('edit-mailbox-electronico', d.electronico);
+      setChk('edit-mailbox-tarjetero', d.tarjetero);
+      setChk('edit-mailbox-acero', d.acero);
+      setVal('edit-mailbox-image-url', d.imageUrl);
+    } else if (type === 'envolvente') {
+      setVal('edit-envolvente-reference', d.reference);
+      setSel('edit-envolvente-tipo', d.tipoEnv);
+      setSel('edit-envolvente-rango', d.rango);
+      setVal('edit-envolvente-descripcion', d.descripcion);
+      setSel('edit-envolvente-tipoconfig', d.tipoVal);
+    } else if (type === 'control') {
+      setVal('edit-control-reference', d.reference);
+      setSel('edit-control-place', d.place);
+      setVal('edit-control-descripcion', d.descripcion);
+      setSel('edit-control-tipo', d.tipoVal);
+      setChk('edit-control-acero', d.acero);
+    } else if (type === 'bandeja') {
+      setVal('edit-bandeja-reference', d.reference);
+      setVal('edit-bandeja-serie', d.serie);
+      setSel('edit-bandeja-tipo', d.tipoVal);
+    } else if (type === 'brazo') {
+      setVal('edit-brazo-reference', d.reference);
+      setVal('edit-brazo-altura', d.altura);
+      setVal('edit-brazo-descripcion', d.descripcion);
+      setSel('edit-brazo-tipo', d.tipoVal);
+    } else if (type === 'pata') {
+      setVal('edit-pata-reference', d.reference);
+      setVal('edit-pata-num-columnas', d.numColumnas);
+      setVal('edit-pata-descripcion', d.descripcion);
+      setSel('edit-pata-tipo', d.tipoVal);
+    }
+
+    document.getElementById('modal-edit-' + type).classList.add('open');
+  }
 </script>
 {% endblock %}
