@@ -518,8 +518,14 @@
   <div class="search-row">
     <div class="search">
       <span class="icon">🔍</span>
-      <input id="projectSearch" type="text" placeholder="Buscar por nombre, cliente o ciudad..." autocomplete="off">
+      <input id="projectSearch" type="text" placeholder="Buscar por nombre, cliente, ciudad o responsable..." autocomplete="off">
     </div>
+
+    <button type="button" id="btnMisProyectos"
+            data-me="{{ (app.user.name ?? '')|lower }}"
+            style="display:flex;align-items:center;gap:7px;padding:8px 16px;border:2px solid rgba(15,23,42,.15);border-radius:10px;background:#fff;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;transition:.15s;white-space:nowrap;">
+      <span style="font-size:15px;">👤</span> Mis proyectos
+    </button>
 
     <div class="view-switch" id="viewSwitch">
       <button type="button" class="view-btn active" data-view="table">🗂 Tarjetas</button>
@@ -549,7 +555,8 @@
         <div class="p-card"
              data-name="{{ project.projectName|lower }}"
              data-client="{{ project.clientName|lower }}"
-             data-city="{{ (project.city ?? '')|lower }}">
+             data-city="{{ (project.city ?? '')|lower }}"
+             data-responsable="{{ (project.user.name ?? '')|lower }}">
 
           <div class="col-project">
             <div class="project-title-row">
@@ -624,18 +631,33 @@
           return (s || '').toLowerCase().trim();
         }
 
-        input?.addEventListener('input', () => {
-          const q = norm(input.value);
+        const btnMine = document.getElementById('btnMisProyectos');
+        const me = norm(btnMine?.dataset.me);
+        let onlyMine = false;
 
+        function applyFilter() {
+          const q = norm(input.value);
           cards.forEach(card => {
             const hay = [
               card.getAttribute('data-name'),
               card.getAttribute('data-client'),
               card.getAttribute('data-city'),
+              card.getAttribute('data-responsable'),
             ].join(' ');
-
-            card.style.display = hay.includes(q) ? '' : 'none';
+            const matchesSearch = !q || hay.includes(q);
+            const matchesMine   = !onlyMine || norm(card.getAttribute('data-responsable')) === me;
+            card.style.display = (matchesSearch && matchesMine) ? '' : 'none';
           });
+        }
+
+        input?.addEventListener('input', applyFilter);
+
+        btnMine?.addEventListener('click', () => {
+          onlyMine = !onlyMine;
+          btnMine.style.background      = onlyMine ? '#0b76d8' : '#fff';
+          btnMine.style.color           = onlyMine ? '#fff'    : '#6b7280';
+          btnMine.style.borderColor     = onlyMine ? '#0b76d8' : 'rgba(15,23,42,.15)';
+          applyFilter();
         });
 
         const savedView = localStorage.getItem('projectsView') || 'table';
