@@ -1,6 +1,7 @@
 twig:
     default_path: '%kernel.project_dir%/templates'
     globals:
+        nav_url: '%nav.url%'
         kuik:
             # Escala px/H-unit usada en los previews
             scale: 4.16

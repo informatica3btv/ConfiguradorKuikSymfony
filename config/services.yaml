@@ -1,5 +1,6 @@
 parameters:
     gemini.api_key: '%env(GEMINI_API_KEY)%'
+    nav.url: '%env(NAV_URL)%'
     placa.reference: '13180'
     colgador.reference: '61456'
     instalacion.reference: '13406'

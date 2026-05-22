@@ -740,7 +740,7 @@
               {% endif %}
               {% set navOfferNum = p._navOfferResult.result.Cabecera.NumeroOfertaNav ?? null %}
               {% if navOfferNum %}
-                · Oferta NAV: <b style="color:#16a34a;">{{ navOfferNum }}</b>
+                · Oferta NAV: <a href="{{ nav_url }}/runpage?page=9300" style="color:#16a34a;font-weight:700;text-decoration:none;" title="Abrir en NAV">{{ navOfferNum }}</a>
               {% endif %}
             </div>
           </div>
