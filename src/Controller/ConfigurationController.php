@@ -11,25 +11,23 @@ use App\Repository\ProjectRepository;
 use App\Repository\ControlRepository;
 use App\Repository\MailboxRepository;
 use App\Service\ConfigurationService;
+use App\Service\NavOfferService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class ConfigurationController extends AbstractController
 {
     private ConfigurationService $configService;
-    private \App\Service\BtvApiService $btvApi;
+    private NavOfferService $navOfferService;
 
-    public function __construct(ConfigurationService $configService, \App\Service\BtvApiService $btvApi)
+    public function __construct(ConfigurationService $configService, NavOfferService $navOfferService)
     {
-        $this->configService = $configService;
-        $this->btvApi = $btvApi;
+        $this->configService   = $configService;
+        $this->navOfferService = $navOfferService;
     }
 
     /**
@@ -757,92 +755,6 @@ class ConfigurationController extends AbstractController
     }
 
     /**
-     * @Route("/configuration/{id}/summary", name="configuration_summary", methods={"GET"})
-     */
-    public function summary(
-        int $id,
-        ConfigurationRepository $repo
-    ): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        $configuration = $repo->find($id);
-        if (!$configuration) {
-            return $this->redirectToRoute('projects_list');
-        }
-
-        $p = $configuration->getProject();
-        /*if (!$p || $p->getUser() !== $this->getUser()) {
-            throw $this->createAccessDeniedException();
-        }*/
-
-        $payload = $configuration->getDecodedPayload();
-
-        $payloadPrepared = $this->configService->prepareSummaryPayload($payload);
-
-        return $this->render('configurations/summary.html.twig', [
-            'project' => $p,
-            'configuration' => $configuration,
-            'payload' => $payloadPrepared,
-        ]);
-    }
-
-    /**
-     * @Route("/btv-debug", name="btv_debug", methods={"GET"})
-     */
-    public function btvDebug(\App\Service\BtvApiService $btvApi): JsonResponse
-    {
-        $result = $btvApi->getProductInfo('05828', 1);
-        return new JsonResponse([
-            'result' => $result,
-            'error'  => $result === null ? 'getProductInfo returned null — check var/log/prod.log' : null,
-        ]);
-    }
-
-    /**
-     * @Route("/configuration/{id}/product-table", name="configuration_product_table", methods={"GET"})
-     */
-    public function productTable(
-        int $id,
-        ConfigurationRepository $repo,
-        EntityManagerInterface $em
-    ): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        $configuration = $repo->find($id);
-        if (!$configuration) {
-            throw $this->createNotFoundException('Configuration not found');
-        }
-
-        $payload = $configuration->getDecodedPayload();
-
-        $isClosed = in_array($configuration->getStatus(), [
-            Configuration::STATUS_ACCEPTED,
-            Configuration::STATUS_CLOSED,
-        ], true);
-
-        if ($isClosed && isset($payload['_acceptedProductTable'])) {
-            $table = $payload['_acceptedProductTable'];
-        } elseif ($isClosed) {
-            // Configuración cerrada/aceptada sin snapshot previo — generarlo y persistirlo.
-            $snapshot = $this->buildProductSnapshot($payload);
-            $payload['_acceptedProductTable'] = $snapshot;
-            $configuration->setPayload(json_encode($payload));
-            $em->persist($configuration);
-            $em->flush();
-            $table = $snapshot;
-        } else {
-            $table = $this->configService->buildProductTable($payload);
-        }
-
-        $table['instalacionPrecio']    = (float) ($payload['_instalacion_precio'] ?? 0);
-        $table['instalacionIva']       = (bool)  ($payload['_instalacion_iva']    ?? false);
-        $table['instalacionReference'] = $this->configService->getInstalacionReference();
-        $table['descuento']            = (float) ($payload['_descuento']           ?? 0);
-
-        return $this->render('configurations/ajax.html.twig', $table);
-    }
-
-    /**
      * Recuperar configuración por código (ID de configuración)
      * @Route("/configuration/recover", name="configuration_recover", methods={"GET","POST"})
      */
@@ -878,134 +790,6 @@ class ConfigurationController extends AbstractController
             'error' => $error,
         ]);
     }
-
-    /**
-     * @Route("/configuration/{id}/pdf", name="configuration_pdf", methods={"GET"})
-     */
-    public function pdf(
-        int $id,
-        ConfigurationRepository $repo,
-        EntityManagerInterface $em
-    ): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-
-        $configuration = $repo->find($id);
-
-        if (!$configuration) {
-            throw $this->createNotFoundException('Configuration not found');
-        }
-
-        $project = $configuration->getProject();
-
-        if (!$project || $project->getUser() !== $this->getUser()) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $payloadArr = $configuration->getDecodedPayload() ?? [];
-        if (!isset($payloadArr['_acceptedProductTable'])) {
-            $payloadArr['_acceptedProductTable'] = $this->buildProductSnapshot($payloadArr);
-            $configuration->setPayload(json_encode($payloadArr));
-        }
-
-        $configuration->setStatus(Configuration::STATUS_CLOSED);
-        $em->persist($configuration);
-        $em->flush();
-
-        $payload = $payloadArr;
-
-        $screenPath = $this->getParameter('kernel.project_dir') . '/public/assets/pantalla.png';
-        $screenBase64 = null;
-
-        if (file_exists($screenPath)) {
-            $screenBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($screenPath));
-        }
-
-        $armBlanco = null;
-        $armPlata = null;
-        $armNegro = null;
-
-        $armBlancoPath = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_blanco.jpg';
-        $armPlataPath  = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_plata.jpg';
-        $armNegroPath  = $this->getParameter('kernel.project_dir') . '/public/assets/brazo_negro.jpg';
-
-        if (file_exists($armBlancoPath)) {
-            $armBlanco = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armBlancoPath));
-        }
-
-        if (file_exists($armPlataPath)) {
-            $armPlata = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armPlataPath));
-        }
-
-        if (file_exists($armNegroPath)) {
-            $armNegro = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($armNegroPath));
-        }
-
-        $buzonBase64 = null;
-        $buzonPath = $this->getParameter('kernel.project_dir') . '/public/assets/buzon_kuik.png';
-        if (file_exists($buzonPath)) {
-            $buzonBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($buzonPath));
-        }
-
-        $mbGroupBase64 = null;
-        $mbGroupLocalPath = realpath(__DIR__ . '/../../public/assets/buzon_agrupacion.jpg');
-        if ($mbGroupLocalPath && file_exists($mbGroupLocalPath)) {
-            $mbGroupBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($mbGroupLocalPath));
-        }
-
-        $legBase64 = null;
-        $legPath = $this->getParameter('kernel.project_dir') . '/public/assets/pie_negro.jpg';
-        if (file_exists($legPath)) {
-            $legBase64 = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($legPath));
-        }
-
-        $logoBase64 = null;
-        $logoPath = $this->getParameter('kernel.project_dir') . '/public/assets/Kuik Smart Lockers Azul.png';
-        if (file_exists($logoPath)) {
-            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-        }
-
-        $productTable = $payload['_acceptedProductTable'] ?? $this->configService->buildProductTable($payload);
-
-        $html = $this->renderView('pdf/configuration_summary.html.twig', [
-            'project' => $project,
-            'configuration' => $configuration,
-            'payload' => $payload,
-            'public_dir' => $this->getParameter('kernel.project_dir') . '/public',
-            'screen_base64' => $screenBase64,
-            'arm_blanco' => $armBlanco,
-            'arm_plata' => $armPlata,
-            'arm_negro' => $armNegro,
-            'buzon_base64'    => $buzonBase64,
-            'mb_group_base64' => $mbGroupBase64,
-            'leg_base64' => $legBase64,
-            'logo_base64' => $logoBase64,
-            'products'    => $productTable['products'],
-            'productInfo' => $productTable['productInfo'],
-            'sizeCounts'  => $productTable['sizeCounts'],
-        ]);
-
-        $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans');
-        $options->setIsRemoteEnabled(true);
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html, 'UTF-8');
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        $filename = sprintf('configuracion_%d.pdf', $configuration->getId());
-
-        return new Response(
-            $dompdf->output(),
-            200,
-            [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => (new ResponseHeaderBag())
-                    ->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename),
-            ]
-        );
-    }
-
 
      /**
      * @Route("/configuracion/copiar/{id}", name="configuration_copy", methods={"GET"})
@@ -1076,8 +860,8 @@ class ConfigurationController extends AbstractController
 
         // Primero intentar crear la oferta en NAV
         $payloadArr = $configuration->getDecodedPayload() ?? [];
-        $snapshot = $this->buildProductSnapshot($payloadArr);
-        $offerResult = $this->createNavOffer($snapshot, $project, $payloadArr);
+        $snapshot = $this->navOfferService->buildProductSnapshot($payloadArr);
+        $offerResult = $this->navOfferService->createNavOffer($snapshot, $project, $payloadArr);
 
         $navOfferNumber = $offerResult['result']['Cabecera']['NumeroOfertaNav'] ?? null;
         if ($offerResult === null || empty($navOfferNumber)) {
@@ -1143,123 +927,6 @@ class ConfigurationController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['ok' => true]);
-    }
-
-    private function createNavOffer(array $snapshot, \App\Entity\Project $project, array $payload = []): ?array
-    {
-        $items = [];
-        $cartId = 1;
-        $products  = $snapshot['products']  ?? [];
-        $sizeCounts = $snapshot['sizeCounts'] ?? [];
-        $productInfo = $snapshot['productInfo'] ?? [];
-
-        foreach ($products as $key => $product) {
-            $reference = is_array($product) ? ($product['reference'] ?? null) : $product;
-            if (!$reference) {
-                continue;
-            }
-            $quantity = (int) ($sizeCounts[$key] ?? 1);
-            $name = $productInfo[$key]['_descripcion'] ?? $reference;
-
-            $items[] = [
-                'cartId'                  => $cartId,
-                'type'                    => 1,
-                'id'                      => $cartId,
-                'productCode'             => $reference,
-                'name'                    => $name,
-                'productQuantity'         => $quantity,
-                'productDescription'      => '',
-                'discount'                => '',
-                'price'                   => '',
-                'productTotalPrice'       => 0,
-                'productSellingPrice'     => 0,
-                'productDiscountPerc1'    => '',
-                'productDiscountPerc2'    => 0,
-                'productItemPrice'        => 0,
-                'productDisponibility'    => '',
-                'productDisponibilityDate'=> '',
-                'comments'               => '',
-                'errorMessage'           => '',
-            ];
-            $cartId++;
-        }
-
-        // Añadir instalación si tiene precio configurado
-        $instalacionPrecio = $payload['_instalacion_precio'] ?? 0;
-        if ($instalacionPrecio > 0) {
-            $instalacionRef = $this->configService->getInstalacionReference();
-            $items[] = [
-                'cartId'                  => $cartId,
-                'type'                    => 1,
-                'id'                      => $cartId,
-                'productCode'             => $instalacionRef,
-                'name'                    => 'Instalación',
-                'productQuantity'         => 1,
-                'productDescription'      => '',
-                'discount'                => '',
-                'price'                   => '',
-                'productTotalPrice'       => 0,
-                'productSellingPrice'     => 0,
-                'productDiscountPerc1'    => '',
-                'productDiscountPerc2'    => 0,
-                'productItemPrice'        => 0,
-                'productDisponibility'    => '',
-                'productDisponibilityDate'=> '',
-                'comments'               => '',
-                'errorMessage'           => '',
-            ];
-        }
-
-        if (empty($items)) {
-            return null;
-        }
-
-        $user = $this->getUser();
-        $email = $user instanceof \App\Entity\User ? $user->getEmail() : '';
-
-        $orderData = [
-            'codCliente'              => '32285',
-            'suplantado'              => false,
-            'emailTradeRepresentative'=> 'logsistemas.it@btv.es',
-            'email'                   => 'logsistemas.it@btv.es',
-            'codOrder'                => 0,
-            'codCenter'               => 1,
-            'codSendAddress'          => false,
-            'codSeller'               => $this->btvApi->getCodSeller(),
-            'addressName'             => $project->getClientName() ?? '',
-            'receiver'                => null,
-            'receiverPhone'           => $project->getPhone() ?? null,
-            'street'                  => $project->getAddress() ?? '',
-            'street2'                 => '',
-            'postalCode'              => '',
-            'locality'                => $project->getCity() ?? '',
-            'region'                  => '',
-            'country'                 => 'ES',
-            'codGroup'                => false,
-            'authorizationNumber'     => 0,
-            'sellingPrice'            => '',
-            'comments'                => '',
-            'purchaseOrder'           => '',
-            'requestType'             => 'Grabación',
-            'documentType'            => 'Oferta',
-            'SusMedios'               => 0,
-            'items'                   => $items,
-        ];
-
-        return $this->btvApi->createOffer($orderData);
-    }
-
-    private function buildProductSnapshot(array $payload): array
-    {
-        $table = $this->configService->buildProductTable($payload);
-        $normalized = [];
-        foreach ($table['products'] as $key => $product) {
-            $normalized[$key] = (is_object($product) && method_exists($product, 'getReference'))
-                ? ['reference' => $product->getReference()]
-                : $product;
-        }
-        $table['products'] = $normalized;
-        return $table;
     }
 
     /**
