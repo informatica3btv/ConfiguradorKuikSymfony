@@ -34,6 +34,22 @@ class ConfigurationController extends AbstractController
      * Devuelve (o crea) la configuración asociada a un proyecto.
      * Asumimos 1 Configuration por Project.
      */
+    private function enrichMailboxGroupImageUrl(array $payload, MailboxRepository $mailboxRepo): array
+    {
+        $mbGroup = $payload['mailboxGroup'] ?? null;
+        if (!is_array($mbGroup) || !empty($mbGroup['imageUrl'])) {
+            return $payload;
+        }
+        $mailboxId = $mbGroup['mailboxId'] ?? null;
+        if ($mailboxId) {
+            $mailbox = $mailboxRepo->find($mailboxId);
+            if ($mailbox && $mailbox->getImageUrl()) {
+                $payload['mailboxGroup']['imageUrl'] = $mailbox->getImageUrl();
+            }
+        }
+        return $payload;
+    }
+
     private function getOrCreateConfigurationForProject(
         Project $project,
         EntityManagerInterface $em,
@@ -510,7 +526,8 @@ class ConfigurationController extends AbstractController
     public function create(
         Request $request,
         EntityManagerInterface $em,
-        ConfigurationRepository $repo
+        ConfigurationRepository $repo,
+        MailboxRepository $mailboxRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -596,6 +613,7 @@ class ConfigurationController extends AbstractController
 
         if(isset($payloadArr['instalacion']) && in_array($payloadArr['instalacion'], ['empotrado', 'zocalo', 'colgado'])){
 
+            $payloadArr    = $this->enrichMailboxGroupImageUrl($payloadArr, $mailboxRepo);
             $payloadPrepared = $this->configService->prepareSummaryPayload($payloadArr);
             return $this->render('configurations/summary.html.twig', [
                 'project' => $project,
@@ -605,6 +623,7 @@ class ConfigurationController extends AbstractController
         }
 
         else if(isset($payloadArr['instalacion']) && $payloadArr['instalacion'] == 'soporte_suelo'){
+            $payloadArr = $this->enrichMailboxGroupImageUrl($payloadArr, $mailboxRepo);
             return $this->render('configurations/bracket.html.twig', [
                 'project' => $project,
                 'configuration' => $config,
@@ -672,7 +691,8 @@ class ConfigurationController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         ConfigurationRepository $configRepo,
-        ProjectRepository $projectRepo
+        ProjectRepository $projectRepo,
+        MailboxRepository $mailboxRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -746,6 +766,7 @@ class ConfigurationController extends AbstractController
 
         $em->flush();
 
+        $payloadArr      = $this->enrichMailboxGroupImageUrl($payloadArr, $mailboxRepo);
         $payloadPrepared = $this->configService->prepareSummaryPayload($payloadArr);
         return $this->render('configurations/summary.html.twig', [
             'project' => $project,

@@ -692,8 +692,9 @@
                       data-ancho="{{ mb.ancho }}"
                       data-fondo="{{ mb.fondo }}"
                       data-ref="{{ mb.reference }}"
-                      data-desc="{{ mb.descripcion }}">
-                {{ mb.reference }} ({{ mb.alto }}×{{ mb.ancho }}×{{ mb.fondo }})
+                      data-desc="{{ mb.descripcion }}"
+                      data-img="{{ mb.imageUrl }}">
+                {{ mb.reference }} ({{ mb.alto }}×{{ mb.ancho }}×{{ mb.fondo }}){% if mb.descripcion %} — {{ mb.descripcion }}{% endif %}
               </option>
             {% endfor %}
           </select>
@@ -2206,10 +2207,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // cells: array plano de booleanos (true=ocupado, false=vacío), row-major
   window.MB_STATE = null;
 
-  const MAILBOX_IMG = '{{ kuik.img_buzon_btv }}';
+  const MAILBOX_IMG_DEFAULT = '{{ kuik.img_buzon_btv }}';
   const CELL_W = 104; // px por celda ~30% más grande (alto se calcula por proporción de la imagen)
 
   const modelSel  = document.getElementById('mb-model-select');
+  function getMailboxImg() {
+    const opt = modelSel && modelSel.options[modelSel.selectedIndex];
+    return (opt && opt.dataset.img) || MAILBOX_IMG_DEFAULT;
+  }
   const colsSel   = document.getElementById('mb-cols-select');
   const sideSel   = document.getElementById('mb-side-select');
   const genBtn    = document.getElementById('mb-generate-btn');
@@ -2248,7 +2253,7 @@ document.addEventListener('DOMContentLoaded', function() {
       cell.dataset.idx = idx;
 
       const img = document.createElement('img');
-      img.src = MAILBOX_IMG;
+      img.src = getMailboxImg();
       img.alt = 'Buzón';
       cell.appendChild(img);
 
@@ -2277,7 +2282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         c.style.height = cellH + 'px';
       });
     };
-    probe.src = MAILBOX_IMG;
+    probe.src = getMailboxImg();
 
     return cells;
   }
@@ -2301,6 +2306,7 @@ document.addEventListener('DOMContentLoaded', function() {
       mailboxId:   parseInt(opt.value, 10),
       reference:   opt.dataset.ref,
       descripcion: opt.dataset.desc || null,
+      imageUrl:    opt.dataset.img || null,
       alto:        opt.dataset.alto,
       ancho:       opt.dataset.ancho,
       fondo:       opt.dataset.fondo,

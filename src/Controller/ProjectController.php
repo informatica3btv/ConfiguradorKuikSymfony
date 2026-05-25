@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Project;
 use App\Repository\ProjectRepository;
 use App\Repository\ConfigurationRepository;
+use App\Repository\MailboxRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -48,7 +49,8 @@ class ProjectController extends AbstractController
     public function listByProject(
         int $project_id,
         ProjectRepository $projectRepo,
-        ConfigurationRepository $configRepo
+        ConfigurationRepository $configRepo,
+        MailboxRepository $mailboxRepo
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
@@ -75,6 +77,14 @@ class ProjectController extends AbstractController
                 $decoded = json_decode($raw, true);
                 if (is_array($decoded)) {
                     $payload = $decoded;
+                }
+            }
+
+            $mbGroup = $payload['mailboxGroup'] ?? null;
+            if (is_array($mbGroup) && empty($mbGroup['imageUrl']) && !empty($mbGroup['mailboxId'])) {
+                $mailbox = $mailboxRepo->find($mbGroup['mailboxId']);
+                if ($mailbox && $mailbox->getImageUrl()) {
+                    $payload['mailboxGroup']['imageUrl'] = $mailbox->getImageUrl();
                 }
             }
 

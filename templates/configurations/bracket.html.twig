@@ -562,6 +562,7 @@
               {# Agrupación de buzones #}
               {% set agrupacionCombinada = p.agrupacion_combinada ?? false %}
               {% set mailboxGroup = p.mailboxGroup ?? null %}
+              {% set mbImg = mailboxGroup.imageUrl ?? kuik.img_buzon_btv %}
               {% set mbSide = mailboxGroup.side ?? 'right' %}
               {% set mbRows = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.rows ?? 0) : 0 %}
               {% set mbCols = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cols ?? 0) : 0 %}
@@ -628,7 +629,7 @@
                                     {% set cellIdx = r * mbCols + c %}
                                     {% set filled = mbCells[cellIdx] ?? true %}
                                     <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                      {% if filled %}<img src="{{ mbImg }}" alt="Buzón">{% endif %}
                                     </div>
                                   {% endfor %}
                                 </div>
@@ -716,7 +717,7 @@
                                     {% set cellIdx = r * mbCols + c %}
                                     {% set filled = mbCells[cellIdx] ?? true %}
                                     <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                      {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="Buzón">{% endif %}
+                                      {% if filled %}<img src="{{ mbImg }}" alt="Buzón">{% endif %}
                                     </div>
                                   {% endfor %}
                                 </div>

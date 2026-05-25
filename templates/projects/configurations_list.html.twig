@@ -846,6 +846,7 @@
               {% set doorIndex = 0 %}
 
               {# Variables del bloque de buzones — se renderizan dentro del último grupo #}
+              {% set mbImg   = mailboxGroup.imageUrl ?? kuik.img_buzon_btv %}
               {% set mbSide  = mailboxGroup.side ?? 'right' %}
               {% set mbRows  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.rows ?? 0) : 0 %}
               {% set mbCols  = (agrupacionCombinada and mailboxGroup) ? (mailboxGroup.cols ?? 0) : 0 %}
@@ -899,7 +900,7 @@
                                           {% set cellIdx = r * mbCols + c %}
                                           {% set filled = mbCells[cellIdx] ?? true %}
                                           <div style="flex:1;width:{{ mbCellW }}px;overflow:hidden;border:1px solid {{ filled ? '#1187e6' : '#cbd5e1' }};background:{{ filled ? '#fff' : '#f0f4f8' }};">
-                                            {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
+                                            {% if filled %}<img src="{{ mbImg }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
                                           </div>
                                         {% endfor %}
                                       </div>
@@ -1066,7 +1067,7 @@
                                           {% set cellIdx = r * mbCols + c %}
                                           {% set filled = mbCells[cellIdx] ?? true %}
                                           <div style="flex:1;width:{{ mbCellW }}px;overflow:hidden;border:1px solid {{ filled ? '#1187e6' : '#cbd5e1' }};background:{{ filled ? '#fff' : '#f0f4f8' }};">
-                                            {% if filled %}<img src="{{ kuik.img_buzon_btv }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
+                                            {% if filled %}<img src="{{ mbImg }}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">{% endif %}
                                           </div>
                                         {% endfor %}
                                       </div>
