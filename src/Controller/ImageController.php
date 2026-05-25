@@ -7,6 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * @Route("/api")
@@ -67,6 +68,33 @@ class ImageController extends AbstractController
         return $this->json([
             'mime' => 'image/png',
             'image_base64' => $base64,
+        ]);
+    }
+
+    /**
+     * @Route("/image-proxy", name="image_proxy", methods={"GET"})
+     */
+    public function proxy(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $url = $request->query->get('url', '');
+
+        if (!preg_match('#^https?://#', $url)) {
+            return new Response('Invalid URL', 400);
+        }
+
+        $data = @file_get_contents($url);
+        if ($data === false) {
+            return new Response('Could not fetch image', 502);
+        }
+
+        $mime = str_ends_with(strtok($url, '?'), '.png') ? 'image/png' : 'image/jpeg';
+
+        return new Response($data, 200, [
+            'Content-Type'                => $mime,
+            'Access-Control-Allow-Origin' => '*',
+            'Cache-Control'               => 'public, max-age=3600',
         ]);
     }
 }

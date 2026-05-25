@@ -1520,6 +1520,14 @@
             const hidden = [...document.querySelectorAll('#previewCapture .num, #previewCapture .badges')];
             hidden.forEach(el => el.style.visibility = 'hidden');
 
+            const proxyBase = '/api/image-proxy?url=';
+            const externalImgs = [...document.querySelectorAll('#previewCapture img')].filter(
+              img => /^https?:\/\//.test(img.src)
+            );
+            const originalSrcs = externalImgs.map(img => img.src);
+            externalImgs.forEach(img => { img.src = proxyBase + encodeURIComponent(img.src); });
+            await Promise.all(externalImgs.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })));
+
             const screenshots = [];
             for (const group of groups) {
               const prevPadding = group.style.padding;
@@ -1528,6 +1536,8 @@
               group.style.padding = prevPadding;
               screenshots.push(canvas.toDataURL('image/png'));
             }
+
+            externalImgs.forEach((img, i) => { img.src = originalSrcs[i]; });
 
             hidden.forEach(el => el.style.visibility = '');
 
