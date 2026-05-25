@@ -907,7 +907,7 @@
                                     {% endfor %}
                                   </div>
                                   {% if isSoporteSuelo %}
-                                    {% set _mbMiniLegH = 80 %}
+                                    {% set _mbMiniLegH = (singleCap * 1.35)|round %}
                                     {% set _mbMiniCellW = mbCellW %}
                                     {% if selectedType == 'patas' %}
                                       {% set _n = mbCols %}
@@ -1074,7 +1074,7 @@
                                     {% endfor %}
                                   </div>
                                   {% if isSoporteSuelo %}
-                                    {% set _mbMiniLegH = 80 %}
+                                    {% set _mbMiniLegH = (singleCap * 1.35)|round %}
                                     {% set _mbMiniCellW = mbCellW %}
                                     {% if selectedType == 'patas' %}
                                       {% set _n = mbCols %}
@@ -1128,10 +1128,11 @@
                                 {% endif %}
                               {% endif %}
                               {% set _taqLegLeft = (isLastGroup and mbBlockPx > 0 and mbSide == 'left') ? mbBlockPx : 0 %}
-                              <div style="position:relative; height:80px; margin-left:{{ _taqLegLeft }}px; width:{{ n * 60 }}px; pointer-events:none; flex-shrink:0;">
+                              {% set _colLegH = (singleCap * 1.35)|round %}
+                              <div style="position:relative; height:{{ _colLegH }}px; margin-left:{{ _taqLegLeft }}px; width:{{ n * 60 }}px; pointer-events:none; flex-shrink:0;">
                                 {% for pos in legPositions %}
                                   {% set _xC = (pos - 0.5) * 60 %}
-                                  <img style="position:absolute; left:{{ (_xC - 40)|round }}px; top:0; width:80px; height:80px; object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                  <img style="position:absolute; left:{{ (_xC - 40)|round }}px; top:0; width:80px; height:{{ _colLegH }}px; object-fit:contain;" src="{{ legSrc }}" alt="Pata">
                                 {% endfor %}
                               </div>
                             {% endif %}
