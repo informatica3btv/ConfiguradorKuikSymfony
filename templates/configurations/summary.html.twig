@@ -1481,6 +1481,37 @@
           scroll.scrollLeft = scrollLeft - walk;
         });
       }
+
+      // En móvil, en vez de scroll horizontal, escalamos el dibujo para que
+      // quepa entero en pantalla; si el usuario quiere ver detalle (puertas,
+      // cotas) hace zoom táctil, no hace falta desplazarse por los lados.
+      var MOBILE_BREAKPOINT = 768;
+      var stage = document.getElementById('previewCapture');
+
+      function fitPreviewToMobile() {
+        if (!scroll || !stage) return;
+
+        if (window.innerWidth > MOBILE_BREAKPOINT) {
+          stage.style.transform = '';
+          stage.style.transformOrigin = '';
+          scroll.style.height = '';
+          return;
+        }
+
+        stage.style.transform = 'none';
+        var naturalWidth  = stage.scrollWidth;
+        var naturalHeight = stage.scrollHeight;
+        var availWidth    = scroll.clientWidth;
+        var scale = availWidth > 0 && naturalWidth > 0 ? Math.min(1, availWidth / naturalWidth) : 1;
+
+        stage.style.transformOrigin = 'top left';
+        stage.style.transform = 'scale(' + scale + ')';
+        scroll.style.height = (naturalHeight * scale) + 'px';
+      }
+
+      fitPreviewToMobile();
+      window.addEventListener('resize', fitPreviewToMobile);
+      window.addEventListener('orientationchange', fitPreviewToMobile);
     });
 
     const _saveUrl   = '{{ path('configuration_instalacion', { id: configuration.id }) }}';
@@ -1727,6 +1758,12 @@
         const btnEdit = document.getElementById('btnEditConfig');
         if (btnEdit) btnEdit.style.display = 'none';
 
+        // Si el croquis está escalado (vista móvil), lo restauramos a tamaño
+        // real para que la captura del PDF salga a resolución completa.
+        const previewStageEl = document.getElementById('previewCapture');
+        const prevStageTransform = previewStageEl ? previewStageEl.style.transform : '';
+        if (previewStageEl) previewStageEl.style.transform = 'none';
+
         try {
           const groups = document.querySelectorAll('#previewCapture .group-block');
           if (groups.length > 0) {
@@ -1766,6 +1803,8 @@
           }
         } catch (e) {
           console.warn('Screenshot failed, continuing without it:', e);
+        } finally {
+          if (previewStageEl) previewStageEl.style.transform = prevStageTransform;
         }
 
         window.location.href = pdfUrl;

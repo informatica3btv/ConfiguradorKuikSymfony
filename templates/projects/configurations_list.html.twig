@@ -153,6 +153,9 @@
       grid-template-columns: 1fr 1fr;
       gap:10px;
     }
+    @media (max-width: 420px){
+      .kvs{ grid-template-columns: 1fr; }
+    }
     .kv{
       border:0;
       border-radius:14px;
@@ -564,7 +567,7 @@
       </div>
 
       {% if project.user.id == app.user.id and project.status == "0" %}
-        <a class="btn primary icon" style="margin-left:80px;"
+        <a class="btn primary icon" style="margin-left:auto;"
           href="#"
           id="openEditClient">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

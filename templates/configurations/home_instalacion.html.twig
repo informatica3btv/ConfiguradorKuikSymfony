@@ -44,6 +44,10 @@
       font-weight:800;
       font-size:16px;
     }
+    @media (max-width: 780px){
+      .option-row{ grid-template-columns:1fr; }
+      .option-row[data-group="agrupacion"]{ grid-template-columns:1fr !important; max-width:100% !important; }
+    }
     .primary-btn{
       padding:14px 24px;
       border-radius:999px;

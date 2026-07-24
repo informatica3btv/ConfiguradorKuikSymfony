@@ -512,6 +512,12 @@ body{
   padding: 24px;           /* mismo padding en ambos lados */
 }
 
+@media (max-width: 600px){
+  .app-main{
+    padding: 12px;
+  }
+}
+
 .app-container{
   max-width: 100%;
   margin-inline: auto;     /* equivalente moderno a margin: 0 auto */
