@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Complementos{% endblock %}
+{% block page_title %}{{ 'complementos.page_title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -275,33 +275,33 @@
   <div class="page-layout">
 
     <aside class="side-tools">
-      <h3>Complementos</h3>
+      <h3>{{ 'complementos.sidebar.title'|trans }}</h3>
       <div class="help">
-        Selecciona una opción y luego haz click en la puerta que quieras modificar.
+        {{ 'complementos.sidebar.help'|trans }}
       </div>
 
       <div class="mode-buttons" id="modeButtons">
-        <button type="button" class="mode-btn active" data-mode="socket">Enchufe</button>
-        <button type="button" class="mode-btn" data-mode="usb">USB</button>
-        <button type="button" class="mode-btn" data-mode="both">Ambos</button>
-        <button type="button" class="mode-btn" data-mode="methacrylate">Metacrilato</button>
-        <button type="button" class="mode-btn" data-mode="none">Ninguno</button>
+        <button type="button" class="mode-btn active" data-mode="socket">{{ 'complementos.mode.socket'|trans }}</button>
+        <button type="button" class="mode-btn" data-mode="usb">{{ 'complementos.mode.usb'|trans }}</button>
+        <button type="button" class="mode-btn" data-mode="both">{{ 'complementos.mode.both'|trans }}</button>
+        <button type="button" class="mode-btn" data-mode="methacrylate">{{ 'complementos.mode.methacrylate'|trans }}</button>
+        <button type="button" class="mode-btn" data-mode="none">{{ 'complementos.mode.none'|trans }}</button>
       </div>
 
       <div class="side-note">
-        La opción seleccionada se aplicará directamente al pulsar sobre una puerta.
+        {{ 'complementos.sidebar.note'|trans }}
       </div>
     </aside>
 
     <div class="preview-wrap">
-      <h2 style="margin:0;">Selecciona complementos por puerta</h2>
+      <h2 style="margin:0;">{{ 'complementos.preview.title'|trans }}</h2>
       <div style="opacity:.75; margin-top:6px;">
-        Haz click en una puerta para aplicar la opción activa.
+        {{ 'complementos.preview.subtitle'|trans }}
       </div>
 
       {% if columns is empty %}
         <div style="margin-top:12px; color:#c0392b; font-weight:900;">
-          No hay columnas en esta configuración.
+          {{ 'complementos.preview.no_columns'|trans }}
         </div>
       {% else %}
         {% set doorIndex = 0 %}
@@ -313,7 +313,7 @@
         {% for groupCols in payloadGroups %}
           {% if payloadGroups|length > 1 %}
             <div style="font-weight:900; font-size:13px; color:#334155; margin-top:14px; margin-bottom:4px;">
-              Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)
+              {{ 'complementos.preview.group_label'|trans({'%index%': loop.index, '%count%': groupCols|length}) }}
             </div>
           {% endif %}
 
@@ -323,7 +323,7 @@
 
               {% for col in groupCols %}
                 <div class="col-shell">
-                  <div class="col-topbar">Columna {{ loop.index }}</div>
+                  <div class="col-topbar">{{ 'complementos.preview.column_label'|trans({'%index%': loop.index}) }}</div>
 
                   <div class="col-card">
                     <div class="col-body">
@@ -345,7 +345,7 @@
                                  data-half="top"
                                {% endif %}>
                             {% if type == 'screen' %}
-                              <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
+                              <img src="{{ asset(kuik.img_pantalla) }}" alt="{{ 'complementos.alt.screen'|trans }}">
                             {% else %}
                               <div class="num">{{ doorIndex }}</div>
                               <div class="badges" data-badges></div>
@@ -373,7 +373,7 @@
                                  data-half="bottom"
                                {% endif %}>
                             {% if type == 'screen' %}
-                              <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
+                              <img src="{{ asset(kuik.img_pantalla) }}" alt="{{ 'complementos.alt.screen'|trans }}">
                             {% else %}
                               <div class="num">{{ doorIndex }}</div>
                               <div class="badges" data-badges></div>
@@ -405,11 +405,11 @@
               config_id: configuration.id,
               type: payload.type|default('')
            }) }}">
-          Volver atrás
+          {{ 'complementos.actions.back'|trans }}
         </a>
 
-        <button type="submit" class="btn primary">Siguiente</button>
-        <button type="button" id="clearAll" class="btn danger">Borrar todo</button>
+        <button type="submit" class="btn primary">{{ 'complementos.actions.next'|trans }}</button>
+        <button type="button" id="clearAll" class="btn danger">{{ 'complementos.actions.clear_all'|trans }}</button>
       </form>
     </div>
 
@@ -421,6 +421,10 @@
 
   <script>
     window.PRELOADED_ADDONS = {{ (payload.addons ?? {})|json_encode|raw }};
+    window.I18N_COMPLEMENTOS = {{ {
+      badge_socket: 'complementos.badge.socket'|trans,
+      badge_usb: 'complementos.badge.usb'|trans
+    }|json_encode|raw }};
   </script>
 
   <script>
@@ -511,14 +515,14 @@
         if (sel.socket){
           const b = document.createElement('div');
           b.className = 'badge';
-          b.textContent = 'ENCH';
+          b.textContent = window.I18N_COMPLEMENTOS.badge_socket;
           badgesWrap.appendChild(b);
         }
 
         if (sel.usb){
           const b = document.createElement('div');
           b.className = 'badge';
-          b.textContent = 'USB';
+          b.textContent = window.I18N_COMPLEMENTOS.badge_usb;
           badgesWrap.appendChild(b);
         }
       }

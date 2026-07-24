@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -r ' *)",
+      "Bash(php bin/console lint:twig templates/configurations/project_new.html.twig templates/configurations/recover.html.twig)",
+      "PowerShell(php bin/console lint:twig templates/configurations/type.html.twig templates/configurations/home_instalacion.html.twig)"
+    ]
+  }
+}

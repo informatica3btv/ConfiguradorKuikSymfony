@@ -11,6 +11,32 @@
 
 {% set pxPerH = 1.6 %}
 
+{% macro conceptLabel(size, count, info) %}
+  {%- if size starts with 'columna_' %}{{ 'pdf_summary.concept.column'|trans }} H{{ size|replace({'columna_': ''}) }}
+  {%- elseif size == 'columna' %}{{ 'pdf_summary.concept.column'|trans }}
+  {%- elseif size == 'control' %}{{ 'pdf_summary.concept.peripherals'|trans }}
+  {%- elseif size == 'bandeja' %}{{ 'pdf_summary.concept.intermediate_tray'|trans }}
+  {%- elseif size starts with 'lateral_' %}{{ 'pdf_summary.concept.side_panel_pair'|trans }} H{{ size|replace({'lateral_': ''}) }}
+  {%- elseif size == 'lateral' %}{{ 'pdf_summary.concept.side_panel_pair'|trans }}
+  {%- elseif size starts with 'mailbox_col_' %}
+    {%- set _mbParts = size|replace({'mailbox_col_': ''})|split('_') -%}
+    {{ 'pdf_summary.concept.mailbox'|trans }} {{ _mbParts[0] == '1' ? ('pdf_summary.concept.electronic'|trans) : ('pdf_summary.concept.mechanical'|trans) }}{{ _mbParts[1] == '1' ? (' ' ~ ('pdf_summary.concept.with_card_reader'|trans)) : (' ' ~ ('pdf_summary.concept.without_card_reader'|trans)) }}
+  {%- elseif size starts with 'brazo_' %}{{ 'pdf_summary.concept.arms'|trans }} H{{ size|replace({'brazo_': ''}) }}
+  {%- elseif size starts with 'pata_' %}{{ 'pdf_summary.concept.legs'|trans }} ({{ size|replace({'pata_': ''}) }} {{ 'pdf_summary.concept.col_abbr'|trans }}.)
+  {%- elseif size == 'instalacion_ref' %}{{ 'pdf_summary.concept.installation'|trans }}
+  {%- elseif size == 'color_door' %}{{ 'pdf_summary.config.door_color'|trans }}
+  {%- elseif size == 'color_body' %}{{ 'pdf_summary.config.body_color'|trans }}
+  {%- elseif size == 'placa' %}{{ 'pdf_summary.concept.plate'|trans }}
+  {%- elseif size == 'colgador' %}{{ 'pdf_summary.concept.hanger'|trans }}
+  {%- elseif size == 'buzon_group' %}{{ 'pdf_summary.concept.mailboxes_group'|trans }}
+  {%- elseif size == 'envolvente_buzon' %}{{ 'pdf_summary.concept.mailbox_enclosure'|trans }} ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m
+  {%- elseif size starts with 'tejado_' %}{{ 'pdf_summary.concept.roof'|trans }} {{ size|replace({'tejado_': ''}) }} {{ 'pdf_summary.concept.col_abbr'|trans }}.
+  {%- elseif size ends with '_meth' %}{{ 'pdf_summary.concept.door_of'|trans }} H{{ size|replace({'_meth': ''}) }} + {{ 'pdf_summary.concept.methacrylate'|trans }}
+  {%- else %}{{ 'pdf_summary.concept.door_of'|trans }} H{{ size }}{% endif -%}
+{% endmacro %}
+
+{% import _self as macros %}
+
 {# Detect max columns in any group to decide orientation #}
 {% set maxGroupSize = 0 %}
 {% set groupsForSize = payload.groups ?? [] %}
@@ -33,13 +59,16 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    /* ===== Paleta de marca Kuik (Pantone 2995C — Light Blue) ===== */
+    /* Base: #00AFEA · tintas: 80% #33BFEE · 60% #66CFF2 · 40% #99DFF7 · 20% #CCEFFB */
+
     @page { size: A4 portrait; margin: 0; }
     body{ font-family: DejaVu Sans, Arial, sans-serif; font-size:12px; color:#0b1220; }
     .page{ padding: 18px 22px; }
 
     /* Header */
     .head{
-      border-bottom: 2px solid #0b76d8;
+      border-bottom: 2px solid #00AFEA;
       padding-bottom: 10px;
       margin-bottom: 14px;
     }
@@ -53,7 +82,7 @@
     .col-50 + .col-50{ margin-left:2%; }
 
     .card{
-      border:1px solid rgba(15,23,42,.12);
+      border:1px solid #99DFF7;
       border-radius:10px;
       padding:10px;
       margin-bottom: 10px;
@@ -69,19 +98,26 @@
       padding-bottom: 20px;
     }
 
-    .card h3{ margin:0 0 8px; font-size: 12px; font-weight: 900; color:#003b73; }
+    .card h3{
+      margin:0 0 8px;
+      padding-bottom:6px;
+      font-size: 12px;
+      font-weight: 900;
+      color:#003b73;
+      border-bottom: 1px solid #CCEFFB;
+    }
     .muted{ color:#6b7280; font-size:11px; }
 
     table{ width:100%; border-collapse: collapse; font-size: 11px; }
-    th, td{ border:1px solid #e5e7eb; padding:7px 8px; text-align:left; vertical-align: top; }
-    th{ background:#f3f4f6; font-weight:900; color:#111827; width: 40%; }
+    th, td{ border:1px solid #99DFF7; padding:7px 8px; text-align:left; vertical-align: top; }
+    th{ background:#CCEFFB; font-weight:900; color:#003b73; width: 40%; }
 
     .pill{
       display:inline-block;
       padding:2px 8px;
       border-radius:999px;
-      border:1px solid rgba(15,23,42,.12);
-      background:#fbfcfe;
+      border:1px solid #99DFF7;
+      background:#CCEFFB;
       font-weight:900;
       font-size: 10px;
       color:#003b73;
@@ -92,14 +128,14 @@
     .kvs-table td{ border:0; padding:0 0 8px 0; vertical-align: top; }
     .kvs-table td.gap{ width:2%; }
     .kv{
-      border:1px solid rgba(15,23,42,.10);
+      border:1px solid #99DFF7;
       border-radius:10px;
       padding:8px 10px;
-      background:#fbfcfe;
+      background:#CCEFFB;
       box-sizing:border-box;
     }
-    .kv .k{ font-size:10px; color:#6b7280; font-weight:900; margin:0; }
-    .kv .v{ font-size:11px; font-weight:900; margin:3px 0 0; color:#111827; }
+    .kv .k{ font-size:10px; color:#003b73; font-weight:900; margin:0; }
+    .kv .v{ font-size:11px; font-weight:900; margin:3px 0 0; color:#0b1220; }
 
     :root{ --hscale: {{ pxPerH }}px; }
 
@@ -128,6 +164,63 @@
       background:#f7f7f7;
       position:relative;
       z-index:2;
+    }
+
+    .dim-row{
+      display:block;
+      text-align:center;
+      font-size:9px;
+      line-height:1;
+      color:#0b1220;
+      margin-top:4px;
+      white-space:nowrap;
+    }
+
+    .dim-row .arrow{
+      font-size:12px;
+    }
+
+    .dim-row .line{
+      display:inline-block;
+      width:40px;
+      border-top:1px solid #0b1220;
+      vertical-align:middle;
+      margin:0 2px;
+    }
+
+    .dim-value{
+      font-size:9px;
+      font-weight:900;
+      text-align:center;
+    }
+
+    .group-width-total{
+      display:inline-block;
+      margin-top:6px;
+    }
+
+    .group-width-total .dim-row .line{
+      width:60px;
+    }
+
+    .group-width-total .dim-value{
+      font-size:11px;
+    }
+
+    .group-height-label{
+      font-size:11px;
+      font-weight:900;
+      text-align:center;
+      margin-bottom:2px;
+    }
+
+    .group-height-dim{
+      text-align:center;
+      margin-bottom:6px;
+    }
+
+    .group-height-dim .dim-row .line{
+      width:70px;
     }
 
     .col-body{ background:#eaeaea; }
@@ -275,7 +368,7 @@
 
     .footer{
       margin-top: 12px;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid #99DFF7;
       padding-top: 8px;
       font-size: 10px;
       color:#6b7280;
@@ -368,6 +461,11 @@
     fondo == '400' ? 'Serie 400' :
     fondo == '500' ? 'Serie 500' : (fondo ?: '—')
   %}
+
+  {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
+  {% set colWidthLabel = fondo in ['300', '400', '500'] ? fondo : null %}
+  {% set totalHUnitsPdf = isEmpotradoLike ? singleCap : (topCap + bottomCap) %}
+  {% set groupHeightLabelPdf = kuik.h_heights_mm[totalHUnitsPdf] is defined ? kuik.h_heights_mm[totalHUnitsPdf] : (totalHUnitsPdf / 10 * 125)|round %}
   {% set placementLabel =
     placement == 'interior' ? 'Interior' :
     placement == 'exterior' ? 'Exterior' : (placement ?: '—')
@@ -387,7 +485,7 @@
       {% for blk in (col.single.blocks ?? []) %}
         {% set bType = blk.type ?? 'door' %}
         {% set h = blk.h ?? blk %}
-        {% if bType != 'screen' %}
+        {% if bType != 'screen' and bType != 'mailbox' %}
           {% set totalDoors = totalDoors + 1 %}
           {% set key = 'H' ~ h %}
           {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
@@ -401,7 +499,7 @@
       {% for blk in (col.top.blocks ?? []) %}
         {% set bType = blk.type ?? 'door' %}
         {% set h = blk.h ?? blk %}
-        {% if bType != 'screen' %}
+        {% if bType != 'screen' and bType != 'mailbox' %}
           {% set totalDoors = totalDoors + 1 %}
           {% set key = 'H' ~ h %}
           {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
@@ -414,7 +512,7 @@
       {% for blk in (col.bottom.blocks ?? []) %}
         {% set bType = blk.type ?? 'door' %}
         {% set h = blk.h ?? blk %}
-        {% if bType != 'screen' %}
+        {% if bType != 'screen' and bType != 'mailbox' %}
           {% set totalDoors = totalDoors + 1 %}
           {% set key = 'H' ~ h %}
           {% set doorCounts = doorCounts|merge({ (key): (doorCounts[key]|default(0) + 1) }) %}
@@ -442,10 +540,10 @@
         </p>
       </div>
       <div class="col col-50" style="text-align:right;">
-        <p class="doc-title" style="margin:0;">Presupuesto</p>
+        <p class="doc-title" style="margin:0;">{{ 'pdf_summary.header.title'|trans }}</p>
         <div class="meta">
-          Nº: <b>#{{ configuration.id }}</b><br>
-          Fecha: <b>{{ "now"|date("d/m/Y") }}</b>
+          {{ 'pdf_summary.header.number'|trans }}: <b>#{{ configuration.id }}</b><br>
+          {{ 'pdf_summary.header.date'|trans }}: <b>{{ p._pdf_fecha ?? ("now"|date("d/m/Y")) }}</b>
         </div>
       </div>
     </div>
@@ -455,29 +553,259 @@
      Cliente + Proyecto
      ========================= #}
   <div class="card">
-    <h3>Datos del cliente</h3>
+    <h3>{{ 'pdf_summary.client.title'|trans }}</h3>
 
     <table class="kvs-table">
       <tbody>
         <tr>
-          <td><div class="kv"><div class="k">Proyecto</div><div class="v">{{ project.projectName ?? '—' }}</div></div></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.project'|trans }}</div><div class="v">{{ project.projectName ?? '—' }}</div></div></td>
           <td class="gap"></td>
-          <td><div class="kv"><div class="k">Cliente</div><div class="v">{{ project.clientName ?? '—' }}</div></div></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.client'|trans }}</div><div class="v">{{ project.clientName ?? '—' }}</div></div></td>
+          <td class="gap"></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.email'|trans }}</div><div class="v">{{ project.email ?: '—' }}</div></div></td>
         </tr>
         <tr>
-          <td><div class="kv"><div class="k">Email</div><div class="v">{{ project.email ?: '—' }}</div></div></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.phone'|trans }}</div><div class="v">{{ project.phone ?: '—' }}</div></div></td>
           <td class="gap"></td>
-          <td><div class="kv"><div class="k">Teléfono</div><div class="v">{{ project.phone ?: '—' }}</div></div></td>
-        </tr>
-        <tr>
-          <td><div class="kv"><div class="k">Ciudad</div><div class="v">{{ project.city ?: '—' }}</div></div></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.city'|trans }}</div><div class="v">{{ project.city ?: '—' }}</div></div></td>
           <td class="gap"></td>
-          <td><div class="kv"><div class="k">Dirección</div><div class="v">{{ project.address ?: '—' }}</div></div></td>
+          <td><div class="kv"><div class="k">{{ 'pdf_summary.client.address'|trans }}</div><div class="v">{{ project.address ?: '—' }}</div></div></td>
         </tr>
       </tbody>
     </table>
   </div>
 
+
+  {# =========================
+     Configuración + puertas
+     ========================= #}
+  {#<div class="row">
+    <div class="col col-50">
+      <div class="card">
+        <h3>{{ 'pdf_summary.config.title'|trans }}</h3>
+        <table>
+          <tbody>
+            <tr><th>{{ 'pdf_summary.config.type'|trans }}</th><td><span class="pill">{{ p.type ?? '—' }}</span></td></tr>
+            <tr><th>{{ 'pdf_summary.config.installation'|trans }}</th><td>{{ instalacion ?: '—' }}</td></tr>
+            <tr><th>{{ 'pdf_summary.config.background_size'|trans }}</th><td>{{ fondoLabel }}</td></tr>
+            <tr><th>{{ 'pdf_summary.config.indoor_outdoor'|trans }}</th><td>{{ placementLabel }}</td></tr>
+            <tr><th>{{ 'pdf_summary.config.door_color'|trans }}</th><td>{{ doorColorRal ?: '—' }}</td></tr>
+            <tr><th>{{ 'pdf_summary.config.body_color'|trans }}</th><td>{{ bodyColorRal ?: '—' }}</td></tr>
+            <tr><th>{{ 'pdf_summary.config.column_count'|trans }}</th><td>{{ columnsAll|length }}</td></tr>
+            {% if isSoporteSuelo %}
+              <tr><th>{{ 'pdf_summary.config.support'|trans }}</th><td>{{ selectedType ?: '—' }} {{ selectedColor ?: '' }}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col col-50">
+      <div class="card">
+        <h3>{{ 'pdf_summary.doors_addons.title'|trans }}</h3>
+
+        <table>
+          <tbody>
+            <tr><th>{{ 'pdf_summary.doors_addons.sockets_used'|trans }}</th><td>{{ enchCount }}</td></tr>
+            <tr><th>{{ 'pdf_summary.doors_addons.usb_used'|trans }}</th><td>{{ usbCount }}</td></tr>
+            <tr><th>{{ 'pdf_summary.doors_addons.methacrylate'|trans }}</th><td>{{ methacrylateCount }}</td></tr>
+          </tbody>
+        </table>
+
+        <div style="height:8px;"></div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%;">{{ 'pdf_summary.doors_addons.door_type'|trans }}</th>
+              <th>{{ 'pdf_summary.doors_addons.quantity'|trans }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, count in doorCounts %}
+              <tr><td>{{ key }}</td><td>{{ count }}</td></tr>
+            {% endfor %}
+            {% if doorCounts is empty %}
+              <tr><td colspan="2">—</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>#}
+
+  {% set sizeCategoryLabels = sizeCategoryLabels ?? {} %}
+  {% set categoryOrder = categoryOrder ?? ['Sin categoría'] %}
+
+  {% if products is defined and products is not empty %}
+  <div style="margin-top:10px; page-break-inside:avoid;">
+    {#<h3>{{ 'pdf_summary.products.title'|trans }}</h3>#}
+    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <thead>
+        <tr>
+          <th style="background:#CCEFFB; padding:7px 8px; text-align:right; border:1px solid #99DFF7; width:10%;">{{ 'pdf_summary.products.units'|trans }}</th>
+          <th style="background:#CCEFFB; padding:7px 8px; text-align:left; border:1px solid #99DFF7; width:50%;">{{ 'pdf_summary.products.concept'|trans }}</th>
+          <th style="background:#CCEFFB; padding:7px 8px; text-align:right; border:1px solid #99DFF7; width:20%;">{{ 'pdf_summary.products.unit_price'|trans }}</th>
+          <th style="background:#CCEFFB; padding:7px 8px; text-align:right; border:1px solid #99DFF7; width:20%;">{{ 'pdf_summary.products.total'|trans }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set grandTotal = 0 %}
+        {% for category in categoryOrder %}
+        {% set isUncategorized = category == 'Sin categoría' %}
+
+        {% if not isUncategorized %}
+          {% set catTotal = 0 %}
+          {% set catItems = [] %}
+          {% for size, product in products %}
+            {% if (sizeCategoryLabels[size] ?? 'Sin categoría') == category %}
+              {% set info  = productInfo[size] ?? null %}
+              {% set count = sizeCounts[size] ?? 0 %}
+              {% if product and info and info.PrecioVenta is defined and info.PrecioVenta is not iterable %}
+                {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}
+                {% set catTotal = catTotal + (priceStr * count) %}
+              {% endif %}
+              {% set catItems = catItems|merge([{ 'count': count, 'label': macros.conceptLabel(size, count, info) }]) %}
+            {% endif %}
+          {% endfor %}
+          {% set grandTotal = grandTotal + catTotal %}
+          <tr>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">1</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7;">
+              <div style="font-weight:900;">{{ category }}</div>
+              <ul style="margin:4px 0 0; padding-left:14px; font-weight:400; color:#6b7280; font-size:10px;">
+                {% for item in catItems %}
+                  <li>{{ item.count }} x {{ item.label|trim }}</li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; color:#6b7280;">—</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; font-weight:900;">{{ catTotal|number_format(2, ',', '.') }} €</td>
+          </tr>
+        {% else %}
+        {% for size, product in products %}
+          {% if (sizeCategoryLabels[size] ?? 'Sin categoría') == category %}
+          {% set info  = productInfo[size] ?? null %}
+          {% set count = sizeCounts[size] ?? 0 %}
+          <tr>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">{{ count }}</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7;">{{ macros.conceptLabel(size, count, info)|trim }}</td>
+            {% if product %}
+              {% if info and info.PrecioVenta is defined and info.PrecioVenta is not iterable %}
+                {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}
+                {% set lineTotal = priceStr * count %}
+                {% set grandTotal = grandTotal + lineTotal %}
+                <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">{{ info.PrecioVenta }} €</td>
+                <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; font-weight:900;">{{ lineTotal|number_format(2, ',', '.') }} €</td>
+              {% else %}
+                <td colspan="2" style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; color:#6b7280;">—</td>
+              {% endif %}
+            {% else %}
+              <td colspan="2" style="padding:6px 8px; border:1px solid #99DFF7; color:#6b7280;">{{ 'pdf_summary.products.no_reference'|trans }}</td>
+            {% endif %}
+          </tr>
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+        {% set instalacionPrecio = p._instalacion_precio ?? 0 %}
+        {% if instalacionPrecio > 0 %}
+        {% set grandTotal = grandTotal + instalacionPrecio %}
+        <tr>
+          <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">1</td>
+          <td style="padding:6px 8px; border:1px solid #99DFF7;">{{ 'pdf_summary.concept.installation_of'|trans }} {{ columnsAll|length }} {{ 'pdf_summary.concept.columns'|trans }}</td>
+          <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
+          <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; font-weight:900;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% endif %}
+      </tbody>
+      {% set instalacionIva    = p._instalacion_iva ?? false %}
+      {% set descuento         = p._descuento ?? 0 %}
+      {% set subtotalBase      = grandTotal %}
+      {% set totalAntesDesc    = instalacionIva ? subtotalBase * 1.21 : subtotalBase %}
+      {% set descuentoImporte  = totalAntesDesc * descuento / 100 %}
+      {% set totalFinal        = totalAntesDesc - descuentoImporte %}
+      <tfoot>
+        {% if instalacionIva %}
+        <tr>
+          <td colspan="3" style="padding:7px 8px; text-align:right; border-top:1px solid #99DFF7; color:#6b7280;">{{ 'pdf_summary.totals.subtotal'|trans }}</td>
+          <td style="padding:7px 8px; text-align:right; border-top:1px solid #99DFF7; color:#6b7280;">{{ subtotalBase|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:7px 8px; text-align:right; color:#6b7280;">{{ 'pdf_summary.totals.vat'|trans }} (21%)</td>
+          <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ (subtotalBase * 0.21)|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% endif %}
+        {% if descuento > 0 %}
+        <tr>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right;">{{ 'pdf_summary.totals.discount'|trans }} ({{ descuento % 1 == 0 ? descuento|number_format(0) : descuento|number_format(1) }}%)</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right;">−{{ descuentoImporte|number_format(2, ',', '.') }} €</td>
+        </tr>
+        <tr>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total_with_discount'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalFinal|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
+          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
+        </tr>
+        {% endif %}
+      </tfoot>
+    </table>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:50px; page-break-inside:avoid;">
+    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <tr>
+        <th style="background:#00AFEA; color:#fff; padding:6px 8px; text-align:left; border:1px solid #00AFEA; width:50%;">{{ 'pdf_summary.terms.payment_title'|trans }}</th>
+        <th style="background:#00AFEA; color:#fff; padding:6px 8px; text-align:left; border:1px solid #00AFEA; width:50%;">{{ 'pdf_summary.terms.offer_title'|trans }}</th>
+      </tr>
+      <tr>
+        <td style="padding:8px 10px; border:1px solid #99DFF7; vertical-align:top;">
+          <ul style="margin:0; padding-left:16px;">
+            <li>{{ 'pdf_summary.terms.payment_1'|trans }}</li>
+            <li>{{ 'pdf_summary.terms.payment_2'|trans }}</li>
+            <li>{{ 'pdf_summary.terms.payment_3'|trans }}</li>
+            <li>{{ 'pdf_summary.terms.payment_4'|trans }}</li>
+          </ul>
+        </td>
+        <td style="padding:8px 10px; border:1px solid #99DFF7; vertical-align:top;">
+          <ul style="margin:0; padding-left:16px;">
+            <li>{{ 'pdf_summary.terms.offer_1'|trans }}</li>
+            <li>{{ 'pdf_summary.terms.offer_2'|trans }}</li>
+            <li>{{ 'pdf_summary.terms.offer_3'|trans }}</li>
+          </ul>
+        </td>
+      </tr>
+      {#<tr>
+        <th colspan="2" style="background:#00AFEA; color:#fff; padding:6px 8px; text-align:left; border:1px solid #00AFEA;">{{ 'pdf_summary.terms.notes_title'|trans }}</th>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:8px 10px; border:1px solid #99DFF7; vertical-align:top;">
+          {% if p._notas is defined and p._notas %}
+            <ul style="margin:0; padding-left:16px;">
+              <li>{{ p._notas }}</li>
+            </ul>
+          {% endif %}
+        </td>
+      </tr>#}
+    </table>
+  </div>
+
+  <div class="footer">
+
+  </div>
+
+</div>
+
+  <div class="page" style="page-break-before: always;">
+    <h2 class="doc-title" style="margin:30px 0 14px 40px; color:#00AFEA;">{{ 'pdf_summary.preview.page_title'|trans }}</h2>
   {# =========================
      Vista previa
      ========================= #}
@@ -488,7 +816,7 @@
         <img src="{{ shot }}" style="max-width:100%; height:auto; display:block; margin:0 auto 12px;" alt="Agrupación {{ loop.index }}">
       {% endfor %}
     {% elseif groups is empty %}
-      <div style="color:#c0392b; font-weight:900;">No hay columnas en esta configuración.</div>
+      <div style="color:#c0392b; font-weight:900;">{{ 'pdf_summary.preview.no_columns'|trans }}</div>
     {% else %}
 
       {% set doorIndex = 0 %}
@@ -516,6 +844,13 @@
         #}
         {% set rotMargin = 60 %}
         {% set rotOffset = ((groupW - estGroupH) / 2)|round + rotMargin %}
+
+        <div class="group-height-label">{{ 'pdf_summary.config.column_height'|trans }}: {{ groupHeightLabelPdf }}</div>
+        <div class="group-height-dim">
+          <div class="dim-row">
+            <span class="arrow">&#9650;</span><span class="line"></span><span class="arrow">&#9660;</span>
+          </div>
+        </div>
 
         {% if groupNeedRotate %}
         {# Outer: width=estGroupH, height=groupW+rotMargin (extra room for top/bottom margin) #}
@@ -565,7 +900,6 @@
             <div class="cols-wrap" style="width: {{ groupW }}px;">
               {% for col in groupCols %}
                 <div class="col-shell">
-
                   <div class="col-card" style="border-color: {{ bodyColor }}; {{ not isHome ? 'border-top-width: 18px; border-radius: 0 0 8px 8px;' : '' }}">
                     {% set colBodyH = (col.single is defined and col.single is not empty) ? (singleCap * pxPerH) : ((topCap + bottomCap) * pxPerH) %}
                     <div class="col-body" style="height:{{ colBodyH + 4 }}px;">
@@ -671,10 +1005,24 @@
 
                     </div>
                   </div>
+                  {% if colWidthLabel %}
+                    <div class="dim-row">
+                      <span class="arrow">&#9668;</span><span class="line"></span><span class="arrow">&#9658;</span>
+                    </div>
+                    <div class="dim-value">{{ colWidthLabel }}</div>
+                  {% endif %}
 
                 </div>
               {% endfor %}
             </div>{# /cols-wrap #}
+            {% if colWidthLabel and n > 1 %}
+              <div class="group-width-total" style="width: {{ groupW }}px;">
+                <div class="dim-row">
+                  <span class="arrow">&#9668;</span><span class="line"></span><span class="arrow">&#9658;</span>
+                </div>
+                <div class="dim-value">{{ (colWidthLabel * n) + 50 }}</div>
+              </div>
+            {% endif %}
             </td>
 
             {# ── Buzones DERECHA ── #}
@@ -737,184 +1085,6 @@
 
     {% endif %}
   </div>
-
-  {# =========================
-     Configuración + puertas
-     ========================= #}
-  <div class="row">
-    <div class="col col-50">
-      <div class="card">
-        <h3>Configuración</h3>
-        <table>
-          <tbody>
-            <tr><th>Tipo</th><td><span class="pill">{{ p.type ?? '—' }}</span></td></tr>
-            <tr><th>Instalación</th><td>{{ instalacion ?: '—' }}</td></tr>
-            <tr><th>Medida de fondo</th><td>{{ fondoLabel }}</td></tr>
-            <tr><th>Interior / Exterior</th><td>{{ placementLabel }}</td></tr>
-            <tr><th>Material</th><td>{{ material ?: '—' }}</td></tr>
-            <tr><th>Color puerta</th><td>{{ doorColorRal ?: '—' }}</td></tr>
-            <tr><th>Color cuerpo</th><td>{{ bodyColorRal ?: '—' }}</td></tr>
-            <tr><th>Nº columnas</th><td>{{ columnsAll|length }}</td></tr>
-            {% if isSoporteSuelo %}
-              <tr><th>Soporte</th><td>{{ selectedType ?: '—' }} {{ selectedColor ?: '' }}</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="col col-50">
-      <div class="card">
-        <h3>Puertas y complementos</h3>
-
-        <table>
-          <tbody>
-            <tr><th>Total puertas</th><td><b>{{ totalDoors }}</b></td></tr>
-            <tr><th>ENCH usados</th><td>{{ enchCount }}</td></tr>
-            <tr><th>USB usados</th><td>{{ usbCount }}</td></tr>
-            <tr><th>Metacrilato</th><td>{{ methacrylateCount }}</td></tr>
-          </tbody>
-        </table>
-
-        <div style="height:8px;"></div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width:40%;">Tipo de puerta</th>
-              <th>Cantidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for key, count in doorCounts %}
-              <tr><td>{{ key }}</td><td>{{ count }}</td></tr>
-            {% endfor %}
-            {% if doorCounts is empty %}
-              <tr><td colspan="2">—</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
-
-  {% if products is defined and products is not empty %}
-  <div class="card" style="margin-top:10px; page-break-inside:avoid;">
-    <h3>Referencias de producto</h3>
-    <table style="width:100%; border-collapse:collapse; font-size:11px;">
-      <thead>
-        <tr>
-          <th style="background:#f3f4f6; padding:7px 8px; text-align:left; border:1px solid #e5e7eb;">Concepto</th>
-          <th style="background:#f3f4f6; padding:7px 8px; text-align:left; border:1px solid #e5e7eb;">Referencia</th>
-          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Uds.</th>
-          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Precio ud.</th>
-          <th style="background:#f3f4f6; padding:7px 8px; text-align:right; border:1px solid #e5e7eb;">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% set grandTotal = 0 %}
-        {% for size, product in products %}
-          {% set info  = productInfo[size] ?? null %}
-          {% set count = sizeCounts[size] ?? 0 %}
-          <tr>
-            <td style="padding:6px 8px; border:1px solid #e5e7eb;">
-              {% if size starts with 'columna_' %}Columna H{{ size|replace({'columna_': ''}) }}
-              {% elseif size == 'columna' %}Columna
-              {% elseif size == 'control' %}Periféricos
-              {% elseif size == 'bandeja' %}Bandeja Intermedia
-              {% elseif size starts with 'lateral_' %}Par de laterales H{{ size|replace({'lateral_': ''}) }}
-              {% elseif size == 'lateral' %}Par de laterales
-              {% elseif size starts with 'mailbox_col_' %}
-                {% set _mbParts = size|replace({'mailbox_col_': ''})|split('_') %}
-                Buzón {{ _mbParts[0] == '1' ? 'electrónico' : 'mecánico' }}{{ _mbParts[1] == '1' ? ' con tarjetero' : ' sin tarjetero' }}
-              {% elseif size starts with 'brazo_' %}Brazos H{{ size|replace({'brazo_': ''}) }}
-              {% elseif size starts with 'pata_' %}Patas ({{ size|replace({'pata_': ''}) }} col.)
-              {% elseif size == 'instalacion_ref' %}Instalación
-              {% elseif size == 'color_door' %}Color puerta
-              {% elseif size == 'color_body' %}Color cuerpo
-              {% elseif size == 'placa' %}Placa
-              {% elseif size == 'colgador' %}Colgador
-              {% elseif size == 'buzon_group' %}Buzones (agrupación)
-              {% elseif size == 'envolvente_buzon' %}Envolvente buzones ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m
-              {% elseif size starts with 'tejado_' %}Tejado {{ size|replace({'tejado_': ''}) }} col.
-              {% elseif size ends with '_meth' %}H{{ size|replace({'_meth': ''}) }} + Metacrilato
-              {% else %}H{{ size }}{% endif %}
-            </td>
-            {% if product %}
-              <td style="padding:6px 8px; border:1px solid #e5e7eb; font-weight:900;">
-                {{ (size in ['placa','buzon_group','colgador','instalacion_ref','color_door','color_body']) ? product : product.reference }}
-                {% if size == 'buzon_group' and info._descripcion is defined and info._descripcion %}
-                  <div style="font-weight:400; color:#6b7280; font-size:10px; margin-top:2px;">{{ info._descripcion }}</div>
-                {% endif %}
-              </td>
-              <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right;">{{ count }}</td>
-              {% if info and info.PrecioVenta is defined and info.PrecioVenta is not iterable %}
-                {% set priceStr = info.PrecioVenta|replace({'.': '', ',': '.'}) %}
-                {% set lineTotal = priceStr * count %}
-                {% set grandTotal = grandTotal + lineTotal %}
-                <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right;">{{ info.PrecioVenta }} €</td>
-                <td style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right; font-weight:900;">{{ lineTotal|number_format(2, ',', '.') }} €</td>
-              {% else %}
-                <td colspan="2" style="padding:6px 8px; border:1px solid #e5e7eb; text-align:right; color:#6b7280;">—</td>
-              {% endif %}
-            {% else %}
-              <td colspan="4" style="padding:6px 8px; border:1px solid #e5e7eb; color:#6b7280;">Sin referencia</td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-      </tbody>
-      {% set instalacionPrecio = p._instalacion_precio ?? 0 %}
-      {% set instalacionIva    = p._instalacion_iva ?? false %}
-      {% set descuento         = p._descuento ?? 0 %}
-      {% set subtotalBase      = grandTotal + instalacionPrecio %}
-      {% set totalAntesDesc    = instalacionIva ? subtotalBase * 1.21 : subtotalBase %}
-      {% set descuentoImporte  = totalAntesDesc * descuento / 100 %}
-      {% set totalFinal        = totalAntesDesc - descuentoImporte %}
-      <tfoot>
-        {% if instalacionPrecio > 0 %}
-        <tr>
-          <td colspan="4" style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">Instalación</td>
-          <td style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
-        </tr>
-        {% endif %}
-        {% if instalacionIva %}
-        <tr>
-          <td colspan="4" style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb; color:#6b7280;">Subtotal</td>
-          <td style="padding:7px 8px; text-align:right; border-top:1px solid #e5e7eb; color:#6b7280;">{{ subtotalBase|number_format(2, ',', '.') }} €</td>
-        </tr>
-        <tr>
-          <td colspan="4" style="padding:7px 8px; text-align:right; color:#6b7280;">IVA (21%)</td>
-          <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ (subtotalBase * 0.21)|number_format(2, ',', '.') }} €</td>
-        </tr>
-        {% endif %}
-        {% if descuento > 0 %}
-        <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
-        </tr>
-        <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right;">Descuento ({{ descuento % 1 == 0 ? descuento|number_format(0) : descuento|number_format(1) }}%)</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right;">−{{ descuentoImporte|number_format(2, ',', '.') }} €</td>
-        </tr>
-        <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total con descuento{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalFinal|number_format(2, ',', '.') }} €</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="4" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #111827;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
-        </tr>
-        {% endif %}
-      </tfoot>
-    </table>
-  </div>
-  {% endif %}
-
-  <div class="footer">
-
-  </div>
-
-</div>
 </body>
 </html>

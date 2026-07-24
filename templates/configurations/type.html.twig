@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Tipo de columnas{% endblock %}
+{% block page_title %}{{ 'config_type.page_title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -78,7 +78,7 @@
   <input type="hidden" name="type" id="type" value="">
 
   <div style="margin:16px 0;">
-    <h3 style="margin-bottom: 8px; font-size:24px;">Selecciona tipo de configuracion</h3>
+    <h3 style="margin-bottom: 8px; font-size:24px;">{{ 'config_type.select_heading'|trans }}</h3>
 
     <div class="option-row" data-group="type" style="grid-template-columns:repeat(3,1fr);">
       {% for type in types %}
@@ -90,7 +90,7 @@
   </div>
 
   <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
-    <button type="submit" class="primary-btn">Siguiente</button>
+    <button type="submit" class="primary-btn">{{ 'config_type.next_button'|trans }}</button>
     <div id="typeError" class="warn"></div>
   </div>
 </form>
@@ -98,6 +98,11 @@
 
 {% block javascripts %}
 {{ parent() }}
+<script>
+  window.I18N_TYPE = {{ {
+    select_type_error: 'config_type.select_type_error'|trans
+  }|json_encode|raw }};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('typeForm');
@@ -128,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const v = (hidden.value || '').trim();
     if (!v) {
-      if (err) err.textContent = 'Selecciona un tipo de columna para continuar.';
+      if (err) err.textContent = window.I18N_TYPE.select_type_error;
       return;
     }
 

@@ -1,0 +1,8 @@
+stof_doctrine_extensions:
+    # El contenido "original" de las entidades está en español, así que ese
+    # es el locale que Gedmo debe tratar como el de referencia (no kernel.default_locale).
+    default_locale: 'es'
+    translation_fallback: true
+    orm:
+        default:
+            translatable: true

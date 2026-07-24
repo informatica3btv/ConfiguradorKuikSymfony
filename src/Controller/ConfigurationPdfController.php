@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Configuration;
+use App\Entity\ProductTypeCategory;
 use App\Repository\ConfigurationRepository;
 use App\Service\ConfigurationService;
 use App\Service\NavOfferService;
+use App\Service\ProductTypeResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -18,11 +20,16 @@ class ConfigurationPdfController extends AbstractController
 {
     private ConfigurationService $configService;
     private NavOfferService $navOfferService;
+    private ProductTypeResolver $productTypeResolver;
 
-    public function __construct(ConfigurationService $configService, NavOfferService $navOfferService)
-    {
-        $this->configService   = $configService;
-        $this->navOfferService = $navOfferService;
+    public function __construct(
+        ConfigurationService $configService,
+        NavOfferService $navOfferService,
+        ProductTypeResolver $productTypeResolver
+    ) {
+        $this->configService      = $configService;
+        $this->navOfferService    = $navOfferService;
+        $this->productTypeResolver = $productTypeResolver;
     }
 
     /**
@@ -50,8 +57,11 @@ class ConfigurationPdfController extends AbstractController
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         if (!isset($payloadArr['_acceptedProductTable'])) {
             $payloadArr['_acceptedProductTable'] = $this->navOfferService->buildProductSnapshot($payloadArr);
-            $configuration->setPayload(json_encode($payloadArr));
         }
+        if (!isset($payloadArr['_pdf_fecha'])) {
+            $payloadArr['_pdf_fecha'] = (new \DateTimeImmutable())->format('d/m/Y');
+        }
+        $configuration->setPayload(json_encode($payloadArr));
 
         $configuration->setStatus(Configuration::STATUS_CLOSED);
         $em->persist($configuration);
@@ -62,9 +72,9 @@ class ConfigurationPdfController extends AbstractController
         $projectDir = $this->getParameter('kernel.project_dir');
 
         $screenBase64  = $this->loadBase64($projectDir . '/public/assets/pantalla.png',        'image/png');
-        $armBlanco     = $this->loadBase64($projectDir . '/public/assets/brazo_blanco.jpg',    'image/jpeg');
-        $armPlata      = $this->loadBase64($projectDir . '/public/assets/brazo_plata.jpg',     'image/jpeg');
-        $armNegro      = $this->loadBase64($projectDir . '/public/assets/brazo_negro.jpg',     'image/jpeg');
+        $armBlanco     = $this->loadBase64($projectDir . '/public/assets/brazo_blanco.png',    'image/jpeg');
+        $armPlata      = $this->loadBase64($projectDir . '/public/assets/brazo_plata.png',     'image/jpeg');
+        $armNegro      = $this->loadBase64($projectDir . '/public/assets/brazo_negro.png',     'image/jpeg');
         $buzonBase64   = $this->loadBase64($projectDir . '/public/assets/buzon_kuik.png',      'image/png');
         $legBase64     = $this->loadBase64($projectDir . '/public/assets/pie_negro.jpg',       'image/jpeg');
         $logoBase64    = $this->loadBase64($projectDir . '/public/assets/Kuik Smart Lockers Azul.png', 'image/png');
@@ -75,6 +85,11 @@ class ConfigurationPdfController extends AbstractController
             : null;
 
         $productTable = $payload['_acceptedProductTable'] ?? $this->configService->buildProductTable($payload);
+
+        [$sizeCategoryLabels, $categoryOrder] = $this->buildCategoryGrouping(
+            array_keys($productTable['products'] ?? []),
+            $em
+        );
 
         $html = $this->renderView('pdf/configuration_summary.html.twig', [
             'project'         => $project,
@@ -92,6 +107,8 @@ class ConfigurationPdfController extends AbstractController
             'products'        => $productTable['products'],
             'productInfo'     => $productTable['productInfo'],
             'sizeCounts'      => $productTable['sizeCounts'],
+            'sizeCategoryLabels' => $sizeCategoryLabels,
+            'categoryOrder'      => $categoryOrder,
         ]);
 
         $options = new Options();
@@ -122,5 +139,41 @@ class ConfigurationPdfController extends AbstractController
             return null;
         }
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+    }
+
+    /**
+     * Para cada `size` de la tabla de productos, resuelve su categoría de
+     * agrupación (o "Sin categoría" si no tiene ninguna asignada) y devuelve
+     * también el orden en que deben mostrarse las categorías en el PDF.
+     *
+     * @param string[] $sizes
+     * @return array{0: array<string,string>, 1: string[]}
+     */
+    private function buildCategoryGrouping(array $sizes, EntityManagerInterface $em): array
+    {
+        $uncategorizedLabel = 'Sin categoría';
+
+        $typeCategories = $em->getRepository(ProductTypeCategory::class)->findAllIndexedByTypeKey();
+
+        $sizeCategoryLabels = [];
+        $categoryPositions = [];
+
+        foreach ($sizes as $size) {
+            $typeKey = $this->productTypeResolver->resolve($size);
+            $typeCategory = $typeCategories[$typeKey] ?? null;
+            $category = $typeCategory ? $typeCategory->getCategory() : null;
+
+            $label = $category ? $category->getName() : $uncategorizedLabel;
+            $sizeCategoryLabels[$size] = $label;
+
+            if (!array_key_exists($label, $categoryPositions)) {
+                $categoryPositions[$label] = $category ? $category->getPosition() : PHP_INT_MAX;
+            }
+        }
+
+        asort($categoryPositions);
+        $categoryOrder = array_keys($categoryPositions);
+
+        return [$sizeCategoryLabels, $categoryOrder];
     }
 }

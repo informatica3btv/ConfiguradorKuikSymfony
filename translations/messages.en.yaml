@@ -1,0 +1,527 @@
+header:
+    title: Kuik Configurator
+    home: Home
+    projects: Projects
+    admin: Administration
+    logout: Log out
+
+config_type:
+    page_title: 'Column type'
+    select_heading: 'Select configuration type'
+    next_button: 'Next'
+    select_type_error: 'Select a column type to continue.'
+
+home_installation:
+    page_title: 'Installation (Home)'
+    select_installation_heading: 'Select installation type'
+    combined_grouping_heading: 'Is it a combined grouping?'
+    combined_grouping_help: 'Indicate whether this installation combines different column types.'
+    yes: 'Yes'
+    no: 'No'
+    next_button: 'Next'
+    select_installation_error: 'Select an installation type to continue.'
+    combined_grouping_error: 'Indicate whether it is a combined grouping to continue.'
+
+project_new:
+    title: Create project
+    subtitle: Enter the client and project details
+    project_name_label: 'Project name *'
+    project_name_placeholder: E.g. Madrid Project 01
+    client_name_label: 'Client name *'
+    client_name_placeholder: E.g. John Smith
+    phone_label: Phone
+    phone_placeholder: E.g. 600 123 456
+    email_label: Email
+    email_placeholder: E.g. client@email.com
+    city_label: City
+    city_placeholder: E.g. Madrid
+    address_label: Address
+    address_placeholder: E.g. Main Street 10
+    submit: Create and continue
+    required_fields_error: Fill in the required fields (*) to continue.
+    invalid_email_error: The email is not in a valid format.
+
+recover:
+    title: Recover project
+    subtitle: Enter the configuration/project ID to load its summary.
+    search_placeholder: 'E.g: 123'
+    search_button: Search
+    clear_button: Clear
+    preview_title: Preview
+    config_title: Configuration
+    doors_by_size_title: Doors by size
+    addons_title: Add-ons
+    addons_detail_title: Detail (doors with add-ons only)
+    config_id_label: Configuration ID
+    project_label: Project
+    invalid_id_error: Enter a valid ID.
+    not_found_error: 'No configuration exists with ID %id%.'
+    invalid_json_error: This configuration's payload is not valid JSON.
+    network_error: Could not recover the project (network or server error).
+    no_columns: There are no columns in this configuration.
+    no_doors: There are no doors (screens only or empty).
+    no_addons_doors: There are no doors with add-ons.
+    size_header: Size
+    quantity_header: Quantity
+    total_doors: Total doors
+    door_header: Door
+    addon_header: Add-on
+    socket_usb: Socket + USB
+    socket: Socket
+    usb: USB
+    total_sockets: Total sockets
+    total_usb: Total USB
+    doors_with_both: Doors with both
+    series_300: Series 300
+    series_400: Series 400
+    series_500: Series 500
+    interior: Interior
+    exterior: Exterior
+    group_label: 'Group %index% (%count% columns)'
+    background_label: Background
+    location_label: Location
+    material_label: Material
+    door_color_label: Door color
+    body_color_label: Body color
+    columns_label: Columns
+    installation_label: Installation
+    type_label: Type
+
+complementos:
+    page_title: Addons
+    sidebar:
+        title: Addons
+        help: Select an option and then click on the door you want to modify.
+        note: The selected option will be applied directly when you click a door.
+    mode:
+        socket: Socket
+        usb: USB
+        both: Both
+        methacrylate: Methacrylate
+        none: None
+    preview:
+        title: Select addons per door
+        subtitle: Click on a door to apply the active option.
+        no_columns: There are no columns in this configuration.
+        group_label: 'Group %index% (%count% columns)'
+        column_label: 'Column %index%'
+    alt:
+        screen: Screen
+    actions:
+        back: Go back
+        next: Next
+        clear_all: Clear all
+    badge:
+        socket: SOCK
+        usb: USB
+
+bracket:
+    page_title: Floor support
+    header:
+        config_id: 'Configuration ID: %id%'
+        project: 'Project: %name%'
+        installation: 'Installation: floor support'
+    step1:
+        title: 1) Choose the support type
+        help: 'Select %patas% or %brazos%.'
+    type:
+        patas: Legs
+        patas_desc: Lower support with legs.
+        brazos: Arms
+        brazos_desc: Side/arm-type support structure.
+    step2:
+        title: 2) Choose the color
+        help: Select the support finish.
+    color:
+        white: White
+        black: Black
+        silver: Silver
+    preview:
+        title: Preview
+        no_columns: There are no columns in this configuration.
+        group_label: 'Group %index% (%count% columns)'
+    alt:
+        arm_left: Left arm
+        arm_right: Right arm
+        mailbox: Mailbox
+        leg: Leg
+        screen: Screen
+    action:
+        remove_leg: Remove leg
+    actions:
+        back: Go back
+        continue: Continue
+        continue_hint: '* The %continue% button is enabled once you choose a type and color.'
+
+config_ajax:
+    title: Product references
+    apply_iva: Apply VAT (21%)
+    discount: 'Discount:'
+    table:
+        size: Size
+        reference: Reference
+        description: Description
+        units: Units
+        unit_price: Unit price
+        line_total: Line total
+    row:
+        column_h: 'Column H%h%'
+        column: Column
+        peripherals: Peripherals
+        intermediate_tray: Intermediate tray
+        side_pair_h: 'Pair of sides H%h%'
+        side_pair: Pair of sides
+        mailbox: 'Mailbox %kind%%card_reader%'
+        mailbox_electronic: electronic
+        mailbox_mechanical: mechanical
+        mailbox_with_card_reader: ' with card reader'
+        mailbox_without_card_reader: ' without card reader'
+        arms_h: 'Arms H%h%'
+        legs_cols: 'Legs (%cols% col.)'
+        installation: Installation
+        door_color: Door color
+        body_color: Body color
+        plate: Plate
+        hanger: Hanger
+        mailbox_group: Mailboxes (group)
+        mailbox_enclosure: 'Mailbox enclosure (%range%) — %meters% m'
+        roof_cols: 'Roof %cols% col.'
+        h_methacrylate: 'H%h% + Methacrylate'
+        no_reference: No reference
+    totals:
+        subtotal: Subtotal
+        iva: VAT (21%)
+        total: Total
+        total_iva_incl: Total (VAT incl.)
+        discount: Discount
+        total_with_discount: Total with discount
+        total_with_discount_iva_incl: Total with discount (VAT incl.)
+
+projects:
+    title: Projects
+    subtitle: Manage your smart locker projects
+    accepted: Accepted
+    rejected: Rejected
+    open: Open
+    new_project: New Project
+    search_placeholder: Search by name, client, city or owner...
+    my_projects: My projects
+    view_cards: Cards
+    view_table: Table
+    no_projects: You don't have any projects yet.
+    create_first: Create first project
+    table_header_project: Project
+    table_header_city: City
+    table_header_date: Date
+    table_header_owner: Owner
+    table_header_action: Action
+    status_accepted: Accepted
+    status_rejected: Rejected
+    view: View
+
+project_configs:
+    page_title: Configurations
+    title: Project configurations
+    project_label: Project
+    commercial_label: Sales rep
+    client: Client
+    email: Email
+    location: Location
+    phone: Phone
+    address: Address
+    edit: Edit
+    edit_data: Edit data
+    close: Close
+    cancel: Cancel
+    save_changes: Save changes
+    back_to_projects: Back to projects
+    new_configuration: New configuration
+    reject_project: Reject project
+    confirm_reject_project: 'Are you sure you want to reject this project?'
+    no_configurations: No configurations yet.
+    configuration: Configuration
+    status_open: Open
+    status_closed: Closed
+    status_accepted: Accepted
+    type_label: Type
+    installation_label: Installation
+    created_label: Created
+    nav_offer_label: NAV Offer
+    open_in_nav: Open in NAV
+    download_technical: Download technical details
+    accept_and_offer: Accept configuration and create NAV offer
+    accept_modal_title: Accept configuration
+    accept_modal_help: Enter the client code (5 digits) to create the offer in NAV.
+    client_code_label: Client code
+    client_code_placeholder: E.g. 12345
+    accept_submit: Accept and create offer
+    copy: Copy
+    summary: Summary
+    pdf: PDF
+    state: State
+    columns: Columns
+    body_color: Body color
+    door_color: Door color
+    config_id: Config ID
+    preview_title: Preview (thumbnail)
+    no_columns: No columns
+    group: 'Group %number%'
+    showing_x_of_y: 'Showing %shown% of %total% columns…'
+    arm_left: Left arm
+    arm_right: Right arm
+    leg: Leg
+    screen: Screen
+    mailbox: Mailbox
+
+summary:
+    page_title: Summary
+    config_id: 'Configuration ID: %id%'
+    status:
+        open: Open
+        closed: Closed
+        accepted: Accepted
+    btn:
+        new_project: New project
+        view_project: View project
+        new_configuration: New configuration
+        edit_configuration: Edit configuration
+        download_pdf: Download PDF
+    preview:
+        title: Preview
+        no_columns: There are no columns in this configuration.
+        group_label: 'Group %index% (%count% columns)'
+        side_view: 'Depth'
+    badge:
+        socket: SOCK
+        usb: USB
+    installation:
+        label: 'Installation (€):'
+        saved: 'Saved ✓'
+    config:
+        title: Configuration
+        type: Type
+        background: Background
+        placement: Placement
+        door_color: Door color
+        body_color: Body color
+        columns: Columns
+        arm_height: Arm height
+        leg_height: Leg height
+        hangers: Hangers
+        control: Control
+        mailboxes_ref: 'Mailboxes (ref.)'
+        mailbox_description: Mailbox description
+    client:
+        title: Client details
+        project: Project
+        client: Client
+        phone: Phone
+        email: Email
+        city: City
+        address: Address
+    doors_by_size:
+        title: Doors by size
+        none: There are no doors or mailboxes.
+        size: Size
+        quantity: Quantity
+        mailbox: Mailbox
+        total_doors: Total doors
+        total_mailboxes: Total mailboxes
+    addons:
+        title: Addons
+        total_sockets: Total sockets
+        total_usb: Total USB
+        doors_with_both: Doors with both
+        doors_with_methacrylate: Doors with methacrylate
+        detail_title: 'Detail (doors with addons only)'
+        none: There are no doors with addons.
+        door: Door
+        addon: Addon
+        methacrylate: Methacrylate
+        socket: Socket
+    js:
+        generating: 'Generating…'
+        download_pdf: Download PDF
+        total: Total
+        total_with_discount: Total with discount
+        iva_included: ' (VAT incl.)'
+        non_json_response: 'The server returned an error (not JSON). Check the console and the Symfony log.'
+        image_generation_error: Error generating image
+        unexpected_error: 'Unexpected error (check console).'
+
+pdf_summary:
+    header:
+        title: Quote
+        number: 'No.'
+        date: Date
+    client:
+        title: Client details
+        project: Project
+        client: Client
+        email: Email
+        phone: Phone
+        city: City
+        address: Address
+    preview:
+        no_columns: There are no columns in this configuration.
+        page_title: Sketch
+    config:
+        title: Configuration
+        type: Type
+        installation: Installation
+        background_size: Background size
+        indoor_outdoor: 'Indoor / Outdoor'
+        material: Material
+        door_color: Door color
+        body_color: Body color
+        column_count: 'No. of columns'
+        column_height: Height
+        support: Support
+    doors_addons:
+        title: Doors and addons
+        total_doors: Total doors
+        sockets_used: Sockets used
+        usb_used: USB used
+        methacrylate: Methacrylate
+        door_type: Door type
+        quantity: Quantity
+    products:
+        title: Product references
+        concept: Concept
+        reference: Reference
+        units: 'Units'
+        unit_price: 'Unit price'
+        total: Total
+        no_reference: No reference
+    concept:
+        column: Column
+        peripherals: Peripherals
+        intermediate_tray: 'Intermediate tray'
+        side_panel_pair: 'Pair of side panels'
+        mailbox: Mailbox
+        electronic: electronic
+        mechanical: mechanical
+        with_card_reader: 'with card reader'
+        without_card_reader: 'without card reader'
+        arms: Arms
+        legs: Legs
+        col_abbr: col
+        installation: Installation
+        plate: Plate
+        hanger: Hanger
+        mailboxes_group: 'Mailboxes (group)'
+        mailbox_enclosure: 'Mailbox enclosure'
+        roof: Roof
+        methacrylate: Methacrylate
+        door_of: 'Door'
+        installation_of: 'Installation of'
+        columns: 'columns'
+    totals:
+        subtotal: Subtotal
+        vat: VAT
+        vat_included: '(VAT incl.)'
+        total: Total
+        discount: Discount
+        total_with_discount: Total with discount
+    terms:
+        payment_title: Payment terms
+        payment_1: Bank transfer.
+        payment_2: 'Account: ES74 0128 7655 5501 0000 1472'
+        payment_3: 'Beneficiary: Easybuzón S.L.'
+        payment_4: '50% on confirmation and 50% before shipping.'
+        offer_title: Offer terms
+        offer_1: 'Manufacturing: 30 days from confirmation.'
+        offer_2: 'Validity: 30 days from issue.'
+        offer_3: 'Shipping: Included for deliveries in mainland Spain.'
+        notes_title: Additional notes
+
+home:
+    page_sub: Configure the background, location, material, colors and door layout.
+    select_prefix: Select
+    interior_exterior: Interior / Exterior
+    interior_exterior_help: Define the installation location.
+    interior: Interior
+    interior_sub: Indoor use
+    exterior: Exterior
+    exterior_sub: Weather-resistant
+    colors_title: Colors
+    colors_help: Select door and body color.
+    acero_inoxidable: Stainless steel
+    color_door_label: Door Color
+    color_body_label: Body Color
+    select_color: Select a color
+    columns_title: Columns
+    columns_help: Add doors or a screen.
+    add_column_button: Add column
+    element_label: 'Element:'
+    door_option: Door
+    screen_option: Screen
+    mailbox_integrated_h10: Integrated mailbox (H10)
+    h10_suffix: (H10)
+    screen_size_label: 'Screen size:'
+    size_to_add_label: 'Size to add:'
+    tarjetero: Card holder
+    electronico: Electronic
+    mailbox_group_title: Mailbox group
+    mailbox_group_help: Select the model, number of columns and edit empty cells.
+    mailbox_model_label: Mailbox model
+    select_placeholder: -- Select --
+    mb_cols_label: No. of columns (width)
+    mb_position_label: Position
+    left: Left
+    right: Right
+    generate_grid_button: Generate grid
+    peripherals_title: Peripherals
+    no_control: No control
+    next_button: Next
+    js:
+        group_label: Group
+        add_group_button: Add group
+        active_label: Active
+        select_label: Select
+        group_columns_max: 'column(s) · max'
+        delete_group_title: Delete group (if empty)
+        col_label: Col
+        copy_icon_alt: copy
+        copy_column_title: Copy column to active group
+        group_full: The active group is already full.
+        only_one_screen: Only 1 screen can be added to the whole configuration.
+        add_block_title: Add block
+        delete_column_title: Delete column
+        delete_block_title: Delete
+        screen_alt: Screen
+        mailbox_alt: Mailbox
+        not_fit_in_column: Does not fit
+        in_column_word: in Column
+        free_label: Free
+        mailbox_bottom_min_h30: The mailbox in the bottom area requires min. H30 of doors below
+        mailbox_bottom_no_fit: The mailbox does not fit in the bottom area
+        element_top_only_no_fit: This element can only go on top and does not fit.
+        free_top_label: Free on top
+        mailbox_reorder_min_h30: Mailboxes must leave at least H30 of doors at the bottom of the lower area.
+        used_label: Used
+        top_word: Top
+        bottom_word: Bottom
+        select_attr_prefix: Select
+        select_placement_colors: Select interior/exterior, door color and body color.
+        add_one_column: Add at least 1 column.
+        column_incomplete_missing: 'Column %num% is not complete. Missing:'
+        column_exceeds_capacity: 'Column %num% exceeds capacity (H%cap%). Remove'
+        column_incomplete_parts: 'Column %num% is not complete:'
+        of_blocks_word: of blocks
+        top_missing: 'top missing '
+        top_excess: 'top excess '
+        bottom_missing: 'bottom missing '
+        bottom_excess: 'bottom excess '
+        screen_needs_peripheral: If there is a screen you must select a peripheral.
+        buzones_active_of_total: active mailboxes of
+        select_model: Select a model.
+        top_height_label: 'Top height:'
+        module_height_label: 'Module height:'
+
+login:
+    title: Sign in
+    email: Email
+    password: Password
+    submit: Sign in
+    recover_link: 'Have a project code? Click here'

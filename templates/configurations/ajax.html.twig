@@ -5,13 +5,13 @@
   <div style="height:1px; background:rgba(15,23,42,.10); margin:16px 0;"></div>
 
   <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;">
-    <h3 style="margin:0; font-size:16px; font-weight:900; letter-spacing:-0.01em;">Referencias de producto</h3>
+    <h3 style="margin:0; font-size:16px; font-weight:900; letter-spacing:-0.01em;">{{ 'config_ajax.title'|trans }}</h3>
     <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; cursor:pointer;">
       <input type="checkbox" id="ivaCheck" style="width:15px;height:15px;" {{ instalacionIva ? 'checked' : '' }}>
-      Aplicar IVA (21%)
+      {{ 'config_ajax.apply_iva'|trans }}
     </label>
     <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700;">
-      Descuento:
+      {{ 'config_ajax.discount'|trans }}
       <input type="number" id="discountPct" min="0" max="100" step="0.1" value="{{ descuento ?? 0 }}"
              style="width:70px; padding:3px 6px; border:1px solid rgba(15,23,42,.18); border-radius:6px; font-size:13px; font-weight:700; text-align:right;">
       %
@@ -32,12 +32,12 @@
          style="width:100%; border-collapse:separate; border-spacing:0; border:1px solid rgba(15,23,42,.12); border-radius:14px; overflow:hidden; background:#fff;">
     <thead>
       <tr>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">Tamaño</th>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">Referencia</th>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">Descripción</th>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">Uds.</th>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">Precio ud.</th>
-        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">Total línea</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.size'|trans }}</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.reference'|trans }}</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:left; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.description'|trans }}</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.units'|trans }}</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.unit_price'|trans }}</th>
+        <th style="padding:10px 12px; background:#fbfcfe; font-weight:900; color:#334155; font-size:12px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.table.line_total'|trans }}</th>
       </tr>
     </thead>
     <tbody>
@@ -48,44 +48,47 @@
         <tr>
           <td style="padding:10px 12px; font-size:14px; font-weight:900; {{ border }}">
             {% if size starts with 'columna_' %}
-              Columna H{{ size|replace({'columna_': ''}) }}
+              {{ 'config_ajax.row.column_h'|trans({'%h%': size|replace({'columna_': ''})}) }}
             {% elseif size == 'columna' %}
-              Columna
+              {{ 'config_ajax.row.column'|trans }}
             {% elseif size == 'control' %}
-              Periféricos
+              {{ 'config_ajax.row.peripherals'|trans }}
             {% elseif size == 'bandeja' %}
-              Bandeja Intermedia
+              {{ 'config_ajax.row.intermediate_tray'|trans }}
             {% elseif size starts with 'lateral_' %}
-              Par de laterales H{{ size|replace({'lateral_': ''}) }}
+              {{ 'config_ajax.row.side_pair_h'|trans({'%h%': size|replace({'lateral_': ''})}) }}
             {% elseif size == 'lateral' %}
-              Par de laterales
+              {{ 'config_ajax.row.side_pair'|trans }}
             {% elseif size starts with 'mailbox_col_ref_' %}
               {{ info.descripcion ?? size|replace({'mailbox_col_ref_': ''}) }}
             {% elseif size starts with 'mailbox_col_' %}
               {% set _mbParts = size|replace({'mailbox_col_': ''})|split('_') %}
-              Buzón {{ _mbParts[0] == '1' ? 'electrónico' : 'mecánico' }}{{ _mbParts[1] == '1' ? ' con tarjetero' : ' sin tarjetero' }}
+              {{ 'config_ajax.row.mailbox'|trans({
+                '%kind%': _mbParts[0] == '1' ? ('config_ajax.row.mailbox_electronic'|trans) : ('config_ajax.row.mailbox_mechanical'|trans),
+                '%card_reader%': _mbParts[1] == '1' ? ('config_ajax.row.mailbox_with_card_reader'|trans) : ('config_ajax.row.mailbox_without_card_reader'|trans)
+              }) }}
             {% elseif size starts with 'brazo_' %}
-              Brazos H{{ size|replace({'brazo_': ''}) }}
+              {{ 'config_ajax.row.arms_h'|trans({'%h%': size|replace({'brazo_': ''})}) }}
             {% elseif size starts with 'pata_' %}
-              Patas ({{ size|replace({'pata_': ''}) }} col.)
+              {{ 'config_ajax.row.legs_cols'|trans({'%cols%': size|replace({'pata_': ''})}) }}
             {% elseif size == 'instalacion_ref' %}
-              Instalación
+              {{ 'config_ajax.row.installation'|trans }}
             {% elseif size == 'color_door' %}
-              Color puerta
+              {{ 'config_ajax.row.door_color'|trans }}
             {% elseif size == 'color_body' %}
-              Color cuerpo
+              {{ 'config_ajax.row.body_color'|trans }}
             {% elseif size == 'placa' %}
-              Placa
+              {{ 'config_ajax.row.plate'|trans }}
             {% elseif size == 'colgador' %}
-              Colgador
+              {{ 'config_ajax.row.hanger'|trans }}
             {% elseif size == 'buzon_group' %}
-              Buzones (agrupación)
+              {{ 'config_ajax.row.mailbox_group'|trans }}
             {% elseif size == 'envolvente_buzon' %}
-              Envolvente buzones ({{ info._rango ?? '' }}) — {{ info._metros ?? count }} m
+              {{ 'config_ajax.row.mailbox_enclosure'|trans({'%range%': info._rango ?? '', '%meters%': info._metros ?? count}) }}
             {% elseif size starts with 'tejado_' %}
-              Tejado {{ size|replace({'tejado_': ''}) }} col.
+              {{ 'config_ajax.row.roof_cols'|trans({'%cols%': size|replace({'tejado_': ''})}) }}
             {% elseif size ends with '_meth' %}
-              H{{ size|replace({'_meth': ''}) }} + Metacrilato
+              {{ 'config_ajax.row.h_methacrylate'|trans({'%h%': size|replace({'_meth': ''})}) }}
             {% else %}
               H{{ size }}
             {% endif %}
@@ -108,14 +111,14 @@
               <td colspan="2" style="padding:10px 12px; font-size:14px; color:#6b7280; text-align:right; {{ border }}">—</td>
             {% endif %}
           {% else %}
-            <td colspan="5" style="padding:10px 12px; font-size:14px; color:#6b7280; {{ border }}">Sin referencia</td>
+            <td colspan="5" style="padding:10px 12px; font-size:14px; color:#6b7280; {{ border }}">{{ 'config_ajax.row.no_reference'|trans }}</td>
           {% endif %}
         </tr>
       {% endfor %}
 
       {% if instalacionPrecio > 0 %}
         <tr>
-          <td style="padding:10px 12px; font-size:14px; font-weight:900; border-bottom:1px solid rgba(15,23,42,.08);">Instalación</td>
+          <td style="padding:10px 12px; font-size:14px; font-weight:900; border-bottom:1px solid rgba(15,23,42,.08);">{{ 'config_ajax.row.installation'|trans }}</td>
           <td style="padding:10px 12px; font-size:14px; font-weight:900; border-bottom:1px solid rgba(15,23,42,.08);">{{ instalacionReference ?? '—' }}</td>
           <td style="padding:10px 12px; font-size:14px; color:#6b7280; border-bottom:1px solid rgba(15,23,42,.08);">—</td>
           <td style="padding:10px 12px; font-size:14px; text-align:right; border-bottom:1px solid rgba(15,23,42,.08);">1</td>
@@ -129,24 +132,24 @@
       {% set totalFinal = instalacionIva ? subtotal * 1.21 : subtotal %}
       {% if instalacionIva and subtotal > 0 %}
         <tr id="rowSubtotal">
-          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">Subtotal</td>
+          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ 'config_ajax.totals.subtotal'|trans }}</td>
           <td id="cellSubtotal" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ subtotal|number_format(2, ',', '.') }} €</td>
         </tr>
         <tr id="rowIva">
-          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">IVA (21%)</td>
+          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ 'config_ajax.totals.iva'|trans }}</td>
           <td id="cellIva" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ (subtotal * 0.21)|number_format(2, ',', '.') }} €</td>
         </tr>
       {% endif %}
       <tr id="rowTotalBefore" style="display:none;">
-        <td colspan="5" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">Total{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+        <td colspan="5" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ instalacionIva ? ('config_ajax.totals.total_iva_incl'|trans) : ('config_ajax.totals.total'|trans) }}</td>
         <td id="cellTotalBefore" style="padding:10px 12px; font-size:16px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ totalFinal|number_format(2, ',', '.') }} €</td>
       </tr>
       <tr id="rowDiscount" style="display:none;">
-        <td colspan="5" style="padding:8px 12px; font-size:14px; font-weight:900; text-align:right;">Descuento (<span id="discountPctLabel">0</span>%)</td>
+        <td colspan="5" style="padding:8px 12px; font-size:14px; font-weight:900; text-align:right;">{{ 'config_ajax.totals.discount'|trans }} (<span id="discountPctLabel">0</span>%)</td>
         <td id="cellDiscount" style="padding:8px 12px; font-size:14px; font-weight:900; text-align:right;">−0,00 €</td>
       </tr>
       <tr>
-        <td colspan="5" id="cellTotalLabel" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">Total con descuento{{ instalacionIva ? ' (IVA incl.)' : '' }}</td>
+        <td colspan="5" id="cellTotalLabel" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ instalacionIva ? ('config_ajax.totals.total_with_discount_iva_incl'|trans) : ('config_ajax.totals.total_with_discount'|trans) }}</td>
         <td id="cellTotal" style="padding:10px 12px; font-size:16px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ totalFinal|number_format(2, ',', '.') }} €</td>
       </tr>
     </tfoot>

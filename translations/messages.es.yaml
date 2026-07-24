@@ -1,0 +1,527 @@
+header:
+    title: Configurador Kuik
+    home: Inicio
+    projects: Proyectos
+    admin: Administración
+    logout: Cerrar sesión
+
+config_type:
+    page_title: 'Tipo de columnas'
+    select_heading: 'Selecciona tipo de configuracion'
+    next_button: 'Siguiente'
+    select_type_error: 'Selecciona un tipo de columna para continuar.'
+
+home_installation:
+    page_title: 'Instalación (Home)'
+    select_installation_heading: 'Selecciona tipo de instalación'
+    combined_grouping_heading: '¿Es agrupación combinada?'
+    combined_grouping_help: 'Indica si esta instalación combina distintos tipos de columnas.'
+    yes: 'Sí'
+    no: 'No'
+    next_button: 'Siguiente'
+    select_installation_error: 'Selecciona un tipo de instalación para continuar.'
+    combined_grouping_error: 'Indica si es agrupación combinada para continuar.'
+
+project_new:
+    title: Crear proyecto
+    subtitle: Introduce los datos del cliente y del proyecto
+    project_name_label: 'Nombre del proyecto *'
+    project_name_placeholder: Ej. Proyecto Madrid 01
+    client_name_label: 'Nombre del cliente *'
+    client_name_placeholder: Ej. Juan Pérez
+    phone_label: Teléfono
+    phone_placeholder: Ej. 600 123 456
+    email_label: Correo
+    email_placeholder: Ej. cliente@correo.com
+    city_label: Ciudad
+    city_placeholder: Ej. Madrid
+    address_label: Dirección
+    address_placeholder: Ej. Calle Mayor 10
+    submit: Crear y continuar
+    required_fields_error: Rellena los campos obligatorios (*) para continuar.
+    invalid_email_error: El correo no tiene un formato válido.
+
+recover:
+    title: Recuperar proyecto
+    subtitle: Escribe el ID de la configuración/proyecto para cargar su resumen.
+    search_placeholder: 'Ej: 123'
+    search_button: Buscar
+    clear_button: Limpiar
+    preview_title: Vista previa
+    config_title: Configuración
+    doors_by_size_title: Puertas por tamaño
+    addons_title: Complementos
+    addons_detail_title: Detalle (solo puertas con complementos)
+    config_id_label: ID configuración
+    project_label: Proyecto
+    invalid_id_error: Introduce un ID válido.
+    not_found_error: 'No existe ninguna configuración con ID %id%.'
+    invalid_json_error: El payload de esta configuración no es JSON válido.
+    network_error: No se pudo recuperar el proyecto (error de red o servidor).
+    no_columns: No hay columnas en esta configuración.
+    no_doors: No hay puertas (solo pantallas o vacío).
+    no_addons_doors: No hay puertas con complementos.
+    size_header: Tamaño
+    quantity_header: Cantidad
+    total_doors: Total puertas
+    door_header: Puerta
+    addon_header: Complemento
+    socket_usb: Enchufe + USB
+    socket: Enchufe
+    usb: USB
+    total_sockets: Total enchufes
+    total_usb: Total USB
+    doors_with_both: Puertas con ambos
+    series_300: Serie 300
+    series_400: Serie 400
+    series_500: Serie 500
+    interior: Interior
+    exterior: Exterior
+    group_label: 'Agrupación %index% (%count% columnas)'
+    background_label: Fondo
+    location_label: Ubicación
+    material_label: Material
+    door_color_label: Color puerta
+    body_color_label: Color cuerpo
+    columns_label: Columnas
+    installation_label: Instalación
+    type_label: Tipo
+
+complementos:
+    page_title: Complementos
+    sidebar:
+        title: Complementos
+        help: Selecciona una opción y luego haz click en la puerta que quieras modificar.
+        note: La opción seleccionada se aplicará directamente al pulsar sobre una puerta.
+    mode:
+        socket: Enchufe
+        usb: USB
+        both: Ambos
+        methacrylate: Metacrilato
+        none: Ninguno
+    preview:
+        title: Selecciona complementos por puerta
+        subtitle: Haz click en una puerta para aplicar la opción activa.
+        no_columns: No hay columnas en esta configuración.
+        group_label: 'Agrupación %index% (%count% columnas)'
+        column_label: 'Columna %index%'
+    alt:
+        screen: Pantalla
+    actions:
+        back: Volver atrás
+        next: Siguiente
+        clear_all: Borrar todo
+    badge:
+        socket: ENCH
+        usb: USB
+
+bracket:
+    page_title: Soporte suelo
+    header:
+        config_id: 'ID configuración: %id%'
+        project: 'Proyecto: %name%'
+        installation: 'Instalación: soporte_suelo'
+    step1:
+        title: 1) Elige el tipo de soporte
+        help: 'Selecciona %patas% o %brazos%.'
+    type:
+        patas: Patas
+        patas_desc: Soporte inferior con patas.
+        brazos: Brazos
+        brazos_desc: Soporte lateral/estructura tipo brazo.
+    step2:
+        title: 2) Elige el color
+        help: Selecciona el acabado del soporte.
+    color:
+        white: Blanco
+        black: Negro
+        silver: Plata
+    preview:
+        title: Vista previa
+        no_columns: No hay columnas en esta configuración.
+        group_label: 'Agrupación %index% (%count% columnas)'
+    alt:
+        arm_left: Brazo izquierdo
+        arm_right: Brazo derecho
+        mailbox: Buzón
+        leg: Pata
+        screen: Pantalla
+    action:
+        remove_leg: Quitar pata
+    actions:
+        back: Volver atrás
+        continue: Continuar
+        continue_hint: '* El botón %continue% se activa cuando elijas tipo y color.'
+
+config_ajax:
+    title: Referencias de producto
+    apply_iva: Aplicar IVA (21%)
+    discount: 'Descuento:'
+    table:
+        size: Tamaño
+        reference: Referencia
+        description: Descripción
+        units: Uds.
+        unit_price: Precio ud.
+        line_total: Total línea
+    row:
+        column_h: 'Columna H%h%'
+        column: Columna
+        peripherals: Periféricos
+        intermediate_tray: Bandeja Intermedia
+        side_pair_h: 'Par de laterales H%h%'
+        side_pair: Par de laterales
+        mailbox: 'Buzón %kind%%card_reader%'
+        mailbox_electronic: electrónico
+        mailbox_mechanical: mecánico
+        mailbox_with_card_reader: ' con tarjetero'
+        mailbox_without_card_reader: ' sin tarjetero'
+        arms_h: 'Brazos H%h%'
+        legs_cols: 'Patas (%cols% col.)'
+        installation: Instalación
+        door_color: Color puerta
+        body_color: Color cuerpo
+        plate: Placa
+        hanger: Colgador
+        mailbox_group: Buzones (agrupación)
+        mailbox_enclosure: 'Envolvente buzones (%range%) — %meters% m'
+        roof_cols: 'Tejado %cols% col.'
+        h_methacrylate: 'H%h% + Metacrilato'
+        no_reference: Sin referencia
+    totals:
+        subtotal: Subtotal
+        iva: IVA (21%)
+        total: Total
+        total_iva_incl: Total (IVA incl.)
+        discount: Descuento
+        total_with_discount: Total con descuento
+        total_with_discount_iva_incl: Total con descuento (IVA incl.)
+
+projects:
+    title: Proyectos
+    subtitle: Gestiona tus proyectos de taquillas inteligentes
+    accepted: Aceptados
+    rejected: Rechazados
+    open: Abiertos
+    new_project: Nuevo Proyecto
+    search_placeholder: Buscar por nombre, cliente, ciudad o responsable...
+    my_projects: Mis proyectos
+    view_cards: Tarjetas
+    view_table: Tabla
+    no_projects: No tienes proyectos todavía.
+    create_first: Crear primer proyecto
+    table_header_project: Proyecto
+    table_header_city: Ciudad
+    table_header_date: Fecha
+    table_header_owner: Responsable
+    table_header_action: Acción
+    status_accepted: Aceptado
+    status_rejected: Rechazado
+    view: Ver
+
+project_configs:
+    page_title: Configuraciones
+    title: Configuraciones del proyecto
+    project_label: Proyecto
+    commercial_label: Comercial
+    client: Cliente
+    email: Email
+    location: Ubicación
+    phone: Teléfono
+    address: Dirección
+    edit: Editar
+    edit_data: Editar datos
+    close: Cerrar
+    cancel: Cancelar
+    save_changes: Guardar cambios
+    back_to_projects: Volver a proyectos
+    new_configuration: Nueva configuración
+    reject_project: Rechazar proyecto
+    confirm_reject_project: '¿Seguro que quieres rechazar esta configuración?'
+    no_configurations: No hay configuraciones aún.
+    configuration: Configuración
+    status_open: Abierta
+    status_closed: Cerrada
+    status_accepted: Aceptada
+    type_label: Tipo
+    installation_label: Instalación
+    created_label: Creada
+    nav_offer_label: Oferta NAV
+    open_in_nav: Abrir en NAV
+    download_technical: Bajar detalles técnicos
+    accept_and_offer: Aceptar configuración y crear oferta en NAV
+    accept_modal_title: Aceptar configuración
+    accept_modal_help: Introduce el código de cliente (5 dígitos) para crear la oferta en NAV.
+    client_code_label: Código de cliente
+    client_code_placeholder: Ej. 12345
+    accept_submit: Aceptar y crear oferta
+    copy: Copiar
+    summary: Resumen
+    pdf: PDF
+    state: Estado
+    columns: Columnas
+    body_color: Color cuerpo
+    door_color: Color puerta
+    config_id: Config ID
+    preview_title: Vista previa (miniatura)
+    no_columns: Sin columnas
+    group: 'Grupo %number%'
+    showing_x_of_y: 'Mostrando %shown% de %total% columnas…'
+    arm_left: Brazo izq
+    arm_right: Brazo der
+    leg: Pata
+    screen: Pantalla
+    mailbox: Buzón
+
+summary:
+    page_title: Resumen
+    config_id: 'ID configuración: %id%'
+    status:
+        open: Abierta
+        closed: Cerrada
+        accepted: Aceptada
+    btn:
+        new_project: Nuevo proyecto
+        view_project: Ver proyecto
+        new_configuration: Nueva configuración
+        edit_configuration: Editar configuración
+        download_pdf: Descargar PDF
+    preview:
+        title: Vista previa
+        no_columns: No hay columnas en esta configuración.
+        group_label: 'Agrupación %index% (%count% columnas)'
+        side_view: 'Fondo'
+    badge:
+        socket: ENCH
+        usb: USB
+    installation:
+        label: 'Instalación (€):'
+        saved: 'Guardado ✓'
+    config:
+        title: Configuración
+        type: Tipo
+        background: Fondo
+        placement: Ubicación
+        door_color: Color puerta
+        body_color: Color cuerpo
+        columns: Columnas
+        arm_height: Altura brazos
+        leg_height: Altura patas
+        hangers: Colgadores
+        control: Control
+        mailboxes_ref: 'Buzones (ref.)'
+        mailbox_description: Descripción buzón
+    client:
+        title: Datos del cliente
+        project: Proyecto
+        client: Cliente
+        phone: Teléfono
+        email: Email
+        city: Ciudad
+        address: Dirección
+    doors_by_size:
+        title: Puertas por tamaño
+        none: No hay puertas ni buzones.
+        size: Tamaño
+        quantity: Cantidad
+        mailbox: Buzón
+        total_doors: Total puertas
+        total_mailboxes: Total buzones
+    addons:
+        title: Complementos
+        total_sockets: Total enchufes
+        total_usb: Total USB
+        doors_with_both: Puertas con ambos
+        doors_with_methacrylate: Puertas con metacrilato
+        detail_title: 'Detalle (solo puertas con complementos)'
+        none: No hay puertas con complementos.
+        door: Puerta
+        addon: Complemento
+        methacrylate: Metacrilato
+        socket: Enchufe
+    js:
+        generating: 'Generando…'
+        download_pdf: Descargar PDF
+        total: Total
+        total_with_discount: Total con descuento
+        iva_included: ' (IVA incl.)'
+        non_json_response: 'El servidor devolvió un error (no JSON). Mira la consola y el log de Symfony.'
+        image_generation_error: Error generando imagen
+        unexpected_error: 'Error inesperado (mira consola).'
+
+pdf_summary:
+    header:
+        title: Presupuesto
+        number: 'Nº'
+        date: Fecha
+    client:
+        title: Datos del cliente
+        project: Proyecto
+        client: Cliente
+        email: Email
+        phone: Teléfono
+        city: Ciudad
+        address: Dirección
+    preview:
+        no_columns: No hay columnas en esta configuración.
+        page_title: Croquis
+    config:
+        title: Configuración
+        type: Tipo
+        installation: Instalación
+        background_size: Medida de fondo
+        indoor_outdoor: 'Interior / Exterior'
+        material: Material
+        door_color: Color puerta
+        body_color: Color cuerpo
+        column_count: 'Nº columnas'
+        column_height: Alto
+        support: Soporte
+    doors_addons:
+        title: Puertas y complementos
+        total_doors: Total puertas
+        sockets_used: ENCH usados
+        usb_used: USB usados
+        methacrylate: Metacrilato
+        door_type: Tipo de puerta
+        quantity: Cantidad
+    products:
+        title: Referencias de producto
+        concept: Descripción
+        reference: Referencia
+        units: 'Cantidad'
+        unit_price: 'Precio unitario'
+        total: Total
+        no_reference: Sin referencia
+    concept:
+        column: Columna
+        peripherals: Periféricos
+        intermediate_tray: 'Bandeja Intermedia'
+        side_panel_pair: 'Par de laterales'
+        mailbox: Buzón
+        electronic: electrónico
+        mechanical: mecánico
+        with_card_reader: 'con tarjetero'
+        without_card_reader: 'sin tarjetero'
+        arms: Brazos
+        legs: Patas
+        col_abbr: col
+        installation: Instalación
+        plate: Placa
+        hanger: Colgador
+        mailboxes_group: 'Buzones (agrupación)'
+        mailbox_enclosure: 'Envolvente buzones'
+        roof: Tejado
+        methacrylate: Metacrilato
+        door_of: 'Puerta de'
+        installation_of: 'Instalación de'
+        columns: 'columnas'
+    totals:
+        subtotal: Subtotal
+        vat: IVA
+        vat_included: '(IVA incl.)'
+        total: Total
+        discount: Descuento
+        total_with_discount: Total con descuento
+    terms:
+        payment_title: Condiciones de pago
+        payment_1: Transferencia bancaria.
+        payment_2: 'Cuenta: ES74 0128 7655 5501 0000 1472'
+        payment_3: 'Beneficiario: Easybuzón S.L.'
+        payment_4: '50% a la confirmación y 50% antes del envío.'
+        offer_title: Condiciones de la oferta
+        offer_1: 'Fabricación: 30 días desde la confirmación.'
+        offer_2: 'Validez: 30 días desde la emisión.'
+        offer_3: 'Transporte: Incluido para entregas en España peninsular.'
+        notes_title: Notas adicionales
+
+home:
+    page_sub: Configura el fondo, ubicación, material, colores y distribución de puertas.
+    select_prefix: Selecciona
+    interior_exterior: Interior / Exterior
+    interior_exterior_help: Define la ubicación de la instalación.
+    interior: Interior
+    interior_sub: Uso interior
+    exterior: Exterior
+    exterior_sub: Resistente a intemperie
+    colors_title: Colores
+    colors_help: Selecciona color de puerta y cuerpo.
+    acero_inoxidable: Acero inoxidable
+    color_door_label: Color Puerta
+    color_body_label: Color Cuerpo
+    select_color: Selecciona un color
+    columns_title: Columnas
+    columns_help: Añade puertas o pantalla.
+    add_column_button: Añadir columna
+    element_label: 'Elemento:'
+    door_option: Puerta
+    screen_option: Pantalla
+    mailbox_integrated_h10: Buzón integrado (H10)
+    h10_suffix: (H10)
+    screen_size_label: 'Tamaño pantalla:'
+    size_to_add_label: 'Tamaño a añadir:'
+    tarjetero: Tarjetero
+    electronico: Electrónico
+    mailbox_group_title: Grupo de buzones
+    mailbox_group_help: Selecciona el modelo, número de columnas y edita las celdas vacías.
+    mailbox_model_label: Modelo de buzón
+    select_placeholder: -- Selecciona --
+    mb_cols_label: Nº columnas (ancho)
+    mb_position_label: Posición
+    left: Izquierda
+    right: Derecha
+    generate_grid_button: Generar grid
+    peripherals_title: Periféricos
+    no_control: Sin control
+    next_button: Siguiente
+    js:
+        group_label: Grupo
+        add_group_button: Añadir grupo
+        active_label: Activo
+        select_label: Seleccionar
+        group_columns_max: 'columna(s) · máx'
+        delete_group_title: Eliminar grupo (si vacío)
+        col_label: Col
+        copy_icon_alt: copiar
+        copy_column_title: Copiar columna al grupo activo
+        group_full: El grupo activo ya está lleno.
+        only_one_screen: Solo se puede añadir 1 pantalla en toda la configuración.
+        add_block_title: Añadir bloque
+        delete_column_title: Eliminar columna
+        delete_block_title: Eliminar
+        screen_alt: Pantalla
+        mailbox_alt: Buzón
+        not_fit_in_column: No cabe
+        in_column_word: en Columna
+        free_label: Libre
+        mailbox_bottom_min_h30: El buzón en la zona inferior requiere mín. H30 de puertas debajo
+        mailbox_bottom_no_fit: No cabe el buzón en la zona inferior
+        element_top_only_no_fit: El elemento solo puede ir arriba y no cabe.
+        free_top_label: Libres arriba
+        mailbox_reorder_min_h30: Los buzones deben dejar mín. H30 de puertas al fondo de la zona inferior.
+        used_label: Usado
+        top_word: Arriba
+        bottom_word: Abajo
+        select_attr_prefix: Selecciona
+        select_placement_colors: Selecciona interior/exterior, color puerta y color cuerpo.
+        add_one_column: Añade al menos 1 columna.
+        column_incomplete_missing: 'La columna %num% no está completa. Falta:'
+        column_exceeds_capacity: 'La columna %num% excede la capacidad (H%cap%). Elimina'
+        column_incomplete_parts: 'La columna %num% no está completa:'
+        of_blocks_word: de bloques
+        top_missing: 'arriba falta '
+        top_excess: 'arriba sobra '
+        bottom_missing: 'abajo falta '
+        bottom_excess: 'abajo sobra '
+        screen_needs_peripheral: Si hay una pantalla debes seleccionar un periférico.
+        buzones_active_of_total: buzones activos de
+        select_model: Selecciona un modelo.
+        top_height_label: 'Altura superior:'
+        module_height_label: 'Altura módulo:'
+
+login:
+    title: Iniciar sesión
+    email: Email
+    password: Contraseña
+    submit: Entrar
+    recover_link: '¿Tienes un código de proyecto? Haz click aquí'

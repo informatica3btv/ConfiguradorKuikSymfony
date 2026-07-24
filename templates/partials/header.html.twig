@@ -90,11 +90,57 @@
     .kuik-title{ display:none; }
     .nav-pill span, .nav-link span{ display:none; }
   }
+
+  .lang-switcher{ position:relative; }
+  .lang-current{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background: rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.22);
+    color:#fff;
+    font-weight:900;
+    border-radius:12px;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+  .lang-current:hover{ background: rgba(255,255,255,.22); }
+  .lang-flag-img{ width:22px; height:22px; object-fit:cover; border-radius:4px; display:block; }
+  .lang-flag-fallback{ font-size:16px; line-height:1; }
+  .lang-caret{ opacity:.85; }
+
+  .lang-menu{
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    right:0;
+    background:#fff;
+    border-radius:14px;
+    box-shadow: 0 18px 40px rgba(2,20,60,.18);
+    border:1px solid rgba(15,23,42,.08);
+    padding:6px;
+    min-width:170px;
+    z-index:50;
+  }
+  .lang-switcher.open .lang-menu{ display:block; }
+  .lang-option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 10px;
+    border-radius:10px;
+    text-decoration:none;
+    color:#0b1220;
+    font-weight:800;
+    font-size:14px;
+  }
+  .lang-option:hover{ background: rgba(11,118,216,.08); }
+  .lang-option.active{ background: rgba(11,118,216,.12); }
 </style>
 
 <header class="kuik-header">
   <div class="kuik-left">
-    <a class="home-pill" href="{{ path('projects_list') }}" aria-label="Inicio">
+    <a class="home-pill" href="{{ path('projects_list') }}" aria-label="{{ 'header.home'|trans }}">
       <!-- icono casa -->
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10.5Z"
@@ -103,9 +149,62 @@
     </a>
 
     <a style="text-decoration:none;" href="{{ path('projects_list') }}">
-      <h2 class="kuik-title">Configurador Kuik</h2>
+      <h2 class="kuik-title">{{ 'header.title'|trans }}</h2>
     </a>
   </div>
+
+  {# Selector de idioma: introducido pero desactivado a la espera de implementar la funcionalidad completa. #}
+  {% set languageSwitcherEnabled = false %}
+  {% set langs = active_languages() %}
+  {% if languageSwitcherEnabled and langs|length > 1 %}
+    {% set currentLang = null %}
+    {% for lang in langs %}
+      {% if lang.code == app.request.locale %}{% set currentLang = lang %}{% endif %}
+    {% endfor %}
+    {% set currentLang = currentLang ?: langs|first %}
+
+    <div class="lang-switcher" data-lang-switcher>
+      <button type="button" class="lang-current" data-lang-toggle aria-haspopup="true" aria-expanded="false">
+        {% if currentLang.flagUrl %}
+          <img class="lang-flag-img" src="{{ currentLang.flagUrl }}" alt="{{ currentLang.name }}">
+        {% else %}
+          <span class="lang-flag-fallback">🌐</span>
+        {% endif %}
+        <span class="lang-caret">▾</span>
+      </button>
+
+      <div class="lang-menu">
+        {% for lang in langs %}
+          <a class="lang-option {{ lang.code == currentLang.code ? 'active' : '' }}"
+             href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge({'_locale': lang.code})) }}">
+            {% if lang.flagUrl %}
+              <img class="lang-flag-img" src="{{ lang.flagUrl }}" alt="{{ lang.name }}">
+            {% else %}
+              <span class="lang-flag-fallback">🌐</span>
+            {% endif %}
+            <span>{{ lang.name }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('click', function (event) {
+        var switcher = document.querySelector('[data-lang-switcher]');
+        if (!switcher) return;
+
+        var toggle = switcher.querySelector('[data-lang-toggle]');
+        if (toggle.contains(event.target)) {
+          switcher.classList.toggle('open');
+          return;
+        }
+
+        if (!switcher.contains(event.target)) {
+          switcher.classList.remove('open');
+        }
+      });
+    </script>
+  {% endif %}
 
   {% if app.user %}
     <nav class="kuik-nav">
@@ -115,7 +214,7 @@
           <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"
                 stroke="white" stroke-width="2" stroke-linejoin="round"/>
         </svg>
-        <span>Proyectos</span>
+        <span>{{ 'header.projects'|trans }}</span>
       </a>
 
       {% if is_granted('ROLE_ADMIN') %}
@@ -127,7 +226,7 @@
             <path d="M19.4 13.5c.04-.5.04-1 0-1.5l2-1.2-2-3.46-2.34.6c-.4-.34-.84-.63-1.32-.86L15.3 4.5h-6.6l-.44 2.58c-.48.23-.92.52-1.32.86l-2.34-.6-2 3.46 2 1.2c-.04.5-.04 1 0 1.5l-2 1.2 2 3.46 2.34-.6c.4.34.84.63 1.32.86l.44 2.58h6.6l.44-2.58c.48-.23.92-.52 1.32-.86l2.34.6 2-3.46-2-1.2Z"
                   stroke="white" stroke-width="2" stroke-linejoin="round"/>
           </svg>
-          <span>Administración</span>
+          <span>{{ 'header.admin'|trans }}</span>
         </a>
       {% endif %}
 
@@ -140,7 +239,7 @@
           <path d="M15 12H9" stroke="white" stroke-width="2" stroke-linecap="round"/>
           <path d="M13 10l2 2-2 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span>Cerrar sesión</span>
+        <span>{{ 'header.logout'|trans }}</span>
       </a>
     </nav>
   {% endif %}

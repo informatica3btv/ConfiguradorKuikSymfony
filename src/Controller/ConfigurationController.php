@@ -597,7 +597,7 @@ class ConfigurationController extends AbstractController
         if (isset($old['addons']) && !isset($payloadArr['addons'])) {
             $payloadArr['addons'] = $old['addons'];
         }
-        foreach (['_instalacion_precio', '_instalacion_iva', '_descuento', '_screenshots', '_acceptedProductTable'] as $internalKey) {
+        foreach (['_instalacion_precio', '_instalacion_iva', '_descuento', '_screenshots', '_acceptedProductTable', '_pdf_fecha'] as $internalKey) {
             if (isset($old[$internalKey]) && !isset($payloadArr[$internalKey])) {
                 $payloadArr[$internalKey] = $old[$internalKey];
             }
@@ -855,10 +855,11 @@ class ConfigurationController extends AbstractController
     }
 
     /**
-     * @Route("/configuracion/aceptar-configuration/{id}", name="configuration_accept", methods={"GET"})
+     * @Route("/configuracion/aceptar-configuration/{id}", name="configuration_accept", methods={"POST"})
      */
     public function aceptConfiguration(
         int $id,
+        Request $request,
         ConfigurationRepository $repo,
         ProjectRepository $repoProject,
         EntityManagerInterface $em
@@ -875,6 +876,16 @@ class ConfigurationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        if (!$this->isCsrfTokenValid('accept_configuration_'.$id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $codCliente = trim((string) $request->request->get('cod_cliente', ''));
+        if (!preg_match('/^\d{5}$/', $codCliente)) {
+            $this->addFlash('error', 'El código de cliente debe tener 5 dígitos.');
+            return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+        }
+
         $configuration = $repo->find($id);
 
         $project = $repoProject->find($configuration->getProject()->getId());
@@ -882,7 +893,7 @@ class ConfigurationController extends AbstractController
         // Primero intentar crear la oferta en NAV
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         $snapshot = $this->navOfferService->buildProductSnapshot($payloadArr);
-        $offerResult = $this->navOfferService->createNavOffer($snapshot, $project, $payloadArr);
+        $offerResult = $this->navOfferService->createNavOffer($snapshot, $project, $codCliente, $payloadArr);
 
         $navOfferNumber = $offerResult['result']['Cabecera']['NumeroOfertaNav'] ?? null;
         if ($offerResult === null || empty($navOfferNumber)) {

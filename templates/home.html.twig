@@ -519,7 +519,7 @@
 <div class="page-wrap">
   <div class="page-head">
     <div>
-      <div class="page-sub">Configura el fondo, ubicación, material, colores y distribución de puertas.</div>
+      <div class="page-sub">{{ 'home.page_sub'|trans }}</div>
     </div>
   </div>
 
@@ -561,7 +561,7 @@
 
           {% elseif t.type == 'selectable' %}
             <select name="{{ groupKey }}" id="{{ groupKey }}">
-              <option value="" selected disabled>Selecciona {{ t.name|lower }}</option>
+              <option value="" selected disabled>{{ 'home.select_prefix'|trans }} {{ t.name|lower }}</option>
               {% for a in g.attributes %}
                 <option value="{{ a.value }}">{{ a.name }}</option>
               {% endfor %}
@@ -572,39 +572,39 @@
     {% endfor %}
 
     <div class="section-card">
-      <h3 class="section-title">Interior / Exterior</h3>
-      <div class="section-help">Define la ubicación de la instalación.</div>
+      <h3 class="section-title">{{ 'home.interior_exterior'|trans }}</h3>
+      <div class="section-help">{{ 'home.interior_exterior_help'|trans }}</div>
 
       <div class="option-row" data-group="placement">
         <button type="button" class="option-card" data-value="interior">
-          <div class="option-title">Interior</div>
-          <div class="option-sub">Uso interior</div>
+          <div class="option-title">{{ 'home.interior'|trans }}</div>
+          <div class="option-sub">{{ 'home.interior_sub'|trans }}</div>
         </button>
         <button type="button" class="option-card" data-value="exterior">
-          <div class="option-title">Exterior</div>
-          <div class="option-sub">Resistente a intemperie</div>
+          <div class="option-title">{{ 'home.exterior'|trans }}</div>
+          <div class="option-sub">{{ 'home.exterior_sub'|trans }}</div>
         </button>
       </div>
     </div>
 
     <div class="section-card">
-      <h3 class="section-title">Colores</h3>
-      <div class="section-help">Selecciona color de puerta y cuerpo.</div>
+      <h3 class="section-title">{{ 'home.colors_title'|trans }}</h3>
+      <div class="section-help">{{ 'home.colors_help'|trans }}</div>
 
       {% if type|default('') == 'home' %}
       <div style="margin-bottom:12px;">
         <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer;">
           <input type="checkbox" id="chkAceroInoxidable" style="width:16px;height:16px;accent-color:#0b76d8;">
-          Acero inoxidable
+          {{ 'home.acero_inoxidable'|trans }}
         </label>
       </div>
       {% endif %}
 
       <div class="grid-two">
         <div class="field">
-          <label for="color-door">Color Puerta</label>
+          <label for="color-door">{{ 'home.color_door_label'|trans }}</label>
           <select name="color-door" id="color-door">
-            <option value="" selected disabled>Selecciona un color</option>
+            <option value="" selected disabled>{{ 'home.select_color'|trans }}</option>
             {% for color in coloresPuerta %}
               <option value="{{ color.hex }}" data-ral="{{ color.ral }}" data-ref="{{ color.reference }}">{{ color.name }}</option>
             {% endfor %}
@@ -612,9 +612,9 @@
         </div>
 
         <div class="field" id="colorBodyField" {% if type|default('') == 'home' %}style="display:none;"{% endif %}>
-          <label for="color-body">Color Cuerpo</label>
+          <label for="color-body">{{ 'home.color_body_label'|trans }}</label>
           <select name="color-body" id="color-body">
-            <option value="" selected disabled>Selecciona un color</option>
+            <option value="" selected disabled>{{ 'home.select_color'|trans }}</option>
             {% for color in coloresCuerpo %}
               <option value="{{ color.hex }}" data-ral="{{ color.ral }}" data-ref="{{ color.reference }}">{{ color.name }}</option>
             {% endfor %}
@@ -624,35 +624,35 @@
     </div>
 
     <div class="section-card">
-      <h3 class="section-title">Columnas</h3>
-      <div> Añade puertas o pantalla.</div>
+      <h3 class="section-title">{{ 'home.columns_title'|trans }}</h3>
+      <div> {{ 'home.columns_help'|trans }}</div>
 
       <div class="builder-wrap">
         <div class="builder-toolbar">
-          <button type="button" id="addColumnBtn" class="secondary-btn">+ Añadir columna</button>
+          <button type="button" id="addColumnBtn" class="secondary-btn">+ {{ 'home.add_column_button'|trans }}</button>
 
-          <label for="itemTypeSelect">Elemento:</label>
+          <label for="itemTypeSelect">{{ 'home.element_label'|trans }}</label>
           <select id="itemTypeSelect" style="max-width:180px;">
-            <option value="door" selected>Puerta</option>
-            <option value="screen">Pantalla</option>
+            <option value="door" selected>{{ 'home.door_option'|trans }}</option>
+            <option value="screen">{{ 'home.screen_option'|trans }}</option>
             {% if type|default('') == 'home' %}
-              <option value="mailbox">Buzón integrado (H10)</option>
+              <option value="mailbox">{{ 'home.mailbox_integrated_h10'|trans }}</option>
               {% for mb in mailboxesSingle %}
                 <option value="mailbox" data-mailbox-id="{{ mb.id }}" data-ref="{{ mb.reference }}">
-                  {{ mb.reference }}{% if mb.descripcion %} — {{ mb.descripcion }}{% endif %} (H10)
+                  {{ mb.reference }}{% if mb.descripcion %} — {{ mb.descripcion }}{% endif %} {{ 'home.h10_suffix'|trans }}
                 </option>
               {% endfor %}
             {% endif %}
           </select>
 
-          <label for="screenSizeSelect" id="screenSizeLabel" style="display:none;">Tamaño pantalla:</label>
+          <label for="screenSizeSelect" id="screenSizeLabel" style="display:none;">{{ 'home.screen_size_label'|trans }}</label>
           <select id="screenSizeSelect" style="max-width:120px;display:none;">
             <option value="30">H30</option>
             <option value="40">H40</option>
           </select>
 
 
-          <label for="hSizeSelect">Tamaño a añadir:</label>
+          <label for="hSizeSelect">{{ 'home.size_to_add_label'|trans }}</label>
           <select id="hSizeSelect" style="max-width:180px;">
             {% for h in [10,20,30,40,50,60,70,80,90] %}
               <option value="{{ h }}">H{{ h }}</option>
@@ -661,10 +661,10 @@
 
           {% if type|default('') == 'home' %}
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
-            <input type="checkbox" id="chkTarjetero" style="width:15px;height:15px;accent-color:#0b76d8;"> Tarjetero
+            <input type="checkbox" id="chkTarjetero" style="width:15px;height:15px;accent-color:#0b76d8;"> {{ 'home.tarjetero'|trans }}
           </label>
           <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
-            <input type="checkbox" id="chkElectronico" style="width:15px;height:15px;accent-color:#0b76d8;"> Electrónico
+            <input type="checkbox" id="chkElectronico" style="width:15px;height:15px;accent-color:#0b76d8;"> {{ 'home.electronico'|trans }}
           </label>
           {% endif %}
 
@@ -678,14 +678,14 @@
 
     {% if agrupacion_combinada %}
     <div class="section-card" id="mailbox-group-section">
-      <h3 class="section-title">Grupo de buzones</h3>
-      <div class="section-help">Selecciona el modelo, número de columnas y edita las celdas vacías.</div>
+      <h3 class="section-title">{{ 'home.mailbox_group_title'|trans }}</h3>
+      <div class="section-help">{{ 'home.mailbox_group_help'|trans }}</div>
 
       <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;">
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:13px;font-weight:700;">Modelo de buzón</label>
+          <label style="font-size:13px;font-weight:700;">{{ 'home.mailbox_model_label'|trans }}</label>
           <select id="mb-model-select" style="min-width:200px;">
-            <option value="">-- Selecciona --</option>
+            <option value="">{{ 'home.select_placeholder'|trans }}</option>
             {% for mb in mailboxesGrupo %}
               <option value="{{ mb.id }}"
                       data-alto="{{ mb.alto }}"
@@ -701,7 +701,7 @@
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:13px;font-weight:700;">Nº columnas (ancho)</label>
+          <label style="font-size:13px;font-weight:700;">{{ 'home.mb_cols_label'|trans }}</label>
           <select id="mb-cols-select" style="width:100px;">
             {% for n in 1..20 %}
               <option value="{{ n }}">{{ n }}</option>
@@ -710,14 +710,14 @@
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:13px;font-weight:700;">Posición</label>
+          <label style="font-size:13px;font-weight:700;">{{ 'home.mb_position_label'|trans }}</label>
           <select id="mb-side-select" style="width:130px;">
-            <option value="left">Izquierda</option>
-            <option value="right">Derecha</option>
+            <option value="left">{{ 'home.left'|trans }}</option>
+            <option value="right">{{ 'home.right'|trans }}</option>
           </select>
         </div>
 
-        <button type="button" id="mb-generate-btn" class="secondary-btn">Generar grid</button>
+        <button type="button" id="mb-generate-btn" class="secondary-btn">{{ 'home.generate_grid_button'|trans }}</button>
         <span id="mb-info" style="font-size:13px;color:#6b7280;"></span>
       </div>
 
@@ -730,9 +730,9 @@
 
     {% if controles is defined and controles is not empty %}
     <div class="section-card">
-      <h3 class="section-title">Perifricos</h3>
+      <h3 class="section-title">{{ 'home.peripherals_title'|trans }}</h3>
       <select name="control" id="control-select">
-        <option value="">Sin control</option>
+        <option value="">{{ 'home.no_control'|trans }}</option>
         {% for ctrl in controles %}
           <option value="{{ ctrl.reference }}" data-place="{{ ctrl.place }}" data-acero="{{ ctrl.aceroInoxidable ? '1' : '0' }}"{% if controlActual == ctrl.reference %} selected{% endif %}>
             {{ ctrl.reference }}{% if ctrl.descripcion %} — {{ ctrl.descripcion }}{% endif %}
@@ -743,7 +743,7 @@
     {% endif %}
 
     <div class="form-actions">
-      <button type="submit" class="primary-btn">Siguiente</button>
+      <button type="submit" class="primary-btn">{{ 'home.next_button'|trans }}</button>
       <div id="formError" class="warn"></div>
     </div>
   </form>
@@ -755,6 +755,54 @@
 
   <script>
     window.PRELOADED_CONFIG = {{ (payload ?? {})|json_encode|raw }};
+  </script>
+
+  <script>
+    window.I18N_HOME = {{ {
+      group_label: 'home.js.group_label'|trans,
+      add_group_button: 'home.js.add_group_button'|trans,
+      active_label: 'home.js.active_label'|trans,
+      select_label: 'home.js.select_label'|trans,
+      group_columns_max: 'home.js.group_columns_max'|trans,
+      delete_group_title: 'home.js.delete_group_title'|trans,
+      col_label: 'home.js.col_label'|trans,
+      copy_icon_alt: 'home.js.copy_icon_alt'|trans,
+      copy_column_title: 'home.js.copy_column_title'|trans,
+      group_full: 'home.js.group_full'|trans,
+      only_one_screen: 'home.js.only_one_screen'|trans,
+      add_block_title: 'home.js.add_block_title'|trans,
+      delete_column_title: 'home.js.delete_column_title'|trans,
+      delete_block_title: 'home.js.delete_block_title'|trans,
+      screen_alt: 'home.js.screen_alt'|trans,
+      mailbox_alt: 'home.js.mailbox_alt'|trans,
+      not_fit_in_column: 'home.js.not_fit_in_column'|trans,
+      in_column_word: 'home.js.in_column_word'|trans,
+      free_label: 'home.js.free_label'|trans,
+      mailbox_bottom_min_h30: 'home.js.mailbox_bottom_min_h30'|trans,
+      mailbox_bottom_no_fit: 'home.js.mailbox_bottom_no_fit'|trans,
+      element_top_only_no_fit: 'home.js.element_top_only_no_fit'|trans,
+      free_top_label: 'home.js.free_top_label'|trans,
+      mailbox_reorder_min_h30: 'home.js.mailbox_reorder_min_h30'|trans,
+      used_label: 'home.js.used_label'|trans,
+      top_word: 'home.js.top_word'|trans,
+      bottom_word: 'home.js.bottom_word'|trans,
+      select_attr_prefix: 'home.js.select_attr_prefix'|trans,
+      select_placement_colors: 'home.js.select_placement_colors'|trans,
+      add_one_column: 'home.js.add_one_column'|trans,
+      column_incomplete_missing: 'home.js.column_incomplete_missing'|trans,
+      column_exceeds_capacity: 'home.js.column_exceeds_capacity'|trans,
+      column_incomplete_parts: 'home.js.column_incomplete_parts'|trans,
+      of_blocks_word: 'home.js.of_blocks_word'|trans,
+      top_missing: 'home.js.top_missing'|trans,
+      top_excess: 'home.js.top_excess'|trans,
+      bottom_missing: 'home.js.bottom_missing'|trans,
+      bottom_excess: 'home.js.bottom_excess'|trans,
+      screen_needs_peripheral: 'home.js.screen_needs_peripheral'|trans,
+      buzones_active_of_total: 'home.js.buzones_active_of_total'|trans,
+      select_model: 'home.js.select_model'|trans,
+      top_height_label: 'home.js.top_height_label'|trans,
+      module_height_label: 'home.js.module_height_label'|trans,
+    }|json_encode|raw }};
   </script>
 
  <script>
@@ -901,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       addToolbarSelect({
         id: 'topCapSelect',
-        label: 'Altura superior:',
+        label: window.I18N_HOME.top_height_label,
         values: [40,50,60,70],
         defaultValue: layout.topCap,
         onChange: (v) => {
@@ -924,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       addToolbarSelect({
         id: 'singleCapSelect',
-        label: 'Altura módulo:',
+        label: window.I18N_HOME.module_height_label,
         values: [40,50,60,70,80],
         defaultValue: layout.singleCap,
         onChange: (v) => {
@@ -961,6 +1009,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (c.single) return c.single.blocks.some(isScreenBlock);
       return c.top.blocks.some(isScreenBlock) || c.bottom.blocks.some(isScreenBlock);
     });
+  }
+
+  function syncControlAvailability(){
+    const controlSel = document.getElementById('control-select');
+    if (!controlSel) return;
+    const hasScreen = hasAnyScreen();
+    controlSel.disabled = !hasScreen;
+    if (!hasScreen) controlSel.value = '';
   }
 
   const screenSizeSelect = document.getElementById('screenSizeSelect');
@@ -1100,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'secondary-btn';
-    btn.textContent = '+ Añadir grupo';
+    btn.textContent = '+ ' + window.I18N_HOME.add_group_button;
     btn.style.marginLeft = '6px';
 
     btn.addEventListener('click', () => {
@@ -1131,6 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ensureActiveGroup();
     rebuildFlatColumnsFromGroups();
+    syncControlAvailability();
 
     state.groups.forEach((group, gIndex) => {
       const groupCols = group.columns;
@@ -1157,11 +1214,11 @@ document.addEventListener('DOMContentLoaded', () => {
       pick.className = 'group-pick';
 
       const t = document.createElement('span');
-      t.textContent = `Grupo ${gIndex + 1}`;
+      t.textContent = `${window.I18N_HOME.group_label} ${gIndex + 1}`;
 
       const badge = document.createElement('span');
       badge.className = 'group-badge' + (group.id === state.activeGroupId ? ' active' : '');
-      badge.textContent = (group.id === state.activeGroupId) ? 'Activo' : 'Seleccionar';
+      badge.textContent = (group.id === state.activeGroupId) ? window.I18N_HOME.active_label : window.I18N_HOME.select_label;
 
       pick.appendChild(t);
       pick.appendChild(badge);
@@ -1169,14 +1226,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const gSub = document.createElement('div');
       gSub.className = 'group-sub';
-      gSub.textContent = `${groupCols.length} columna(s) · máx ${getGroupMax()}`;
+      gSub.textContent = `${groupCols.length} ${window.I18N_HOME.group_columns_max} ${getGroupMax()}`;
 
       // botón borrar grupo (solo si vacío)
       const delGroup = document.createElement('button');
       delGroup.type = 'button';
       delGroup.className = 'icon-btn icon-del';
       delGroup.textContent = '×';
-      delGroup.title = 'Eliminar grupo (si vacío)';
+      delGroup.title = window.I18N_HOME.delete_group_title;
       delGroup.addEventListener('click', (e) => {
         e.stopPropagation(); // no activar al borrar
         if (group.columns.length > 0) return;
@@ -1284,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         topBar.className = 'col-toolbar-top';
 
         const title = document.createElement('div');
-        title.textContent = `Col ${globalIdx + 1}`;
+        title.textContent = `${window.I18N_HOME.col_label} ${globalIdx + 1}`;
 
         const actions = document.createElement('div');
         actions.className = 'col-actions';
@@ -1292,8 +1349,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const copyBtn = document.createElement('button');
         copyBtn.type = 'button';
         copyBtn.className = 'icon-btn icon-copy';
-        copyBtn.innerHTML = '<img src="/assets/icon-copy.png" alt="copiar" />';
-        copyBtn.title = 'Copiar columna al grupo activo';
+        copyBtn.innerHTML = '<img src="/assets/icon-copy.png" alt="' + window.I18N_HOME.copy_icon_alt + '" />';
+        copyBtn.title = window.I18N_HOME.copy_column_title;
 
         copyBtn.addEventListener('mousedown', (e) => e.stopPropagation());
 
@@ -1306,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const max = getGroupMax();
 
           if (targetGroup.columns.length >= max) {
-            builderMsg.textContent = 'El grupo activo ya está lleno.';
+            builderMsg.textContent = window.I18N_HOME.group_full;
             return;
           }
 
@@ -1319,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', () => {
               );
 
           if (colHasScreen && hasAnyScreen()) {
-            builderMsg.textContent = 'Solo se puede añadir 1 pantalla en toda la configuración.';
+            builderMsg.textContent = window.I18N_HOME.only_one_screen;
             return;
           }
           // 🔁 CLON PROFUNDO DE LA COLUMNA
@@ -1357,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', () => {
         plus.type = 'button';
         plus.className = 'icon-btn icon-plus';
         plus.textContent = '+';
-        plus.title = 'Añadir bloque';
+        plus.title = window.I18N_HOME.add_block_title;
         plus.addEventListener('mousedown', (e) => e.stopPropagation());
 
         plus.addEventListener('click', () => {
@@ -1369,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
               : parseInt(hSizeSelect.value, 10);
 
           if (itemType === 'screen' && hasAnyScreen()) {
-            builderMsg.textContent = 'Solo se puede añadir 1 pantalla en toda la configuración.';
+            builderMsg.textContent = window.I18N_HOME.only_one_screen;
             return;
           }
 
@@ -1393,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
               return;
             }
             const left = layout.singleCap - col.single.sum;
-            builderMsg.textContent = `No cabe ${h} en Columna ${globalIdx + 1}. Libre: ${left}.`;
+            builderMsg.textContent = `${window.I18N_HOME.not_fit_in_column} ${h} ${window.I18N_HOME.in_column_word} ${globalIdx + 1}. ${window.I18N_HOME.free_label}: ${left}.`;
             return;
           }
 
@@ -1430,12 +1487,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
               }
               builderMsg.textContent = bottomDoorSum < 30
-                ? `El buzón en la zona inferior requiere mín. H30 de puertas debajo (actualmente H${bottomDoorSum}).`
-                : `No cabe el buzón en la zona inferior (libres: ${layout.bottomCap - col.bottom.sum}).`;
+                ? `${window.I18N_HOME.mailbox_bottom_min_h30} (actualmente H${bottomDoorSum}).`
+                : `${window.I18N_HOME.mailbox_bottom_no_fit} (${window.I18N_HOME.free_label.toLowerCase()}s: ${layout.bottomCap - col.bottom.sum}).`;
               return;
             }
             const topLeft = layout.topCap - col.top.sum;
-            builderMsg.textContent = `El elemento solo puede ir arriba y no cabe. Libres arriba: ${topLeft}.`;
+            builderMsg.textContent = `${window.I18N_HOME.element_top_only_no_fit} ${window.I18N_HOME.free_top_label}: ${topLeft}.`;
             return;
           }
 
@@ -1457,14 +1514,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const topLeft = layout.topCap - col.top.sum;
           const botLeft = layout.bottomCap - col.bottom.sum;
-          builderMsg.textContent = `No cabe ${h} en Columna ${globalIdx + 1}. Libres: arriba ${topLeft}, abajo ${botLeft}.`;
+          builderMsg.textContent = `${window.I18N_HOME.not_fit_in_column} ${h} ${window.I18N_HOME.in_column_word} ${globalIdx + 1}. ${window.I18N_HOME.free_label}s: ${window.I18N_HOME.top_word.toLowerCase()} ${topLeft}, ${window.I18N_HOME.bottom_word.toLowerCase()} ${botLeft}.`;
         });
 
         const del = document.createElement('button');
         del.type = 'button';
         del.className = 'icon-btn icon-del';
         del.textContent = '×';
-        del.title = 'Eliminar columna';
+        del.title = window.I18N_HOME.delete_column_title;
 
         del.addEventListener('mousedown', (e) => e.stopPropagation());
         del.addEventListener('click', () => {
@@ -1571,12 +1628,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (nb.type === 'screen') {
             const img = document.createElement('img');
             img.src = '{{ asset(kuik.img_pantalla) }}';
-            img.alt = 'Pantalla';
+            img.alt = window.I18N_HOME.screen_alt;
             b.appendChild(img);
           } else if (nb.type === 'mailbox') {
             const img = document.createElement('img');
             img.src = getBuzonImg(nb.electronico, nb.tarjetero);
-            img.alt = 'Buzón';
+            img.alt = window.I18N_HOME.mailbox_alt;
             b.appendChild(img);
           } else {
             const label = document.createElement('div');
@@ -1588,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
           delBtn.type = 'button';
           delBtn.className = 'delete-block';
           delBtn.textContent = '×';
-          delBtn.title = 'Eliminar';
+          delBtn.title = window.I18N_HOME.delete_block_title;
 
           delBtn.addEventListener('mousedown', (e) => e.stopPropagation());
           delBtn.addEventListener('click', (e) => {
@@ -1672,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', () => {
               blocksArr.splice(0, blocksArr.length, ...blocksSnap);
               cleanupIndicator();
               render();
-              builderMsg.textContent = 'Los buzones deben dejar mín. H30 de puertas al fondo de la zona inferior.';
+              builderMsg.textContent = window.I18N_HOME.mailbox_reorder_min_h30;
               return;
             }
             cleanupIndicator();
@@ -1722,10 +1779,10 @@ document.addEventListener('DOMContentLoaded', () => {
         foot.className = 'col-foot';
 
         if (layout.mode === 'home_empotrado') {
-          foot.innerHTML = `Usado H${col.single.sum}/H${layout.singleCap}`;
+          foot.innerHTML = `${window.I18N_HOME.used_label} H${col.single.sum}/H${layout.singleCap}`;
         } else {
           const total = col.top.sum + col.bottom.sum;
-          foot.innerHTML = `Usado H${total}/H${layout.topCap + layout.bottomCap} · Arriba H${col.top.sum}/H${layout.topCap} · Abajo H${col.bottom.sum}/H${layout.bottomCap}`;
+          foot.innerHTML = `${window.I18N_HOME.used_label} H${total}/H${layout.topCap + layout.bottomCap} · ${window.I18N_HOME.top_word} H${col.top.sum}/H${layout.topCap} · ${window.I18N_HOME.bottom_word} H${col.bottom.sum}/H${layout.bottomCap}`;
         }
 
         shell.appendChild(topBar);
@@ -2003,13 +2060,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (missingAttr) {
       e.preventDefault();
-      error.textContent = 'Selecciona ' + missingAttr + '.';
+      error.textContent = window.I18N_HOME.select_attr_prefix + ' ' + missingAttr + '.';
       return;
     }
 
     if (!pl || !colorDoor || !colorBody) {
       e.preventDefault();
-      error.textContent = 'Selecciona interior/exterior, color puerta y color cuerpo.';
+      error.textContent = window.I18N_HOME.select_placement_colors;
       return;
     }
 
@@ -2017,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.columns.length === 0) {
       e.preventDefault();
-      error.textContent = 'Añade al menos 1 columna.';
+      error.textContent = window.I18N_HOME.add_one_column;
       return;
     }
 
@@ -2036,15 +2093,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (layout.mode === 'home_empotrado') {
         const left = layout.singleCap - state.columns[incompleteIndex].single.sum;
         error.textContent = left > 0
-          ? `La columna ${colNum} no está completa. Falta: H${left}.`
-          : `La columna ${colNum} excede la capacidad (H${layout.singleCap}). Elimina H${-left} de bloques.`;
+          ? `${window.I18N_HOME.column_incomplete_missing.replace('%num%', colNum)} H${left}.`
+          : `${window.I18N_HOME.column_exceeds_capacity.replace('%num%', colNum).replace('%cap%', layout.singleCap)} H${-left} ${window.I18N_HOME.of_blocks_word}.`;
       } else {
         const topLeft = layout.topCap - state.columns[incompleteIndex].top.sum;
         const botLeft = layout.bottomCap - state.columns[incompleteIndex].bottom.sum;
         const parts = [];
-        if (topLeft !== 0) parts.push(topLeft > 0 ? `arriba falta H${topLeft}` : `arriba sobra H${-topLeft}`);
-        if (botLeft !== 0) parts.push(botLeft > 0 ? `abajo falta H${botLeft}` : `abajo sobra H${-botLeft}`);
-        error.textContent = `La columna ${colNum} no está completa: ${parts.join(', ')}.`;
+        if (topLeft !== 0) parts.push(topLeft > 0 ? `${window.I18N_HOME.top_missing}H${topLeft}` : `${window.I18N_HOME.top_excess}H${-topLeft}`);
+        if (botLeft !== 0) parts.push(botLeft > 0 ? `${window.I18N_HOME.bottom_missing}H${botLeft}` : `${window.I18N_HOME.bottom_excess}H${-botLeft}`);
+        error.textContent = `${window.I18N_HOME.column_incomplete_parts.replace('%num%', colNum)} ${parts.join(', ')}.`;
       }
       return;
     }
@@ -2057,7 +2114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const controlSel = document.getElementById('control-select');
     if (hasScreen && controlSel && !controlSel.value) {
       e.preventDefault();
-      error.textContent = 'Si hay una pantalla debes seleccionar un periférico.';
+      error.textContent = window.I18N_HOME.screen_needs_peripheral;
       return;
     }
 
@@ -2254,7 +2311,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const img = document.createElement('img');
       img.src = getMailboxImg();
-      img.alt = 'Buzón';
+      img.alt = window.I18N_HOME.mailbox_alt;
       cell.appendChild(img);
 
       const rm = document.createElement('span');
@@ -2290,12 +2347,12 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateInfo() {
     if (!window.MB_STATE) return;
     const filled = window.MB_STATE.cells.filter(Boolean).length;
-    info.textContent = `${filled} buzones activos de ${window.MB_STATE.cells.length} total`;
+    info.textContent = `${filled} ${window.I18N_HOME.buzones_active_of_total} ${window.MB_STATE.cells.length} total`;
   }
 
   function generate(existingCells) {
     const opt = modelSel.selectedOptions[0];
-    if (!opt || !opt.value) { info.textContent = 'Selecciona un modelo.'; return; }
+    if (!opt || !opt.value) { info.textContent = window.I18N_HOME.select_model; return; }
 
     const numCols = parseInt(colsSel.value, 10) || 1;
     const rows    = calcRows();

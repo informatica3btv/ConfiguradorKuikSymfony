@@ -16,6 +16,12 @@ twig:
             col_width_px: 135
             mb_col_width_px: 115
 
+            # Fondo (profundidad) real del módulo en mm, según la serie (fondo/ancho de columna)
+            fondo_mm:
+                '300': 600
+                '400': 600
+                '500': 600
+
             # Dimensiones físicas reales de las puertas (en mm)
             # El valor H (10,20,30...) multiplica la unidad base de 12,5 mm
             door_width_mm: 380
@@ -47,9 +53,9 @@ twig:
             # Rutas de assets (usar con asset())
             img_pantalla:    'assets/pantalla.png'
             img_buzon_kuik:  'assets/buzon_kuik.png'
-            img_brazo_blanco: 'assets/brazo_blanco.jpg'
-            img_brazo_negro:  'assets/brazo_negro.jpg'
-            img_brazo_plata:  'assets/brazo_plata.jpg'
+            img_brazo_blanco: 'assets/brazo_blanco.png'
+            img_brazo_negro:  'assets/brazo_negro.png'
+            img_brazo_plata:  'assets/brazo_plata.png'
             img_pie:          'assets/pie_negro.jpg'
 
             img_buzon_btv: '/assets/buzon_agrupacion.jpg'

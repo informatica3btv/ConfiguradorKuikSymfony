@@ -7,6 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Validator\Constraints as Assert;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity(repositoryClass=ConfigurationTypeRepository::class)
@@ -26,9 +27,15 @@ class ConfigurationType
     private ?int $id = null;
 
     /**
+     * @Gedmo\Translatable
      * @ORM\Column(type="string", length=255)
      */
     private ?string $name = null;
+
+    /**
+     * @Gedmo\Locale
+     */
+    private $locale;
 
     /**
      * @ORM\Column(type="string", length=255)
@@ -53,6 +60,8 @@ class ConfigurationType
     }
 
     public function getId(): ?int { return $this->id; }
+
+    public function setTranslatableLocale(string $locale): self { $this->locale = $locale; return $this; }
 
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): self { $this->name = $name; return $this; }

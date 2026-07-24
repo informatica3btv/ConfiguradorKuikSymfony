@@ -1,5 +1,5 @@
 {% extends 'layout.html.twig' %}
-{% block page_title %}Recuperar proyecto{% endblock %}
+{% block page_title %}{{ 'recover.title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -424,28 +424,28 @@
 <div class="page-wrap">
   <div class="page-head">
     <div>
-      <h2 class="page-title">Recuperar proyecto</h2>
-      <div class="page-sub">Escribe el ID de la configuración/proyecto para cargar su resumen.</div>
+      <h2 class="page-title">{{ 'recover.title'|trans }}</h2>
+      <div class="page-sub">{{ 'recover.subtitle'|trans }}</div>
     </div>
   </div>
 
   <div class="search-row">
-    <input id="codeInput" type="number" min="1" placeholder="Ej: 123" required>
-    <button id="btnSearch" class="btn primary" type="button">Buscar</button>
-    <button id="btnClear" class="btn" type="button">Limpiar</button>
+    <input id="codeInput" type="number" min="1" placeholder="{{ 'recover.search_placeholder'|trans }}" required>
+    <button id="btnSearch" class="btn primary" type="button">{{ 'recover.search_button'|trans }}</button>
+    <button id="btnClear" class="btn" type="button">{{ 'recover.clear_button'|trans }}</button>
   </div>
 
   <div id="msg" class="warn" style="display:none;"></div>
 
   <div id="result" style="display:none;">
     <div class="page-sub" style="margin: 6px 0 14px;">
-      <span class="id-pill">ID configuración: <span id="confId">—</span></span>
-      <span class="id-pill" id="projPill" style="display:none;">Proyecto: <span id="projName">—</span></span>
+      <span class="id-pill">{{ 'recover.config_id_label'|trans }}: <span id="confId">—</span></span>
+      <span class="id-pill" id="projPill" style="display:none;">{{ 'recover.project_label'|trans }}: <span id="projName">—</span></span>
     </div>
 
     <div class="grid">
       <div class="card">
-        <h3>Vista previa</h3>
+        <h3>{{ 'recover.preview_title'|trans }}</h3>
 
         <div class="preview-wrap">
           <div class="preview-scroll">
@@ -460,19 +460,19 @@
       </div>
 
       <div class="card">
-        <h3>Configuración</h3>
+        <h3>{{ 'recover.config_title'|trans }}</h3>
 
         <div id="infoBox" class="kvs"></div>
 
         <div class="section-sep"></div>
-        <h3>Puertas por tamaño</h3>
+        <h3>{{ 'recover.doors_by_size_title'|trans }}</h3>
         <div id="doorsTable"></div>
 
         <div class="section-sep"></div>
-        <h3>Complementos</h3>
+        <h3>{{ 'recover.addons_title'|trans }}</h3>
         <div id="addonsTotals" class="kvs" style="margin-top:10px;"></div>
 
-        <h3 style="margin-top:14px;">Detalle (solo puertas con complementos)</h3>
+        <h3 style="margin-top:14px;">{{ 'recover.addons_detail_title'|trans }}</h3>
         <div id="addonsDetail"></div>
       </div>
     </div>
@@ -482,6 +482,43 @@
 
 {% block javascripts %}
 {{ parent() }}
+<script>
+  window.I18N_RECOVER = {{ {
+    size_header: 'recover.size_header'|trans,
+    quantity_header: 'recover.quantity_header'|trans,
+    total_doors: 'recover.total_doors'|trans,
+    door_header: 'recover.door_header'|trans,
+    addon_header: 'recover.addon_header'|trans,
+    socket_usb: 'recover.socket_usb'|trans,
+    socket: 'recover.socket'|trans,
+    usb: 'recover.usb'|trans,
+    series_300: 'recover.series_300'|trans,
+    series_400: 'recover.series_400'|trans,
+    series_500: 'recover.series_500'|trans,
+    interior: 'recover.interior'|trans,
+    exterior: 'recover.exterior'|trans,
+    group_label: 'recover.group_label'|trans,
+    no_columns: 'recover.no_columns'|trans,
+    no_doors: 'recover.no_doors'|trans,
+    no_addons_doors: 'recover.no_addons_doors'|trans,
+    invalid_id: 'recover.invalid_id_error'|trans,
+    not_found: 'recover.not_found_error'|trans,
+    invalid_json: 'recover.invalid_json_error'|trans,
+    network_error: 'recover.network_error'|trans,
+    project_label: 'recover.project_label'|trans,
+    type_label: 'recover.type_label'|trans,
+    installation_label: 'recover.installation_label'|trans,
+    background_label: 'recover.background_label'|trans,
+    location_label: 'recover.location_label'|trans,
+    material_label: 'recover.material_label'|trans,
+    door_color_label: 'recover.door_color_label'|trans,
+    body_color_label: 'recover.body_color_label'|trans,
+    columns_label: 'recover.columns_label'|trans,
+    total_sockets: 'recover.total_sockets'|trans,
+    total_usb: 'recover.total_usb'|trans,
+    doors_with_both: 'recover.doors_with_both'|trans
+  }|json_encode|raw }};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('codeInput');
@@ -531,15 +568,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function labelBg(bg){
-    if (bg === '300') return 'Serie 300';
-    if (bg === '400') return 'Serie 400';
-    if (bg === '500') return 'Serie 500';
+    if (bg === '300') return window.I18N_RECOVER.series_300;
+    if (bg === '400') return window.I18N_RECOVER.series_400;
+    if (bg === '500') return window.I18N_RECOVER.series_500;
     return '—';
   }
 
   function labelPlacement(p){
-    if (p === 'interior') return 'Interior';
-    if (p === 'exterior') return 'Exterior';
+    if (p === 'interior') return window.I18N_RECOVER.interior;
+    if (p === 'exterior') return window.I18N_RECOVER.exterior;
     return '—';
   }
 
@@ -724,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!groups.length){
       const div = document.createElement('div');
       div.className = 'muted';
-      div.textContent = 'No hay columnas en esta configuración.';
+      div.textContent = window.I18N_RECOVER.no_columns;
       previewGroups.appendChild(div);
       return;
     }
@@ -740,7 +777,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const label = document.createElement('div');
       label.className = 'group-label';
-      label.textContent = `Agrupación ${groupIndex + 1} (${groupCols.length} columnas)`;
+      label.textContent = window.I18N_RECOVER.group_label
+        .replace('%index%', groupIndex + 1)
+        .replace('%count%', groupCols.length);
 
       const supportWrap = document.createElement('div');
       supportWrap.className = 'support-wrap';
@@ -833,7 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!sizes.length){
       const div = document.createElement('div');
       div.className = 'muted';
-      div.textContent = 'No hay puertas (solo pantallas o vacío).';
+      div.textContent = window.I18N_RECOVER.no_doors;
       return div;
     }
 
@@ -842,8 +881,8 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th>Tamaño</th>
-          <th>Cantidad</th>
+          <th>${window.I18N_RECOVER.size_header}</th>
+          <th>${window.I18N_RECOVER.quantity_header}</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -862,7 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const trTotal = document.createElement('tr');
     trTotal.innerHTML = `
-      <td><b>Total puertas</b></td>
+      <td><b>${window.I18N_RECOVER.total_doors}</b></td>
       <td><b>${totalDoors}</b></td>
     `;
     tbody.appendChild(trTotal);
@@ -890,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (socket || usb){
         detail.push({
           door: k,
-          label: (socket && usb) ? 'Enchufe + USB' : (socket ? 'Enchufe' : 'USB')
+          label: (socket && usb) ? window.I18N_RECOVER.socket_usb : (socket ? window.I18N_RECOVER.socket : window.I18N_RECOVER.usb)
         });
       }
     });
@@ -903,7 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!detail.length){
       const div = document.createElement('div');
       div.className = 'muted';
-      div.textContent = 'No hay puertas con complementos.';
+      div.textContent = window.I18N_RECOVER.no_addons_doors;
       return div;
     }
 
@@ -912,8 +951,8 @@ document.addEventListener('DOMContentLoaded', () => {
     table.innerHTML = `
       <thead>
         <tr>
-          <th>Puerta</th>
-          <th>Complemento</th>
+          <th>${window.I18N_RECOVER.door_header}</th>
+          <th>${window.I18N_RECOVER.addon_header}</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -944,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const id = (input.value || '').trim();
     if (!id || !/^\d+$/.test(id) || parseInt(id, 10) <= 0){
-      showMsg('Introduce un ID válido.');
+      showMsg(window.I18N_RECOVER.invalid_id);
       return;
     }
 
@@ -955,13 +994,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = (data.items && data.items.length) ? data.items[0] : null;
 
       if (!item){
-        showMsg(`No existe ninguna configuración con ID ${id}.`);
+        showMsg(window.I18N_RECOVER.not_found.replace('%id%', id));
         return;
       }
 
       const payload = safeParse(item.payload || '');
       if (!payload){
-        showMsg('El payload de esta configuración no es JSON válido.');
+        showMsg(window.I18N_RECOVER.invalid_json);
         return;
       }
 
@@ -984,19 +1023,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       infoBox.innerHTML = '';
       infoBox.appendChild(kv('ID', item.id));
-      infoBox.appendChild(kv('Proyecto', item.projectName || '—'));
-      infoBox.appendChild(kv('Tipo', payload.type || '—'));
+      infoBox.appendChild(kv(window.I18N_RECOVER.project_label, item.projectName || '—'));
+      infoBox.appendChild(kv(window.I18N_RECOVER.type_label, payload.type || '—'));
 
       if (payload.instalacion) {
-        infoBox.appendChild(kv('Instalación', payload.instalacion));
+        infoBox.appendChild(kv(window.I18N_RECOVER.installation_label, payload.instalacion));
       }
 
-      infoBox.appendChild(kv('Fondo', labelBg(payload.fondo)));
-      infoBox.appendChild(kv('Ubicación', labelPlacement(payload.placement)));
-      infoBox.appendChild(kv('Material', payload.material || '—'));
-      infoBox.appendChild(kv('Color puerta', doorColorRal || doorColor));
-      infoBox.appendChild(kv('Color cuerpo', bodyColorRal || bodyColor));
-      infoBox.appendChild(kv('Columnas', Array.isArray(columns) ? columns.length : 0));
+      infoBox.appendChild(kv(window.I18N_RECOVER.background_label, labelBg(payload.fondo)));
+      infoBox.appendChild(kv(window.I18N_RECOVER.location_label, labelPlacement(payload.placement)));
+      infoBox.appendChild(kv(window.I18N_RECOVER.material_label, payload.material || '—'));
+      infoBox.appendChild(kv(window.I18N_RECOVER.door_color_label, doorColorRal || doorColor));
+      infoBox.appendChild(kv(window.I18N_RECOVER.body_color_label, bodyColorRal || bodyColor));
+      infoBox.appendChild(kv(window.I18N_RECOVER.columns_label, Array.isArray(columns) ? columns.length : 0));
 
       renderGroups(groups, doorColor, bodyColor, addons, payload);
 
@@ -1006,9 +1045,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = computeAddons(addons);
 
       addonsTotals.innerHTML = '';
-      addonsTotals.appendChild(kv('Total enchufes', a.totalSocket));
-      addonsTotals.appendChild(kv('Total USB', a.totalUsb));
-      addonsTotals.appendChild(kv('Puertas con ambos', a.totalBoth));
+      addonsTotals.appendChild(kv(window.I18N_RECOVER.total_sockets, a.totalSocket));
+      addonsTotals.appendChild(kv(window.I18N_RECOVER.total_usb, a.totalUsb));
+      addonsTotals.appendChild(kv(window.I18N_RECOVER.doors_with_both, a.totalBoth));
 
       addonsDetail.innerHTML = '';
       addonsDetail.appendChild(renderAddonsDetail(a.detail));
@@ -1016,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
       result.style.display = 'block';
     }catch(e){
       console.error(e);
-      showMsg('No se pudo recuperar el proyecto (error de red o servidor).');
+      showMsg(window.I18N_RECOVER.network_error);
     }finally{
       btnSearch.disabled = false;
     }

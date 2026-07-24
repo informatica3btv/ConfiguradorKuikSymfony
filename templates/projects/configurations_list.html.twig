@@ -1,5 +1,5 @@
 {% extends 'layout.html.twig' %}
-{% block page_title %}Configuraciones{% endblock %}
+{% block page_title %}{{ 'project_configs.page_title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -505,9 +505,9 @@
 {% block content %}
 <div class="wrap">
 
-  <h1 class="page-title">Configuraciones del proyecto</h1>
+  <h1 class="page-title">{{ 'project_configs.title'|trans }}</h1>
   <div class="muted" style="margin-top:6px;">
-    Proyecto: <b>{{ project.projectName }}</b> · Comercial: <b>{{user.name}}</b>
+    {{ 'project_configs.project_label'|trans }}: <b>{{ project.projectName }}</b> · {{ 'project_configs.commercial_label'|trans }}: <b>{{user.name}}</b>
   </div>
 
   <div class="info-bar">
@@ -519,7 +519,7 @@
         </svg>
       </div>
       <div>
-        <div class="info-k">Cliente</div>
+        <div class="info-k">{{ 'project_configs.client'|trans }}</div>
         <div class="info-v">{{ project.clientName ?: '—' }}</div>
       </div>
     </div>
@@ -532,7 +532,7 @@
         </svg>
       </div>
       <div>
-        <div class="info-k">Email</div>
+        <div class="info-k">{{ 'project_configs.email'|trans }}</div>
         <div class="info-v">{{ project.email ?: '—' }}</div>
       </div>
     </div>
@@ -545,7 +545,7 @@
         </svg>
       </div>
       <div>
-        <div class="info-k">Ubicación</div>
+        <div class="info-k">{{ 'project_configs.location'|trans }}</div>
         <div class="info-v">{{ project.city ?: '—' }} - {{ project.address }}</div>
       </div>
 
@@ -559,7 +559,7 @@
         </svg>
       </div>
       <div>
-        <div class="info-k">Teléfono</div>
+        <div class="info-k">{{ 'project_configs.phone'|trans }}</div>
         <div class="info-v">{{ project.phone ?: '—' }}</div>
       </div>
 
@@ -571,7 +571,7 @@
             <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
           </svg>
-          Editar
+          {{ 'project_configs.edit'|trans }}
         </a>
       {% endif %}
     </div>
@@ -582,8 +582,8 @@
 
     <div class="modalx__dialog" role="dialog" aria-modal="true" aria-labelledby="editClientTitle">
       <div class="modalx__head">
-        <h4 class="modalx__title" id="editClientTitle">Editar datos</h4>
-        <button type="button" class="modalx__close" aria-label="Cerrar" data-close="1">×</button>
+        <h4 class="modalx__title" id="editClientTitle">{{ 'project_configs.edit_data'|trans }}</h4>
+        <button type="button" class="modalx__close" aria-label="{{ 'project_configs.close'|trans }}" data-close="1">×</button>
       </div>
 
       <form method="post" action="{{ path('project_update_info', {id: project.id}) }}">
@@ -592,35 +592,67 @@
 
           <div class="form-row">
             <div class="field">
-              <label>Cliente</label>
+              <label>{{ 'project_configs.client'|trans }}</label>
               <input type="text" name="clientName" value="{{ project.clientName }}">
             </div>
 
             <div class="field">
-              <label>Email</label>
+              <label>{{ 'project_configs.email'|trans }}</label>
               <input type="email" name="email" value="{{ project.email }}">
             </div>
 
             <div class="field">
-              <label>Teléfono</label>
+              <label>{{ 'project_configs.phone'|trans }}</label>
               <input type="text" name="phone" value="{{ project.phone }}">
             </div>
 
             <div class="field">
-              <label>Ubicación</label>
+              <label>{{ 'project_configs.location'|trans }}</label>
               <input type="text" name="city" value="{{ project.city }}">
             </div>
 
             <div class="field">
-              <label>Dirección</label>
+              <label>{{ 'project_configs.address'|trans }}</label>
               <input type="text" name="address" value="{{ project.address }}">
             </div>
           </div>
         </div>
 
         <div class="modalx__footer">
-          <button type="button" class="btn" data-close="1">Cancelar</button>
-          <button type="submit" class="btn primary">Guardar cambios</button>
+          <button type="button" class="btn" data-close="1">{{ 'project_configs.cancel'|trans }}</button>
+          <button type="submit" class="btn primary">{{ 'project_configs.save_changes'|trans }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modalx" id="acceptConfigModal" aria-hidden="true">
+    <div class="modalx__backdrop" data-close="1"></div>
+
+    <div class="modalx__dialog" role="dialog" aria-modal="true" aria-labelledby="acceptConfigTitle">
+      <div class="modalx__head">
+        <h4 class="modalx__title" id="acceptConfigTitle">{{ 'project_configs.accept_modal_title'|trans }}</h4>
+        <button type="button" class="modalx__close" aria-label="{{ 'project_configs.close'|trans }}" data-close="1">×</button>
+      </div>
+
+      <form method="post" id="acceptConfigForm" action="">
+        <div class="modalx__body">
+          <input type="hidden" name="_token" id="acceptConfigToken" value="">
+
+          <div class="form-row">
+            <div class="field">
+              <p class="muted" style="margin:0 0 10px;">{{ 'project_configs.accept_modal_help'|trans }}</p>
+              <label for="acceptConfigCodCliente">{{ 'project_configs.client_code_label'|trans }}</label>
+              <input type="text" id="acceptConfigCodCliente" name="cod_cliente"
+                     inputmode="numeric" pattern="[0-9]{5}" maxlength="5" minlength="5"
+                     placeholder="{{ 'project_configs.client_code_placeholder'|trans }}" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="modalx__footer">
+          <button type="button" class="btn" data-close="1">{{ 'project_configs.cancel'|trans }}</button>
+          <button type="submit" class="btn primary">{{ 'project_configs.accept_submit'|trans }}</button>
         </div>
       </form>
     </div>
@@ -631,7 +663,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Volver a proyectos
+      {{ 'project_configs.back_to_projects'|trans }}
     </a>
 
     {% if project.status == 0 and app.user.id == user.id %}
@@ -639,29 +671,29 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 5v14M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        Nueva configuración
+        {{ 'project_configs.new_configuration'|trans }}
       </a>
     {% endif %}
 
     {% if project.status == 0 and app.user.id == user.id %}
       <a class="btn reject icon" href="{{ path('project_reject', { id: project.id }) }}"
-          onclick="return confirm('¿Seguro que quieres rechazar esta configuración?');">
+          onclick="return confirm('{{ 'project_configs.confirm_reject_project'|trans|e('js') }}');">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
           <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
         </svg>
-        Rechazar proyecto
+        {{ 'project_configs.reject_project'|trans }}
       </a>
     {% endif %}
   </div>
 
   {% if items is empty %}
     <div class="card">
-      <b>No hay configuraciones aún.</b>
+      <b>{{ 'project_configs.no_configurations'|trans }}</b>
       {% if app.user.id == user.id %}
         <div style="margin-top:10px;">
           <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">
-            Nueva configuración
+            {{ 'project_configs.new_configuration'|trans }}
           </a>
         </div>
       {% endif %}
@@ -720,27 +752,27 @@
         <div class="config-head">
           <div>
             <div class="config-title">
-              Configuración #{{ c.id }}
+              {{ 'project_configs.configuration'|trans }} #{{ c.id }}
               {% if c.status == 0 %}
-                <span class="badge open">Abierta</span>
+                <span class="badge open">{{ 'project_configs.status_open'|trans }}</span>
               {% elseif c.status == 1 %}
-                <span class="badge closed">Cerrada</span>
+                <span class="badge closed">{{ 'project_configs.status_closed'|trans }}</span>
               {% else %}
-                <span class="badge accepted">Aceptada</span>
+                <span class="badge accepted">{{ 'project_configs.status_accepted'|trans }}</span>
               {% endif %}
             </div>
 
             <div class="config-sub">
-              Tipo: <b>{{ type }}</b>
+              {{ 'project_configs.type_label'|trans }}: <b>{{ type }}</b>
               {% if instalacion %}
-                · Instalación: <b>{{ instalacion }}</b>
+                · {{ 'project_configs.installation_label'|trans }}: <b>{{ instalacion }}</b>
               {% endif %}
               {% if c.createdAt is defined and c.createdAt %}
-                · Creada: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
+                · {{ 'project_configs.created_label'|trans }}: <b>{{ c.createdAt|date('d/m/Y H:i') }}</b>
               {% endif %}
               {% set navOfferNum = p._navOfferResult.result.Cabecera.NumeroOfertaNav ?? null %}
               {% if navOfferNum %}
-                · Oferta NAV: <a href="{{ nav_url }}/runpage?page=9300" style="color:#16a34a;font-weight:700;text-decoration:none;" title="Abrir en NAV">{{ navOfferNum }}</a>
+                · {{ 'project_configs.nav_offer_label'|trans }}: <a href="{{ nav_url }}/runpage?page=9300" style="color:#16a34a;font-weight:700;text-decoration:none;" title="{{ 'project_configs.open_in_nav'|trans }}">{{ navOfferNum }}</a>
               {% endif %}
             </div>
           </div>
@@ -748,24 +780,26 @@
           <div class="actions">
 
             {% if c.status == 2 and is_granted('ROLE_TECNICO') %}
-              <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
-                 onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">
+              <button type="button" class="btn accept icon" data-accept-trigger
+                      data-config-id="{{ c.id }}"
+                      data-token="{{ csrf_token('accept_configuration_' ~ c.id) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
-                Bajar detalles técnicos
-              </a>
+                {{ 'project_configs.download_technical'|trans }}
+              </button>
             {% endif %}
             {% if project.status == 0 and app.user.id == user.id %}
-              <a class="btn accept icon" href="{{ path('configuration_accept', { id: c.id }) }}"
-                 onclick="return confirm('¿Seguro que quieres aceptar esta configuración?');">
+              <button type="button" class="btn accept icon" data-accept-trigger
+                      data-config-id="{{ c.id }}"
+                      data-token="{{ csrf_token('accept_configuration_' ~ c.id) }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
-                Aceptar configuración y crear oferta en NAV
-              </a>
+                {{ 'project_configs.accept_and_offer'|trans }}
+              </button>
             {% endif %}
 
             {% if project.status == 0 and app.user.id == user.id %}
@@ -774,7 +808,7 @@
                   <path d="M9 9h11v11H9V9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
-                Copiar
+                {{ 'project_configs.copy'|trans }}
               </a>
             {% endif %}
 
@@ -783,7 +817,7 @@
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
               </svg>
-              Resumen
+              {{ 'project_configs.summary'|trans }}
             </a>
 
             {% if c.status == 0 and project.status == 0 and app.user.id == user.id %}
@@ -792,7 +826,7 @@
                   <path d="M12 20h9" stroke="white" stroke-width="2" stroke-linecap="round"/>
                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
-                Editar
+                {{ 'project_configs.edit'|trans }}
               </a>
             {% endif %}
 
@@ -802,7 +836,7 @@
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
-                PDF
+                {{ 'project_configs.pdf'|trans }}
               </a>
             {% endif %}
 
@@ -812,25 +846,25 @@
         <div class="config-body">
           <div>
             <div class="kvs">
-              <div class="kv"><div class="k">Estado</div><div class="v">{{ c.statusLabel }}</div></div>
-              <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
+              <div class="kv"><div class="k">{{ 'project_configs.state'|trans }}</div><div class="v">{{ c.statusLabel }}</div></div>
+              <div class="kv"><div class="k">{{ 'project_configs.columns'|trans }}</div><div class="v">{{ columnsAll|length }}</div></div>
               <div class="kv">
-                <div class="k">Color cuerpo</div>
+                <div class="k">{{ 'project_configs.body_color'|trans }}</div>
                 <div class="v"><span class="swatch"><span class="dot" style="background: {{ bodyColor }};"></span>{{ bodyColorRal }}</span></div>
               </div>
               <div class="kv">
-                <div class="k">Color puerta</div>
+                <div class="k">{{ 'project_configs.door_color'|trans }}</div>
                 <div class="v"><span class="swatch"><span class="dot" style="background: {{ doorColor }};"></span>{{ doorColorRal }}</span></div>
               </div>
-              <div class="kv wide"><div class="k">Config ID</div><div class="v">#{{ c.id }}</div></div>
+              <div class="kv wide"><div class="k">{{ 'project_configs.config_id'|trans }}</div><div class="v">#{{ c.id }}</div></div>
             </div>
           </div>
 
           <div class="mini-wrap">
-            <div class="mini-title">Vista previa (miniatura)</div>
+            <div class="mini-title">{{ 'project_configs.preview_title'|trans }}</div>
 
             {% if columnsAll is empty %}
-              <div style="margin-top:8px; color:#c0392b; font-weight:900;">Sin columnas</div>
+              <div style="margin-top:8px; color:#c0392b; font-weight:900;">{{ 'project_configs.no_columns'|trans }}</div>
             {% else %}
 
               {% set isHome = (type == 'home') %}
@@ -874,14 +908,14 @@
                       {% set numRows = firstColBlocks|length %}
                       <div class="mini-group" {% if instalacion == 'soporte_suelo' %} style="padding-bottom:70px;" {% endif %}>
 
-                        <div class="mini-group-label">Grupo {{ loop.index }}</div>
+                        <div class="mini-group-label">{{ 'project_configs.group'|trans({'%number%': loop.index}) }}</div>
 
                         <div class="mini-support-center">
                           <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ singleCap > 50 ? '40px' : '14px' }};--armH:{{ (singleCap * 1.65 + 60)|round }}px;">
 
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-                              <img class="mini-arm left"  src="{{ armSrc }}" alt="Brazo izq">
-                              <img class="mini-arm right" src="{{ armSrc }}" alt="Brazo der">
+                              <img class="mini-arm left"  src="{{ armSrc }}" alt="{{ 'project_configs.arm_left'|trans }}">
+                              <img class="mini-arm right" src="{{ armSrc }}" alt="{{ 'project_configs.arm_right'|trans }}">
                             {% endif %}
 
                             {% if not isHome %}
@@ -924,14 +958,14 @@
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _c in _autoCols %}
                                           {% set _xC = (_c - 0.5) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="{{ 'project_configs.leg'|trans }}">
                                         {% endfor %}
                                       </div>
                                     {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _i in mbLegPos %}
                                           {% set _xC = (_i is even) ? ((_i / 2) + 0.5) * _mbMiniCellW : ((_i + 1) / 2) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="{{ 'project_configs.leg'|trans }}">
                                         {% endfor %}
                                       </div>
                                     {% endif %}
@@ -974,12 +1008,12 @@
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                 style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
-                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="{{ 'project_configs.screen'|trans }}">
                                               {% elseif btype == 'mailbox' %}
                                                 {% set _elec = blk.electronico ?? false %}
                                                 {% set _tarj = blk.tarjetero ?? false %}
                                                 {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
-                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                                <img src="{{ asset(_buzonImg) }}" alt="{{ 'project_configs.mailbox'|trans }}">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}
@@ -1004,12 +1038,12 @@
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                 style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
-                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="{{ 'project_configs.screen'|trans }}">
                                               {% elseif btype == 'mailbox' %}
                                                 {% set _elec = blk.electronico ?? false %}
                                                 {% set _tarj = blk.tarjetero ?? false %}
                                                 {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
-                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                                <img src="{{ asset(_buzonImg) }}" alt="{{ 'project_configs.mailbox'|trans }}">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}
@@ -1037,12 +1071,12 @@
                                             <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }} {% if loop.last %}last{% endif %}"
                                                 style="height: calc({{ hh }}px * var(--hscale));">
                                               {% if btype == 'screen' %}
-                                                <img src="{{ asset('assets/pantalla.png') }}" alt="Pantalla">
+                                                <img src="{{ asset('assets/pantalla.png') }}" alt="{{ 'project_configs.screen'|trans }}">
                                               {% elseif btype == 'mailbox' %}
                                                 {% set _elec = blk.electronico ?? false %}
                                                 {% set _tarj = blk.tarjetero ?? false %}
                                                 {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
-                                                <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                                <img src="{{ asset(_buzonImg) }}" alt="{{ 'project_configs.mailbox'|trans }}">
                                               {% else %}
                                                 <div class="num">{{ doorIndex }}</div>
                                               {% endif %}
@@ -1091,14 +1125,14 @@
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _c in _autoCols %}
                                           {% set _xC = (_c - 0.5) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="{{ 'project_configs.leg'|trans }}">
                                         {% endfor %}
                                       </div>
                                     {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
                                       <div style="position:absolute;top:100%;left:4px;width:{{ mbCols * _mbMiniCellW }}px;height:{{ _mbMiniLegH }}px;">
                                         {% for _i in mbLegPos %}
                                           {% set _xC = (_i is even) ? ((_i / 2) + 0.5) * _mbMiniCellW : ((_i + 1) / 2) * _mbMiniCellW %}
-                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                          <img style="position:absolute;left:{{ (_xC - 40)|round }}px;top:0;width:80px;height:{{ _mbMiniLegH }}px;object-fit:contain;" src="{{ legSrc }}" alt="{{ 'project_configs.leg'|trans }}">
                                         {% endfor %}
                                       </div>
                                     {% endif %}
@@ -1132,7 +1166,7 @@
                               <div style="position:relative; height:{{ _colLegH }}px; margin-left:{{ _taqLegLeft }}px; width:{{ n * 60 }}px; pointer-events:none; flex-shrink:0;">
                                 {% for pos in legPositions %}
                                   {% set _xC = (pos - 0.5) * 60 %}
-                                  <img style="position:absolute; left:{{ (_xC - 40)|round }}px; top:0; width:80px; height:{{ _colLegH }}px; object-fit:contain;" src="{{ legSrc }}" alt="Pata">
+                                  <img style="position:absolute; left:{{ (_xC - 40)|round }}px; top:0; width:80px; height:{{ _colLegH }}px; object-fit:contain;" src="{{ legSrc }}" alt="{{ 'project_configs.leg'|trans }}">
                                 {% endfor %}
                               </div>
                             {% endif %}
@@ -1149,7 +1183,7 @@
 
                 {% if totalCols > maxCols %}
                   <div class="muted" style="margin-top:10px;">
-                    Mostrando {{ maxCols }} de {{ totalCols }} columnas…
+                    {{ 'project_configs.showing_x_of_y'|trans({'%shown%': maxCols, '%total%': totalCols}) }}
                   </div>
                 {% endif %}
 
@@ -1190,6 +1224,48 @@
           scroll.scrollLeft = scrollLeft - walk;
         });
       });
+
+      // -------- Modal aceptar configuración / crear oferta NAV --------
+      const acceptModal = document.getElementById('acceptConfigModal');
+      const acceptForm = document.getElementById('acceptConfigForm');
+      const acceptTokenInput = document.getElementById('acceptConfigToken');
+      const acceptUrlTemplate = "{{ path('configuration_accept', {id: 0}) }}";
+
+      if (acceptModal && acceptForm && acceptTokenInput) {
+        const openAccept = (configId, token) => {
+          acceptForm.action = acceptUrlTemplate.replace(/\/0$/, '/' + configId);
+          acceptTokenInput.value = token;
+          acceptForm.reset();
+
+          acceptModal.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+          acceptModal.setAttribute('aria-hidden', 'false');
+
+          const first = acceptModal.querySelector('input[name="cod_cliente"]');
+          if (first) first.focus();
+        };
+
+        const closeAccept = () => {
+          acceptModal.classList.remove('is-open');
+          document.body.style.overflow = '';
+          acceptModal.setAttribute('aria-hidden', 'true');
+        };
+
+        document.querySelectorAll('[data-accept-trigger]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            openAccept(btn.dataset.configId, btn.dataset.token);
+          });
+        });
+
+        acceptModal.addEventListener('click', (e) => {
+          const closeEl = e.target.closest('[data-close="1"]');
+          if (closeEl) closeAccept();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && acceptModal.classList.contains('is-open')) closeAccept();
+        });
+      }
 
       const openBtn = document.getElementById('openEditClient');
       const modal = document.getElementById('editClientModal');

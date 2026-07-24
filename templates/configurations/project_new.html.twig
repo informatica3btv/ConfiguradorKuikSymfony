@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Crear proyecto{% endblock %}
+{% block page_title %}{{ 'project_new.title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -104,8 +104,8 @@
 <div class="wrap">
 
   <div>
-    <div class="page-title">Crear proyecto</div>
-    <div class="page-sub">Introduce los datos del cliente y del proyecto</div>
+    <div class="page-title">{{ 'project_new.title'|trans }}</div>
+    <div class="page-sub">{{ 'project_new.subtitle'|trans }}</div>
   </div>
 
   <form method="post"
@@ -120,46 +120,46 @@
       <div class="grid">
 
         <div class="field">
-          <label for="project_name">Nombre del proyecto *</label>
+          <label for="project_name">{{ 'project_new.project_name_label'|trans }}</label>
           <input id="project_name" name="project_name" type="text"
-                 placeholder="Ej. Proyecto Madrid 01" required>
+                 placeholder="{{ 'project_new.project_name_placeholder'|trans }}" required>
         </div>
 
         <div class="field">
-          <label for="client_name">Nombre del cliente *</label>
+          <label for="client_name">{{ 'project_new.client_name_label'|trans }}</label>
           <input id="client_name" name="client_name" type="text"
-                 placeholder="Ej. Juan Pérez" required>
+                 placeholder="{{ 'project_new.client_name_placeholder'|trans }}" required>
         </div>
 
         <div class="field">
-          <label for="phone">Teléfono</label>
+          <label for="phone">{{ 'project_new.phone_label'|trans }}</label>
           <input id="phone" name="phone" type="tel"
-                 placeholder="Ej. 600 123 456">
+                 placeholder="{{ 'project_new.phone_placeholder'|trans }}">
         </div>
 
         <div class="field">
-          <label for="email">Correo</label>
+          <label for="email">{{ 'project_new.email_label'|trans }}</label>
           <input id="email" name="email" type="email"
-                 placeholder="Ej. cliente@correo.com">
+                 placeholder="{{ 'project_new.email_placeholder'|trans }}">
         </div>
 
         <div class="field">
-          <label for="city">Ciudad</label>
+          <label for="city">{{ 'project_new.city_label'|trans }}</label>
           <input id="city" name="city" type="text"
-                 placeholder="Ej. Madrid">
+                 placeholder="{{ 'project_new.city_placeholder'|trans }}">
         </div>
 
         <div class="field">
-          <label for="address">Dirección</label>
+          <label for="address">{{ 'project_new.address_label'|trans }}</label>
           <input id="address" name="address" type="text"
-                 placeholder="Ej. Calle Mayor 10">
+                 placeholder="{{ 'project_new.address_placeholder'|trans }}">
         </div>
 
       </div>
 
       <div style="margin-top:22px; display:flex; gap:12px; align-items:center;">
         <button type="submit" class="primary-btn">
-          Crear y continuar
+          {{ 'project_new.submit'|trans }}
         </button>
         <div id="projectError" class="warn"></div>
       </div>
@@ -170,6 +170,12 @@
 
 {% block javascripts %}
 {{ parent() }}
+<script>
+  window.I18N_PROJECT_NEW = {{ {
+    required_fields_error: 'project_new.required_fields_error'|trans,
+    invalid_email_error: 'project_new.invalid_email_error'|trans
+  }|json_encode|raw }};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('projectForm');
@@ -187,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (missing.length) {
       e.preventDefault();
-      err.textContent = 'Rellena los campos obligatorios (*) para continuar.';
+      err.textContent = window.I18N_PROJECT_NEW.required_fields_error;
       document.getElementById(missing[0]).focus();
       return;
     }
@@ -195,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('email').value.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.preventDefault();
-      err.textContent = 'El correo no tiene un formato válido.';
+      err.textContent = window.I18N_PROJECT_NEW.invalid_email_error;
       document.getElementById('email').focus();
     }
   });

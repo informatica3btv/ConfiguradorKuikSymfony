@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity()
@@ -17,6 +18,11 @@ class Mailbox
      */
     private $id;
 
+    /**
+     * @Gedmo\Locale
+     */
+    private $locale;
+
     /** @ORM\Column(type="string", length=255) */
     private $reference;
 
@@ -29,7 +35,10 @@ class Mailbox
     /** @ORM\Column(type="string", length=255) */
     private $fondo;
 
-    /** @ORM\Column(type="string", length=500, nullable=true) */
+    /**
+     * @Gedmo\Translatable
+     * @ORM\Column(type="string", length=500, nullable=true)
+     */
     private $descripcion;
 
     /** @ORM\Column(type="string", length=50, nullable=true) */
@@ -51,6 +60,8 @@ class Mailbox
     private $imageUrl;
 
     public function getId(): ?int { return $this->id; }
+
+    public function setTranslatableLocale(string $locale): self { $this->locale = $locale; return $this; }
 
     public function getReference(): ?string { return $this->reference; }
     public function setReference(string $v): self { $this->reference = $v; return $this; }

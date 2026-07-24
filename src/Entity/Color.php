@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\ColorRepository")
@@ -18,9 +19,15 @@ class Color
     private ?int $id = null;
 
     /**
+     * @Gedmo\Translatable
      * @ORM\Column(type="string", length=80)
      */
     private string $name = '';
+
+    /**
+     * @Gedmo\Locale
+     */
+    private $locale;
 
     /**
      * @ORM\Column(type="string", length=16)
@@ -43,6 +50,12 @@ class Color
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setTranslatableLocale(string $locale): self
+    {
+        $this->locale = $locale;
+        return $this;
     }
 
     public function getName(): string

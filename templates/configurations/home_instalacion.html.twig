@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Instalación (Home){% endblock %}
+{% block page_title %}{{ 'home_installation.page_title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -78,7 +78,7 @@
   <input type="hidden" name="agrupacion_combinada" id="agrupacion_combinada" value="">
 
   <div style="margin:16px 0;">
-    <h3 style="margin-bottom: 8px; font-size:24px;">Selecciona tipo de instalación</h3>
+    <h3 style="margin-bottom: 8px; font-size:24px;">{{ 'home_installation.select_installation_heading'|trans }}</h3>
 
     <div class="option-row" data-group="instalacion">
       {% for opt in options %}
@@ -90,21 +90,21 @@
   </div>
 
   <div id="agrupacion-section" style="margin:24px 0 0;display:none;">
-    <h3 style="margin-bottom: 8px; font-size:24px;">¿Es agrupación combinada?</h3>
-    <p style="color:#6b7280;font-size:14px;margin-bottom:12px;">Indica si esta instalación combina distintos tipos de columnas.</p>
+    <h3 style="margin-bottom: 8px; font-size:24px;">{{ 'home_installation.combined_grouping_heading'|trans }}</h3>
+    <p style="color:#6b7280;font-size:14px;margin-bottom:12px;">{{ 'home_installation.combined_grouping_help'|trans }}</p>
 
     <div class="option-row" data-group="agrupacion" style="grid-template-columns:repeat(2,1fr);max-width:400px;">
       <button type="button" class="option-card" data-value="1">
-        <div class="option-title">Sí</div>
+        <div class="option-title">{{ 'home_installation.yes'|trans }}</div>
       </button>
       <button type="button" class="option-card" data-value="0">
-        <div class="option-title">No</div>
+        <div class="option-title">{{ 'home_installation.no'|trans }}</div>
       </button>
     </div>
   </div>
 
   <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
-    <button type="submit" class="primary-btn">Siguiente</button>
+    <button type="submit" class="primary-btn">{{ 'home_installation.next_button'|trans }}</button>
     <div id="instalacionError" class="warn"></div>
   </div>
 </form>
@@ -112,6 +112,12 @@
 
 {% block javascripts %}
     {{ parent() }}
+    <script>
+      window.I18N_HOME_INSTALACION = {{ {
+        select_installation_error: 'home_installation.select_installation_error'|trans,
+        combined_grouping_error: 'home_installation.combined_grouping_error'|trans
+      }|json_encode|raw }};
+    </script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
     const hidden = document.getElementById('instalacion');
@@ -155,12 +161,12 @@
     document.getElementById('instalacionForm').addEventListener('submit', (e) => {
         if (!hidden.value) {
         e.preventDefault();
-        err.textContent = 'Selecciona un tipo de instalación para continuar.';
+        err.textContent = window.I18N_HOME_INSTALACION.select_installation_error;
         return;
         }
         if (agrupacionApplies.includes(hidden.value) && hiddenAgrupacion.value === '') {
         e.preventDefault();
-        err.textContent = 'Indica si es agrupación combinada para continuar.';
+        err.textContent = window.I18N_HOME_INSTALACION.combined_grouping_error;
         }
     });
     });

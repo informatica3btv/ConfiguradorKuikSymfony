@@ -31,6 +31,10 @@ services:
             $verifySsl: '%env(bool:BTV_VERIFY_SSL)%'
             # $cache and $logger are autowired automatically
 
+    App\EventSubscriber\LocaleSubscriber:
+        arguments:
+            $defaultLocale: '%kernel.default_locale%'
+
     App\Service\ConfigurationService:
         arguments:
             $placaReference: '%placa.reference%'

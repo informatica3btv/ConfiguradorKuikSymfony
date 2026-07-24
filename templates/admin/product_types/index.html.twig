@@ -1,0 +1,99 @@
+{% extends 'layout.html.twig' %}
+{% block page_title %}Administración · Tipos de producto{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc; --ink:#0b1220; --muted:#6b7280; --line: rgba(15,23,42,.12);
+      --card:#fff; --shadow: 0 10px 25px rgba(2,20,60,.08); --shadow-sm: 0 6px 14px rgba(2,20,60,.08);
+      --blue:#0b76d8;
+    }
+
+    .admin-wrap{ max-width:900px; margin:26px auto 70px; padding:0 14px; }
+    .admin-title{ font-size:34px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:6px; }
+
+    .admin-card{
+      margin-top:16px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+
+    .type-list{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+    .type-card{
+      background:#fff;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:16px;
+      padding:14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .type-label{ font-weight:900; margin:0; }
+    .type-meta{ margin-top:4px; color:var(--muted); font-size:13px; }
+
+    .badge{
+      display:inline-flex; align-items:center;
+      padding:4px 10px; border-radius:999px;
+      font-size:12px; font-weight:900;
+      background: rgba(11,118,216,.10); color:var(--blue);
+    }
+    .badge.none{ background: rgba(107,114,128,.12); color:var(--muted); }
+
+    .btn{
+      border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      text-decoration:none;
+      color:#0b1220;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <div>
+    <div class="admin-title">Tipos de producto</div>
+    <div class="admin-sub">Asigna una categoría a cada tipo para agrupar la tabla de precios del PDF</div>
+  </div>
+
+  <div class="admin-card">
+    <div class="type-list">
+      {% for t in types %}
+        <div class="type-card">
+          <div>
+            <div class="type-label">{{ t.label }}</div>
+            <div class="type-meta">
+              {% if t.category %}
+                <span class="badge">{{ t.category.name }}</span>
+              {% else %}
+                <span class="badge none">Sin categoría</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <a class="btn" href="{{ path('admin_product_types_edit', {id: t.id}) }}">Editar</a>
+        </div>
+      {% else %}
+        <div style="opacity:.75;">No hay tipos de producto configurados.</div>
+      {% endfor %}
+    </div>
+
+    <div style="margin-top:16px;">
+      <a class="btn" href="{{ path('admin_product_categories_index') }}">← Volver a categorías</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

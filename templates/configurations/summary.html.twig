@@ -29,6 +29,7 @@
 {% set bodyColorRal = p.colorBodyRal ?? '' %}
 
 {% set bg = p.fondo ?? '' %}
+{% set fondoMm = kuik.fondo_mm[bg] ?? null %}
 {% set placement = p.placement ?? '' %}
 {% set material = p.material ?? '' %}
 {% set addons = p.addons ?? {} %}
@@ -55,12 +56,18 @@
   bg == '500'  ? 'Serie 500' : '—'
 %}
 
+{# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
+{% set colWidthLabel = bg in ['300', '400', '500'] ? bg : null %}
+{% set totalHUnits = isEmpotradoLike ? singleCap : (topCap + bottomCap) %}
+{% set groupHeightLabel = kuik.h_heights_mm[totalHUnits] is defined ? kuik.h_heights_mm[totalHUnits] : (totalHUnits / 10 * 125)|round %}
+{% set groupHeightPx = totalHUnits * kuik.scale %}
+
 {% set placementLabel =
   placement == 'interior' ? 'Interior' :
   placement == 'exterior' ? 'Exterior' : '—'
 %}
 
-{% block page_title %}Resumen{% endblock %}
+{% block page_title %}{{ 'summary.page_title'|trans }}{% endblock %}
 
 {% block stylesheets %}
   {{ parent() }}
@@ -165,6 +172,9 @@
       padding:12px;
       overflow: visible;
       min-width: 0;
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
     }
 
     .preview-scroll{
@@ -172,10 +182,55 @@
       padding-bottom: 8px;
       cursor: grab;
       user-select: none;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .preview-scroll.is-dragging{
       cursor: grabbing;
+    }
+
+    /* Bisel de profundidad (fondo) integrado en el propio dibujo del mueble.
+       Se usa transform:skew (bien soportado por html2canvas) en vez de
+       clip-path/filter (mal soportados: se veían planos en la captura del PDF). */
+    .depth-top{
+      position:absolute;
+      top:-28px;
+      left:0px;
+      width:99.5%;
+      height:28px;
+      background: linear-gradient(rgba(255,255,255,.25), rgba(255,255,255,.25)), var(--col-border);
+      transform-origin: left bottom;
+      transform: skewX(-49deg);
+      z-index:1;
+    }
+    .depth-right{
+      position:absolute;
+      top:-4px;
+      left:100%;
+      width:28px;
+      height: 100%;
+      background: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)), var(--col-border);
+      transform-origin: left top;
+      transform: skewY(-41deg);
+      z-index:1;
+    }
+    .depth-label{
+      position:absolute;
+      right:-48px;
+      bottom:-4px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      transform: rotate(-41deg);
+      transform-origin: right center;
+      z-index:4;
+    }
+    .depth-label .dim-row{
+      width:50px;
+    }
+    .depth-label .dim-value{
+      white-space:nowrap;
     }
 
     .preview-stage{
@@ -201,11 +256,12 @@
       font-weight:900;
       color:#0b1220;
       font-size:14px;
-      margin:6px 0 10px;
+      margin:6px 0 20px;
       text-align:center;
     }
 
     .cols-and-mb{
+      position:relative;
       display:flex;
       flex-direction:row;
       align-items:flex-start;
@@ -217,7 +273,7 @@
       grid-template-columns: repeat(var(--colsN), 135px);
       justify-content:center;
       align-items:flex-start;
-      margin-top:10px;
+      margin-top:-5px;
     }
 
     .col-shell{
@@ -465,8 +521,108 @@
 
       position: relative;
       display: inline-block;
-      padding-left:  calc(var(--armW) - var(--armOverlap));
+      padding-left:  calc(var(--armW) - var(--armOverlap) + 40px);
       padding-right: calc(var(--armW) - var(--armOverlap));
+    }
+
+    .height-dim{
+      position:absolute;
+      left:0;
+      top:20px;
+      width:38px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      z-index:3;
+      overflow:visible;
+    }
+
+    .vdim-line{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      height:100%;
+      flex-shrink:0;
+    }
+
+    .vdim-line .varrow{
+      font-size:11px;
+      line-height:1;
+      color:#0b1220;
+      flex-shrink:0;
+    }
+
+    .vdim-line .vline{
+      width:2px;
+      flex:1;
+      min-height:10px;
+      background:#0b1220;
+    }
+
+    .group-height-label{
+      display:inline-block;
+      flex-shrink:0;
+      transform: rotate(-90deg);
+      font-size:13px;
+      font-weight:900;
+      color:#0b1220;
+      white-space:nowrap;
+    }
+
+    .cols-with-total{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+
+    .col-dim{
+      margin-top:4px;
+    }
+
+    .dim-row{
+      display:flex;
+      align-items:center;
+      gap:2px;
+    }
+
+    .dim-row .arrow{
+      font-size:14px;
+      line-height:1;
+      color:#0b1220;
+    }
+
+    .dim-row .line{
+      flex:1;
+      height:1px;
+      background:#0b1220;
+    }
+
+    .dim-value{
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      color:#0b1220;
+      margin-top:2px;
+    }
+
+    .group-width-total{
+      margin:8px auto 0;
+    }
+
+    .group-width-total .dim-value{
+      font-size:13px;
+    }
+
+    .width-dims-below{
+      margin-top:10px;
+    }
+
+    .width-dims-row{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
     }
 
     .arm-img{
@@ -475,18 +631,18 @@
       width: var(--armW);
       height: calc({{ (singleCap * kuik.scale_arm + (singleCap >= 80 ? (singleCap - 70) * 4.5 : 0))|round }}px + 86px);
       object-fit: contain;
-      z-index: 1;
+      z-index: 3;
       pointer-events:none;
       user-select:none;
     }
 
     .arm-img.left{
-      left: calc(-0.3 * var(--armOverlap));
+      left: calc(2.35 * var(--armOverlap));
       transform: scaleX(-1);
     }
 
     .arm-img.right{
-      right: calc(-0.3 * var(--armOverlap));
+      right: calc(-1.55 * var(--armOverlap));
     }
 
     .legs-under{
@@ -541,38 +697,38 @@
 
     <div class="page-head">
       <div>
-        <h2 class="page-title">Resumen</h2>
+        <h2 class="page-title">{{ 'summary.page_title'|trans }}</h2>
         <div class="page-sub">
-          <span class="id-pill">ID configuración: {{ configuration.id }}</span>
+          <span class="id-pill">{{ 'summary.config_id'|trans({'%id%': configuration.id}) }}</span>
 
           {% if configuration.status == 0 %}
-            <span class="badge open">Abierta</span>
+            <span class="badge open">{{ 'summary.status.open'|trans }}</span>
           {% elseif configuration.status == 1 %}
-            <span class="badge closed">Cerrada</span>
+            <span class="badge closed">{{ 'summary.status.closed'|trans }}</span>
           {% else %}
-            <span class="badge accepted">Aceptada</span>
+            <span class="badge accepted">{{ 'summary.status.accepted'|trans }}</span>
           {% endif %}
         </div>
       </div>
     </div>
 
     <div class="btn-row">
-      <a class="btn" href="{{ path('configuration_project_new') }}">Nuevo proyecto</a>
-      <a class="btn" href="{{ path('project_configurations', { project_id: project.id }) }}">Ver proyecto</a>
+      <a class="btn" href="{{ path('configuration_project_new') }}">{{ 'summary.btn.new_project'|trans }}</a>
+      <a class="btn" href="{{ path('project_configurations', { project_id: project.id }) }}">{{ 'summary.btn.view_project'|trans }}</a>
       {% if app.user.id == project.user.id %}
 
         {% if project.status == 0 %}
-          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">Nueva configuración</a>
+          <a class="btn primary" href="{{ path('configuration_type', { project_id: project.id }) }}">{{ 'summary.btn.new_configuration'|trans }}</a>
         {% endif %}
 
         {% if configuration.status == 0 %}
-          <a class="btn primary" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">Editar configuración</a>
+          <a class="btn primary" id="btnEditConfig" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">{{ 'summary.btn.edit_configuration'|trans }}</a>
         {% endif %}
 
         <button class="btn primary" id="btnDescargarPdf"
           data-screenshot-url="{{ path('configuration_screenshot', { id: configuration.id }) }}"
           data-pdf-url="{{ path('configuration_pdf', { id: configuration.id }) }}">
-          Descargar PDF
+          {{ 'summary.btn.download_pdf'|trans }}
         </button>
       {% endif %}
     </div>
@@ -580,7 +736,7 @@
     <div class="grid">
 
       <div class="card">
-        <h3>Vista previa</h3>
+        <h3>{{ 'summary.preview.title'|trans }}</h3>
 
         <div class="preview-wrap">
 
@@ -609,16 +765,25 @@
             <div class="groups-stage" style="--door-color: {{ doorColor }}; --col-border: {{ bodyColor }};">
 
               {% if groups is empty %}
-                <div class="muted">No hay columnas en esta configuración.</div>
+                <div class="muted">{{ 'summary.preview.no_columns'|trans }}</div>
               {% else %}
                 {% for groupCols in groups %}
                   {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
                   {% set totalCols = groupCols|length %}
 
                   <div class="group-block">
-                    <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
+                    <div class="group-label">{{ 'summary.preview.group_label'|trans({'%index%': loop.index, '%count%': groupCols|length}) }}</div>
 
                     <div class="support-wrap" style="--colsN: {{ totalCols }};">
+
+                      <div class="height-dim" style="height: {{ groupHeightPx }}px;">
+                        <div class="group-height-label">{{ groupHeightLabel }}</div>
+                        <div class="vdim-line">
+                          <span class="varrow">▲</span>
+                          <span class="vline"></span>
+                          <span class="varrow">▼</span>
+                        </div>
+                      </div>
 
                       {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                         <img class="arm-img left" src="{{ armSrc }}" alt="Brazo izquierdo">
@@ -629,7 +794,16 @@
                         <div class="group-roof"></div>
                       {% endif %}
 
-                      <div class="cols-and-mb">
+                      <div class="cols-and-mb" style="{% if fondoMm %}margin-top:18px;{% endif %}">
+
+                        {% if fondoMm %}
+                          <div class="depth-top"></div>
+                          <div class="depth-right"></div>
+                          <div class="depth-label">
+                            <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                            <div class="dim-value">{{ fondoMm }}</div>
+                          </div>
+                        {% endif %}
 
                         {# ── Buzones IZQUIERDA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
@@ -728,8 +902,8 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
-                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                            {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">{{ 'summary.badge.usb'|trans }}</span>{% endif %}
                                           </div>
                                         {% endif %}
                                       </div>
@@ -768,8 +942,8 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
-                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                            {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">{{ 'summary.badge.usb'|trans }}</span>{% endif %}
                                           </div>
                                         {% endif %}
                                       </div>
@@ -808,8 +982,8 @@
                                           </div>
 
                                           <div class="badges">
-                                            {% if socket %}<span class="badge-mini">ENCH</span>{% endif %}
-                                            {% if usb %}<span class="badge-mini">USB</span>{% endif %}
+                                            {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
+                                            {% if usb %}<span class="badge-mini">{{ 'summary.badge.usb'|trans }}</span>{% endif %}
                                           </div>
                                         {% endif %}
                                       </div>
@@ -965,6 +1139,25 @@
                         </div>
                       {% endif %}
 
+                      {% if colWidthLabel %}
+                        <div class="width-dims-below">
+                          <div class="width-dims-row" style="--colsN: {{ totalCols }};">
+                            {% for col in groupCols %}
+                              <div class="col-dim">
+                                <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                <div class="dim-value">{{ colWidthLabel }}</div>
+                              </div>
+                            {% endfor %}
+                          </div>
+                          {% if totalCols > 1 %}
+                            <div class="group-width-total" style="width: calc({{ totalCols }} * {{ kuik.col_width_px }}px);">
+                              <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                              <div class="dim-value">{{ (colWidthLabel * totalCols) + 50 }}</div>
+                            </div>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+
                     </div>
                   </div>
                 {% endfor %}
@@ -973,6 +1166,7 @@
             </div>{# /groups-stage #}
           </div>
           </div>
+
         </div>
 
         <img id="resultadoIA"
@@ -983,30 +1177,30 @@
         {% endblock %}
 
         <div style="margin-top:16px; border-top:1px solid rgba(15,23,42,.08); padding-top:16px; display:flex; align-items:center; gap:12px;">
-          <label style="font-size:14px; font-weight:700; white-space:nowrap;">Instalación (€):</label>
+          <label style="font-size:14px; font-weight:700; white-space:nowrap;">{{ 'summary.installation.label'|trans }}</label>
           <input type="number" id="instalacionPrecio" min="0" step="0.01"
             value="{{ p._instalacion_precio ?? '' }}"
             placeholder="0,00"
             style="width:130px; padding:6px 10px; border:1px solid rgba(15,23,42,.15); border-radius:8px; font-size:14px;">
-          <span id="instalacionStatus" style="font-size:12px; color:#6b7280; display:none;">Guardado ✓</span>
+          <span id="instalacionStatus" style="font-size:12px; color:#6b7280; display:none;">{{ 'summary.installation.saved'|trans }}</span>
         </div>
       </div>
 
       <div class="card">
-        <h3>Configuración</h3>
+        <h3>{{ 'summary.config.title'|trans }}</h3>
 
         <div class="kvs">
-          <div class="kv"><div class="k">Tipo</div><div class="v">{{ type }}</div></div>
-          <div class="kv"><div class="k">Fondo</div><div class="v">{{ bgLabel }}</div></div>
-          <div class="kv"><div class="k">Ubicación</div><div class="v">{{ placementLabel }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.type'|trans }}</div><div class="v">{{ type }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.background'|trans }}</div><div class="v">{{ bgLabel }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.placement'|trans }}</div><div class="v">{{ placementLabel }}</div></div>
           {#<div class="kv"><div class="k">Material</div><div class="v">{{ material }}</div></div>#}
-          <div class="kv"><div class="k">Color puerta</div><div class="v">{{ doorColorRal }}</div></div>
-          <div class="kv"><div class="k">Color cuerpo</div><div class="v">{{ bodyColorRal }}</div></div>
-          <div class="kv"><div class="k">Columnas</div><div class="v">{{ columnsAll|length }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.door_color'|trans }}</div><div class="v">{{ doorColorRal }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.body_color'|trans }}</div><div class="v">{{ bodyColorRal }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.config.columns'|trans }}</div><div class="v">{{ columnsAll|length }}</div></div>
           {% if isSoporteSuelo and selectedType == 'brazos' %}
-            <div class="kv"><div class="k">Altura brazos</div><div class="v">1500 mm</div></div>
+            <div class="kv"><div class="k">{{ 'summary.config.arm_height'|trans }}</div><div class="v">1500 mm</div></div>
           {% elseif isSoporteSuelo and selectedType == 'patas' %}
-            <div class="kv"><div class="k">Altura patas</div><div class="v">800/900 mm</div></div>
+            <div class="kv"><div class="k">{{ 'summary.config.leg_height'|trans }}</div><div class="v">800/900 mm</div></div>
           {% endif %}
           {% if instalacion == 'colgado' %}
             {% set _colgadores = 0 %}
@@ -1015,35 +1209,35 @@
               {% set _grpColgadores = _n <= 2 ? _n : ((_n + 1) // 2) %}
               {% set _colgadores = _colgadores + _grpColgadores %}
             {% endfor %}
-            <div class="kv"><div class="k">Colgadores</div><div class="v">{{ _colgadores }}</div></div>
+            <div class="kv"><div class="k">{{ 'summary.config.hangers'|trans }}</div><div class="v">{{ _colgadores }}</div></div>
           {% endif %}
           {% if p.control is defined and p.control %}
-            <div class="kv"><div class="k">Control</div><div class="v">{{ p.control }}</div></div>
+            <div class="kv"><div class="k">{{ 'summary.config.control'|trans }}</div><div class="v">{{ p.control }}</div></div>
           {% endif %}
           {% set _mbGroup = p.mailboxGroup ?? null %}
           {% if (p.agrupacion_combinada ?? false) and _mbGroup %}
-            <div class="kv"><div class="k">Buzones (ref.)</div><div class="v">{{ _mbGroup.reference ?? '—' }}</div></div>
+            <div class="kv"><div class="k">{{ 'summary.config.mailboxes_ref'|trans }}</div><div class="v">{{ _mbGroup.reference ?? '—' }}</div></div>
             {% if _mbGroup.descripcion ?? null %}
-              <div class="kv"><div class="k">Descripción buzón</div><div class="v">{{ _mbGroup.descripcion }}</div></div>
+              <div class="kv"><div class="k">{{ 'summary.config.mailbox_description'|trans }}</div><div class="v">{{ _mbGroup.descripcion }}</div></div>
             {% endif %}
           {% endif %}
         </div>
 
         <div class="section-sep"></div>
 
-        <h3>Datos del cliente</h3>
+        <h3>{{ 'summary.client.title'|trans }}</h3>
 
         <div class="kvs">
-          <div class="kv"><div class="k">Proyecto</div><div class="v">{{ project.projectName }}</div></div>
-          <div class="kv"><div class="k">Cliente</div><div class="v">{{ project.clientName }}</div></div>
-          <div class="kv"><div class="k">Teléfono</div><div class="v">{{ project.phone ?: '—' }}</div></div>
-          <div class="kv"><div class="k">Email</div><div class="v">{{ project.email ?: '—' }}</div></div>
-          <div class="kv"><div class="k">Ciudad</div><div class="v">{{ project.city ?: '—' }}</div></div>
-          <div class="kv"><div class="k">Dirección</div><div class="v">{{ project.address ?: '—' }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.project'|trans }}</div><div class="v">{{ project.projectName }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.client'|trans }}</div><div class="v">{{ project.clientName }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.phone'|trans }}</div><div class="v">{{ project.phone ?: '—' }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.email'|trans }}</div><div class="v">{{ project.email ?: '—' }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.city'|trans }}</div><div class="v">{{ project.city ?: '—' }}</div></div>
+          <div class="kv"><div class="k">{{ 'summary.client.address'|trans }}</div><div class="v">{{ project.address ?: '—' }}</div></div>
         </div>
 
         <div class="section-sep"></div>
-        <h3>Puertas por tamaño</h3>
+        <h3>{{ 'summary.doors_by_size.title'|trans }}</h3>
 
         {% set doorSizeCounts = {} %}
         {% set mailboxSizeCounts = {} %}
@@ -1104,13 +1298,13 @@
         {% endfor %}
 
         {% if totalDoors == 0 and totalMailboxes == 0 %}
-          <div class="muted">No hay puertas ni buzones.</div>
+          <div class="muted">{{ 'summary.doors_by_size.none'|trans }}</div>
         {% else %}
           <table class="addons-table">
             <thead>
               <tr>
-                <th>Tamaño</th>
-                <th>Cantidad</th>
+                <th>{{ 'summary.doors_by_size.size'|trans }}</th>
+                <th>{{ 'summary.doors_by_size.quantity'|trans }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1128,18 +1322,18 @@
                 {% set k = 'H' ~ h %}
                 {% if mailboxSizeCounts[k]|default(0) > 0 %}
                   <tr>
-                    <td><b>Buzón</b></td>
+                    <td><b>{{ 'summary.doors_by_size.mailbox'|trans }}</b></td>
                     <td>{{ mailboxSizeCounts[k] }}</td>
                   </tr>
                 {% endif %}
               {% endfor %}
 
               <tr>
-                <td><b>Total puertas</b></td>
+                <td><b>{{ 'summary.doors_by_size.total_doors'|trans }}</b></td>
                 <td><b>{{ totalDoors }}</b></td>
               </tr>
               <tr>
-                <td><b>Total buzones</b></td>
+                <td><b>{{ 'summary.doors_by_size.total_mailboxes'|trans }}</b></td>
                 <td><b>{{ totalMailboxes }}</b></td>
               </tr>
             </tbody>
@@ -1147,7 +1341,7 @@
         {% endif %}
 
         <div class="section-sep"></div>
-        <h3>Complementos</h3>
+        <h3>{{ 'summary.addons.title'|trans }}</h3>
 
         {% set totalSocket = 0 %}
         {% set totalUsb = 0 %}
@@ -1170,24 +1364,24 @@
 
         <div class="kvs" style="margin-top:10px;">
           <div class="kv">
-            <div class="k">Total enchufes</div>
+            <div class="k">{{ 'summary.addons.total_sockets'|trans }}</div>
             <div class="v">{{ totalSocket }}</div>
           </div>
           <div class="kv">
-            <div class="k">Total USB</div>
+            <div class="k">{{ 'summary.addons.total_usb'|trans }}</div>
             <div class="v">{{ totalUsb }}</div>
           </div>
           <div class="kv">
-            <div class="k">Puertas con ambos</div>
+            <div class="k">{{ 'summary.addons.doors_with_both'|trans }}</div>
             <div class="v">{{ totalBoth }}</div>
           </div>
           <div class="kv">
-            <div class="k">Puertas con metacrilato</div>
+            <div class="k">{{ 'summary.addons.doors_with_methacrylate'|trans }}</div>
             <div class="v">{{ totalMethacrylate }}</div>
           </div>
         </div>
 
-        <h3 style="margin-top:14px;">Detalle (solo puertas con complementos)</h3>
+        <h3 style="margin-top:14px;">{{ 'summary.addons.detail_title'|trans }}</h3>
 
         {% set anyAddon = false %}
         {% for doorNum, sel in addons %}
@@ -1200,13 +1394,13 @@
         {% endfor %}
 
         {% if not anyAddon %}
-          <div class="muted">No hay puertas con complementos.</div>
+          <div class="muted">{{ 'summary.addons.none'|trans }}</div>
         {% else %}
           <table class="addons-table">
             <thead>
               <tr>
-                <th>Puerta</th>
-                <th>Complemento</th>
+                <th>{{ 'summary.addons.door'|trans }}</th>
+                <th>{{ 'summary.addons.addon'|trans }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1219,10 +1413,10 @@
                   {% set labels = [] %}
 
                   {% if methacrylate %}
-                    {% set labels = labels|merge(['Metacrilato']) %}
+                    {% set labels = labels|merge([('summary.addons.methacrylate'|trans)]) %}
                   {% endif %}
                   {% if socket %}
-                    {% set labels = labels|merge(['Enchufe']) %}
+                    {% set labels = labels|merge([('summary.addons.socket'|trans)]) %}
                   {% endif %}
                   {% if usb %}
                     {% set labels = labels|merge(['USB']) %}
@@ -1246,6 +1440,19 @@
 {% block javascripts %}
   {{ parent() }}
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+    window.I18N_SUMMARY = {{ {
+      generating: 'summary.js.generating'|trans,
+      download_pdf: 'summary.js.download_pdf'|trans,
+      total: 'summary.js.total'|trans,
+      total_with_discount: 'summary.js.total_with_discount'|trans,
+      iva_included: 'summary.js.iva_included'|trans,
+      non_json_response: 'summary.js.non_json_response'|trans,
+      image_generation_error: 'summary.js.image_generation_error'|trans,
+      unexpected_error: 'summary.js.unexpected_error'|trans
+    }|json_encode|raw }};
+  </script>
 
   <script>
     window.addEventListener('DOMContentLoaded', function () {
@@ -1351,7 +1558,7 @@
         }
 
         const lbl = document.getElementById('cellTotalLabel');
-        if (lbl) lbl.textContent = (pct > 0 ? 'Total con descuento' : 'Total') + (iva ? ' (IVA incl.)' : '');
+        if (lbl) lbl.textContent = (pct > 0 ? window.I18N_SUMMARY.total_with_discount : window.I18N_SUMMARY.total) + (iva ? window.I18N_SUMMARY.iva_included : '');
         document.getElementById('cellTotal').textContent = fmt(total);
       }
 
@@ -1395,7 +1602,7 @@
 
       btn.addEventListener('click', async function () {
         status.style.display = 'inline';
-        status.textContent = 'Generando…';
+        status.textContent = window.I18N_SUMMARY.generating;
         btn.disabled = true;
 
         try {
@@ -1429,12 +1636,12 @@
             json = JSON.parse(text);
           } catch (e) {
             console.error('Respuesta NO JSON del servidor:', text);
-            alert('El servidor devolvió un error (no JSON). Mira la consola y el log de Symfony.');
+            alert(window.I18N_SUMMARY.non_json_response);
             return;
           }
 
           if (!res.ok) {
-            alert(json.error || 'Error generando imagen');
+            alert(json.error || window.I18N_SUMMARY.image_generation_error);
             return;
           }
 
@@ -1444,7 +1651,7 @@
 
         } catch (e) {
           console.error(e);
-          alert('Error inesperado (mira consola).');
+          alert(window.I18N_SUMMARY.unexpected_error);
         } finally {
           status.style.display = 'none';
           btn.disabled = false;
@@ -1512,7 +1719,13 @@
         const pdfUrl        = btnPdf.dataset.pdfUrl;
 
         btnPdf.disabled = true;
-        btnPdf.textContent = 'Generando…';
+        btnPdf.textContent = window.I18N_SUMMARY.generating;
+
+        // Descargar el PDF cierra la configuración en el servidor: ocultamos
+        // ya el botón de editar para que no se pueda modificar sin recargar
+        // (el DOM no se refresca solo porque la descarga no navega la página).
+        const btnEdit = document.getElementById('btnEditConfig');
+        if (btnEdit) btnEdit.style.display = 'none';
 
         try {
           const groups = document.querySelectorAll('#previewCapture .group-block');
@@ -1531,8 +1744,12 @@
             const screenshots = [];
             for (const group of groups) {
               const prevPadding = group.style.padding;
-              group.style.padding = '10px 70px 100px';
-              const canvas = await html2canvas(group, { backgroundColor: '#ffffff', scale: 1 });
+              // top y right ampliados para no recortar el bisel de profundidad (fondo)
+              group.style.padding = '42px 110px 100px 70px';
+              const canvas = await html2canvas(group, {
+                backgroundColor: '#ffffff',
+                scale: Math.max(window.devicePixelRatio || 1, 3),
+              });
               group.style.padding = prevPadding;
               screenshots.push(canvas.toDataURL('image/png'));
             }
@@ -1554,7 +1771,7 @@
         window.location.href = pdfUrl;
         setTimeout(() => {
           btnPdf.disabled = false;
-          btnPdf.textContent = 'Descargar PDF';
+          btnPdf.textContent = window.I18N_SUMMARY.download_pdf;
         }, 2000);
       });
     });

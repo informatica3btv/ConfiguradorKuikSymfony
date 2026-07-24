@@ -31,7 +31,7 @@ class NavOfferService
         return $table;
     }
 
-    public function createNavOffer(array $snapshot, Project $project, array $payload = []): ?array
+    public function createNavOffer(array $snapshot, Project $project, string $codCliente, array $payload = []): ?array
     {
         $items   = [];
         $cartId  = 1;
@@ -103,8 +103,8 @@ class NavOfferService
         $email = $user instanceof \App\Entity\User ? $user->getEmail() : '';
 
         $orderData = [
-            'codCliente'               => '32285',
-            'suplantado'               => false,
+            'codCliente'               => $codCliente,
+            'suplantado'               => true,
             'emailTradeRepresentative' => 'logsistemas.it@btv.es',
             'email'                    => 'logsistemas.it@btv.es',
             'codOrder'                 => 0,

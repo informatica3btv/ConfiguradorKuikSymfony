@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Soporte suelo{% endblock %}
+{% block page_title %}{{ 'bracket.page_title'|trans }}{% endblock %}
 
 {% set p = payload ?? {} %}
 {% if p is not iterable %}{% set p = {} %}{% endif %}
@@ -493,68 +493,68 @@
   <div class="page-wrap">
     <div class="page-head">
       <div>
-        <h2 class="page-title">Soporte suelo</h2>
+        <h2 class="page-title">{{ 'bracket.page_title'|trans }}</h2>
         <div class="page-sub">
-          <span class="id-pill">ID configuración: {{ configuration.id }}</span>
-          <span class="id-pill">Proyecto: {{ project.projectName }}</span>
-          <span class="id-pill">Instalación: soporte_suelo</span>
+          <span class="id-pill">{{ 'bracket.header.config_id'|trans({'%id%': configuration.id}) }}</span>
+          <span class="id-pill">{{ 'bracket.header.project'|trans({'%name%': project.projectName}) }}</span>
+          <span class="id-pill">{{ 'bracket.header.installation'|trans }}</span>
         </div>
       </div>
     </div>
 
     <div class="grid">
       <div class="card">
-        <h3>1) Elige el tipo de soporte</h3>
-        <div class="muted">Selecciona <b>Patas</b> o <b>Brazos</b>.</div>
+        <h3>{{ 'bracket.step1.title'|trans }}</h3>
+        <div class="muted">{{ 'bracket.step1.help'|trans({'%patas%': '<b>' ~ ('bracket.type.patas'|trans) ~ '</b>', '%brazos%': '<b>' ~ ('bracket.type.brazos'|trans) ~ '</b>'})|raw }}</div>
 
         <div class="pick-grid" style="margin-top:12px;">
           <div class="pick js-pick-type {% if selectedType == 'patas' %}selected{% endif %}" data-value="patas" role="button" tabindex="0">
             <div class="t">
-              Patas
+              {{ 'bracket.type.patas'|trans }}
               <span class="tick" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </span>
             </div>
-            <div class="d">Soporte inferior con patas.</div>
+            <div class="d">{{ 'bracket.type.patas_desc'|trans }}</div>
           </div>
 
           <div class="pick js-pick-type {% if selectedType == 'brazos' %}selected{% endif %}" data-value="brazos" role="button" tabindex="0">
             <div class="t">
-              Brazos
+              {{ 'bracket.type.brazos'|trans }}
               <span class="tick" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </span>
             </div>
-            <div class="d">Soporte lateral/estructura tipo brazo.</div>
+            <div class="d">{{ 'bracket.type.brazos_desc'|trans }}</div>
           </div>
         </div>
 
         <div class="section-sep"></div>
 
         <div id="colorSection" class="{% if not selectedType %}hidden{% endif %}">
-          <h3>2) Elige el color</h3>
-          <div class="muted">Selecciona el acabado del soporte.</div>
+          <h3>{{ 'bracket.step2.title'|trans }}</h3>
+          <div class="muted">{{ 'bracket.step2.help'|trans }}</div>
 
           <div class="color-grid" style="margin-top:12px;">
             <div class="chip js-pick-color {% if selectedColor == 'blanco' %}selected{% endif %}" data-value="blanco" role="button" tabindex="0">
-              <span class="dot white"></span> Blanco
+              <span class="dot white"></span> {{ 'bracket.color.white'|trans }}
             </div>
             <div class="chip js-pick-color {% if selectedColor == 'negro' %}selected{% endif %}" data-value="negro" role="button" tabindex="0">
-              <span class="dot black"></span> Negro
+              <span class="dot black"></span> {{ 'bracket.color.black'|trans }}
             </div>
             <div class="chip js-pick-color {% if selectedColor == 'plata' %}selected{% endif %}" data-value="plata" role="button" tabindex="0">
-              <span class="dot silver"></span> Plata
+              <span class="dot silver"></span> {{ 'bracket.color.silver'|trans }}
             </div>
           </div>
         </div>
 
         {# ✅ PREVIEW: por GRUPOS #}
         <div class="preview-area">
-          <div class="preview-title">Vista previa</div>
+          <div class="preview-title">{{ 'bracket.preview.title'|trans }}</div>
 
           <div class="preview-scroll">
           <div class="preview-stage">
@@ -575,7 +575,7 @@
               {% set lastGroupIndex = groups|length %}
 
               {% if groups is empty %}
-                <div class="muted">No hay columnas en esta configuración.</div>
+                <div class="muted">{{ 'bracket.preview.no_columns'|trans }}</div>
               {% else %}
                 {% set doorIndex = 0 %}
 
@@ -584,7 +584,7 @@
                   {% set isLastGroup = loop.index == lastGroupIndex %}
 
                   <div class="group-block">
-                    <div class="group-label">Agrupación {{ loop.index }} ({{ groupCols|length }} columnas)</div>
+                    <div class="group-label">{{ 'bracket.preview.group_label'|trans({'%index%': loop.index, '%count%': groupCols|length}) }}</div>
 
                     {# ✅ --colsN para alinear grid columnas + patas #}
                     {% set mbBlockW = (isLastGroup and mbRows > 0 and mbCols > 0) ? (mbCols * kuik.mb_col_width_px) : 0 %}
@@ -601,7 +601,7 @@
                             {% else %}
                               {{ asset(kuik.img_brazo_negro) }}
                             {% endif %}"
-                        alt="Brazo izquierdo">
+                        alt="{{ 'bracket.alt.arm_left'|trans }}">
 
                       <img
                         class="arm-img right js-arm {% if selectedType != 'brazos' %}hidden{% endif %}"
@@ -613,7 +613,7 @@
                             {% else %}
                               {{ asset(kuik.img_brazo_negro) }}
                             {% endif %}"
-                        alt="Brazo derecho">
+                        alt="{{ 'bracket.alt.arm_right'|trans }}">
 
                       <div class="cols-and-mb">
 
@@ -629,7 +629,7 @@
                                     {% set cellIdx = r * mbCols + c %}
                                     {% set filled = mbCells[cellIdx] ?? true %}
                                     <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                      {% if filled %}<img src="{{ mbImg }}" alt="Buzón">{% endif %}
+                                      {% if filled %}<img src="{{ mbImg }}" alt="{{ 'bracket.alt.mailbox'|trans }}">{% endif %}
                                     </div>
                                   {% endfor %}
                                 </div>
@@ -654,8 +654,8 @@
                                     {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
                                   {% endif %}
                                   <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
-                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
-                                    <button type="button" class="mb-leg-remove" title="Quitar pata">×</button>
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                                    <button type="button" class="mb-leg-remove" title="{{ 'bracket.action.remove_leg'|trans }}">×</button>
                                   </div>
                                 {% endfor %}
                               </div>
@@ -685,12 +685,12 @@
                                     <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }}"
                                         style="height: {{ (hh * scale) }}px;">
                                       {% if btype == 'screen' %}
-                                        <img src="{{ asset(kuik.img_pantalla) }}" alt="Pantalla">
+                                        <img src="{{ asset(kuik.img_pantalla) }}" alt="{{ 'bracket.alt.screen'|trans }}">
                                       {% elseif btype == 'mailbox' %}
                                         {% set _elec = blk.electronico ?? false %}
                                         {% set _tarj = blk.tarjetero ?? false %}
                                         {% set _buzonImg = _elec ? (_tarj ? 'assets/buzon_kuik_electronico_con_tarjetero.png' : 'assets/buzon_kuik_electronico_sin_tarjetero.png') : (_tarj ? 'assets/buzon_kuik_mecanico_con_tarjetero.png' : 'assets/buzon_kuik_mecanico_sin_tarjetero.png') %}
-                                        <img src="{{ asset(_buzonImg) }}" alt="Buzón">
+                                        <img src="{{ asset(_buzonImg) }}" alt="{{ 'bracket.alt.mailbox'|trans }}">
                                       {% else %}
                                         <div class="num">{{ doorIndex }}</div>
                                       {% endif %}
@@ -717,7 +717,7 @@
                                     {% set cellIdx = r * mbCols + c %}
                                     {% set filled = mbCells[cellIdx] ?? true %}
                                     <div class="door mailbox" style="height:{{ mbCellH }}px;{% if not filled %}opacity:0.1;background:#eaeaea;{% endif %}">
-                                      {% if filled %}<img src="{{ mbImg }}" alt="Buzón">{% endif %}
+                                      {% if filled %}<img src="{{ mbImg }}" alt="{{ 'bracket.alt.mailbox'|trans }}">{% endif %}
                                     </div>
                                   {% endfor %}
                                 </div>
@@ -742,8 +742,8 @@
                                     {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
                                   {% endif %}
                                   <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
-                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
-                                    <button type="button" class="mb-leg-remove" title="Quitar pata">×</button>
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                                    <button type="button" class="mb-leg-remove" title="{{ 'bracket.action.remove_leg'|trans }}">×</button>
                                   </div>
                                 {% endfor %}
                               </div>
@@ -791,7 +791,7 @@
                           {% endif %}
                           <div class="legs-under" style="flex:1;">
                             {% for pos in mbLegPositions %}
-                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
                             {% endfor %}
                           </div>
                           {% if mbSide == 'right' %}
@@ -840,7 +840,7 @@
                           {% endif %}
                           <div class="legs-under" style="flex:1;">
                             {% for pos in legPositions %}
-                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
                             {% endfor %}
                           </div>
                           {% if mbSide == 'right' %}
@@ -853,7 +853,7 @@
                             <img class="leg-img"
                                  style="grid-column: {{ pos }};"
                                  src="{{ asset(kuik.img_pie) }}"
-                                 alt="Pata">
+                                 alt="{{ 'bracket.alt.leg'|trans }}">
                           {% endfor %}
                         </div>
                       {% endif %}
@@ -882,16 +882,16 @@
                  config_id: configuration.id,
                  type: payload.type|default('')
                }) }}">
-              Volver atrás
+              {{ 'bracket.actions.back'|trans }}
             </a>
 
             <button id="btnContinue" class="btn primary" type="submit" {% if not selectedType or not selectedColor %}disabled{% endif %}>
-              Continuar
+              {{ 'bracket.actions.continue'|trans }}
             </button>
           </div>
 
           <div class="muted" style="margin-top:10px;">
-            * El botón <b>Continuar</b> se activa cuando elijas tipo y color.
+            {{ 'bracket.actions.continue_hint'|trans({'%continue%': '<b>' ~ ('bracket.actions.continue'|trans) ~ '</b>'})|raw }}
           </div>
         </form>
       </div>

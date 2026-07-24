@@ -1,5 +1,5 @@
 {% extends 'layout.html.twig' %}
-{% block page_title %}Proyectos{% endblock %}
+{% block page_title %}{{ 'projects.title'|trans }}{% endblock %}
 
 {% block stylesheets %}
 {{ parent() }}
@@ -488,29 +488,29 @@
 
   <div class="page-head">
     <div>
-      <h1 class="title">Proyectos</h1>
-      <div class="subtitle">Gestiona tus proyectos de taquillas inteligentes</div>
+      <h1 class="title">{{ 'projects.title'|trans }}</h1>
+      <div class="subtitle">{{ 'projects.subtitle'|trans }}</div>
     </div>
 
     <div class="top-actions">
       <a class="btn-filter {{ currentStatus == 1 ? 'active-accept' : '' }}"
          href="{{ path('projects_list', { status: 1 }) }}">
-        Aceptados
+        {{ 'projects.accepted'|trans }}
       </a>
 
       <a class="btn-filter {{ currentStatus == 2 ? 'active-reject' : '' }}"
          href="{{ path('projects_list', { status: 2 }) }}">
-        Rechazados
+        {{ 'projects.rejected'|trans }}
       </a>
 
       <a class="btn-filter {{ currentStatus == 0 ? 'active-open' : '' }}"
          href="{{ path('projects_list', { status: 0 }) }}">
-        Abiertos
+        {{ 'projects.open'|trans }}
       </a>
 
       <a class="btn-primary" href="{{ path('configuration_project_new') }}">
         <span class="plus">+</span>
-        Nuevo Proyecto
+        {{ 'projects.new_project'|trans }}
       </a>
     </div>
   </div>
@@ -518,34 +518,34 @@
   <div class="search-row">
     <div class="search">
       <span class="icon">🔍</span>
-      <input id="projectSearch" type="text" placeholder="Buscar por nombre, cliente, ciudad o responsable..." autocomplete="off">
+      <input id="projectSearch" type="text" placeholder="{{ 'projects.search_placeholder'|trans }}" autocomplete="off">
     </div>
 
     <button type="button" id="btnMisProyectos"
             data-me="{{ (app.user.name ?? '')|lower }}"
             style="display:flex;align-items:center;gap:7px;padding:8px 16px;border:2px solid rgba(15,23,42,.15);border-radius:10px;background:#fff;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer;transition:.15s;white-space:nowrap;">
-      <span style="font-size:15px;">👤</span> Mis proyectos
+      <span style="font-size:15px;">👤</span> {{ 'projects.my_projects'|trans }}
     </button>
 
     <div class="view-switch" id="viewSwitch">
-      <button type="button" class="view-btn active" data-view="table">🗂 Tarjetas</button>
-      <button type="button" class="view-btn" data-view="cards">📋 Tabla</button>
+      <button type="button" class="view-btn active" data-view="table">🗂 {{ 'projects.view_cards'|trans }}</button>
+      <button type="button" class="view-btn" data-view="cards">📋 {{ 'projects.view_table'|trans }}</button>
     </div>
   </div>
 
   {% if projects is empty %}
     <div class="empty">
-      <p>No tienes proyectos todavía.</p>
-      <a href="{{ path('configuration_project_new') }}" class="btn-create">Crear primer proyecto</a>
+      <p>{{ 'projects.no_projects'|trans }}</p>
+      <a href="{{ path('configuration_project_new') }}" class="btn-create">{{ 'projects.create_first'|trans }}</a>
     </div>
   {% else %}
 
     <div class="table-head" id="tableHead" style="display:none;">
-      <div>Proyecto</div>
-      <div>Ciudad</div>
-      <div>Fecha</div>
-      <div>Responsable</div>
-      <div>Acción</div>
+      <div>{{ 'projects.table_header_project'|trans }}</div>
+      <div>{{ 'projects.table_header_city'|trans }}</div>
+      <div>{{ 'projects.table_header_date'|trans }}</div>
+      <div>{{ 'projects.table_header_owner'|trans }}</div>
+      <div>{{ 'projects.table_header_action'|trans }}</div>
     </div>
 
     <div class="grid view-table" id="projectsGrid">
@@ -566,9 +566,9 @@
                 <div class="pill">{{ configsCount }} config</div>
               </div>
               {% if project.status == 1 %}
-                <div class="pill-status">Aceptado</div>
+                <div class="pill-status">{{ 'projects.status_accepted'|trans }}</div>
               {% elseif project.status == 2 %}
-                <div class="pill-status-reject">Rechazado</div>
+                <div class="pill-status-reject">{{ 'projects.status_rejected'|trans }}</div>
               {% endif %}
             </div>
 
@@ -591,7 +591,7 @@
               <span class="micon">📅</span>
               <span class="muted">
                 {% if project.createdAt is defined and project.createdAt %}
-                  {{ project.createdAt|format_datetime('none', 'none', locale='es', pattern='d MMMM y') }}
+                  {{ project.createdAt|format_datetime('none', 'none', locale=app.request.locale, pattern='d MMMM y') }}
                 {% else %}
                   —
                 {% endif %}
@@ -612,7 +612,7 @@
             </div>
 
             <a class="btn-ghost" href="{{ path('project_configurations', { project_id: project.id }) }}">
-              Ver <span aria-hidden="true">→</span>
+              {{ 'projects.view'|trans }} <span aria-hidden="true">→</span>
             </a>
           </div>
         </div>

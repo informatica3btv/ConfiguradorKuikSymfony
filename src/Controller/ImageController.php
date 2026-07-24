@@ -84,7 +84,35 @@ class ImageController extends AbstractController
             return new Response('Invalid URL', 400);
         }
 
-        $data = @file_get_contents($url);
+        // If the URL points to this same server, serve the file directly from disk
+        $host = $request->getSchemeAndHttpHost();
+        $parsed = parse_url($url);
+        $requestedHost = ($parsed['scheme'] ?? 'http') . '://' . ($parsed['host'] ?? '');
+        if (isset($parsed['port'])) {
+            $requestedHost .= ':' . $parsed['port'];
+        }
+
+        if (rtrim($requestedHost, '/') === rtrim($host, '/')) {
+            $urlPath = $parsed['path'] ?? '';
+            $localPath = $this->getParameter('kernel.project_dir') . '/public' . $urlPath;
+            $localPath = realpath($localPath);
+            $publicDir = realpath($this->getParameter('kernel.project_dir') . '/public');
+
+            if ($localPath && $publicDir && str_starts_with($localPath, $publicDir) && is_file($localPath)) {
+                $data = file_get_contents($localPath);
+            } else {
+                return new Response('File not found', 404);
+            }
+        } else {
+            $context = stream_context_create([
+                'ssl' => [
+                    'verify_peer'      => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $data = @file_get_contents($url, false, $context);
+        }
+
         if ($data === false) {
             return new Response('Could not fetch image', 502);
         }

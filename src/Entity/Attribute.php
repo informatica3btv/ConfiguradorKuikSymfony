@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 /**
  * @ORM\Entity
@@ -20,6 +21,7 @@ class Attribute
     private ?int $id = null;
 
     /**
+     * @Gedmo\Translatable
      * @ORM\Column(type="string", length=255)
      */
     private ?string $name = null;
@@ -30,9 +32,15 @@ class Attribute
     private ?string $value = null;
 
     /**
+     * @Gedmo\Translatable
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private ?string $description = null;
+
+    /**
+     * @Gedmo\Locale
+     */
+    private $locale;
 
     /**
      * ✅ Muchos Attribute -> 1 AttributesType
@@ -57,6 +65,8 @@ class Attribute
     }
 
     public function getId(): ?int { return $this->id; }
+
+    public function setTranslatableLocale(string $locale): self { $this->locale = $locale; return $this; }
 
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): self { $this->name = $name; return $this; }
