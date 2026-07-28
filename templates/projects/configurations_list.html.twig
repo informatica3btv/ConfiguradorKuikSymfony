@@ -1145,7 +1145,7 @@
 
                             </div>{# /cols #}
 
-                            {% if isSoporteSuelo %}
+                            {% if isSoporteSuelo and selectedType == 'patas' %}
                               {% set n = colsToShow|length %}
                               {% if n == 1 %}{% set legPositions = [1] %}
                               {% elseif n == 2 %}{% set legPositions = [1, 2] %}

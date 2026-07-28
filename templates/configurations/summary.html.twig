@@ -29,12 +29,13 @@
 {% set bodyColorRal = p.colorBodyRal ?? '' %}
 
 {% set bg = p.fondo ?? '' %}
-{% set fondoMm = kuik.fondo_mm[bg] ?? null %}
 {% set placement = p.placement ?? '' %}
 {% set material = p.material ?? '' %}
 {% set addons = p.addons ?? {} %}
 
 {% set isHome = (type == 'home') %}
+{% set isHomeSerie400 = isHome and bg == '400' %}
+{% set fondoMm = isHomeSerie400 ? 425 : (kuik.fondo_mm[bg] ?? null) %}
 {% set isZocalo = (isHome and instalacion == 'zocalo') %}
 {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo' or instalacion == 'colgado')) %}
 
@@ -57,9 +58,13 @@
 %}
 
 {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
-{% set colWidthLabel = bg in ['300', '400', '500'] ? bg : null %}
+{% set colWidthLabel = isHomeSerie400 ? 380 : (bg in ['300', '400', '500'] ? bg : null) %}
+{% set groupWidthExtraMm = isHomeSerie400 ? 200 : 50 %}
 {% set totalHUnits = isEmpotradoLike ? singleCap : (topCap + bottomCap) %}
 {% set groupHeightLabel = kuik.h_heights_mm[totalHUnits] is defined ? kuik.h_heights_mm[totalHUnits] : (totalHUnits / 10 * 125)|round %}
+{% if isZocalo %}
+  {% set groupHeightLabel = groupHeightLabel + 177 %}
+{% endif %}
 {% set groupHeightPx = totalHUnits * kuik.scale %}
 
 {% set placementLabel =
@@ -195,10 +200,10 @@
        clip-path/filter (mal soportados: se veían planos en la captura del PDF). */
     .depth-top{
       position:absolute;
-      top:-28px;
+      top:-30px;
       left:0px;
-      width:99.5%;
-      height:28px;
+      width:100%;
+      height:25px;
       background: linear-gradient(rgba(255,255,255,.25), rgba(255,255,255,.25)), var(--col-border);
       transform-origin: left bottom;
       transform: skewX(-49deg);
@@ -206,10 +211,10 @@
     }
     .depth-right{
       position:absolute;
-      top:-4px;
+      top:-5px;
       left:100%;
-      width:28px;
-      height: 100%;
+      width:29px;
+      height: 101.1%;
       background: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)), var(--col-border);
       transform-origin: left top;
       transform: skewY(-41deg);
@@ -308,7 +313,6 @@
       border-right-width: 4px;
       border-top-width: 8px;
       border-bottom-width: 8px;
-      border-radius: 7px;
       overflow: hidden;
       //box-shadow: var(--shadow);
       position: relative;
@@ -417,6 +421,15 @@
       display:flex;
       gap:4px;
       flex-wrap:wrap;
+    }
+
+    .door .size-label{
+      font-weight:900;
+      font-size:16px;
+      color:#fff;
+      text-shadow:0 0 3px rgba(0,0,0,.7);
+      pointer-events:none;
+      user-select:none;
     }
 
     .badge-mini{
@@ -637,12 +650,12 @@
     }
 
     .arm-img.left{
-      left: calc(2.35 * var(--armOverlap));
+      left: calc(1.95 * var(--armOverlap));
       transform: scaleX(-1);
     }
 
     .arm-img.right{
-      right: calc(-1.55 * var(--armOverlap));
+      right: calc(-1.75 * var(--armOverlap));
     }
 
     .legs-under{
@@ -663,7 +676,7 @@
       justify-self:center;
       flex:0 0 auto;
     }
-    .mb-leg-wrap{ position:relative; flex-shrink:0; }
+    .mb-leg-wrap{ position:relative; flex-shrink:0; top:-5px; }
     .mb-leg-summary{
       position:absolute;
       top:100%;
@@ -808,7 +821,7 @@
                         {# ── Buzones IZQUIERDA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'left' %}
                           <div class="mb-leg-wrap">
-                            <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                            <div class="mb-group-block">
                               {% for c in 0..(mbCols - 1) %}
                                 <div class="mb-group-col">
                                   {% for r in 0..(mbRows - 1) %}
@@ -901,6 +914,8 @@
                                             {{ plateNumber }},{{ doorNumber }}
                                           </div>
 
+                                          <div class="size-label">H{{ hh }}</div>
+
                                           <div class="badges">
                                             {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
                                             {% if usb %}<span class="badge-mini">{{ 'summary.badge.usb'|trans }}</span>{% endif %}
@@ -940,6 +955,8 @@
                                           <div class="num">
                                             {{ plateNumber }},{{ doorNumber }}
                                           </div>
+
+                                          <div class="size-label">H{{ hh }}</div>
 
                                           <div class="badges">
                                             {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
@@ -981,6 +998,8 @@
                                             {{ plateNumber }},{{ doorNumber }}
                                           </div>
 
+                                          <div class="size-label">H{{ hh }}</div>
+
                                           <div class="badges">
                                             {% if socket %}<span class="badge-mini">{{ 'summary.badge.socket'|trans }}</span>{% endif %}
                                             {% if usb %}<span class="badge-mini">{{ 'summary.badge.usb'|trans }}</span>{% endif %}
@@ -1000,7 +1019,7 @@
                         {# ── Buzones DERECHA ── #}
                         {% if mbRows > 0 and mbCols > 0 and mbSide == 'right' %}
                           <div class="mb-leg-wrap">
-                            <div class="mb-group-block" style="margin-top:{{ mbMarginTop }}px;">
+                            <div class="mb-group-block">
                               {% for c in 0..(mbCols - 1) %}
                                 <div class="mb-group-col">
                                   {% for r in 0..(mbRows - 1) %}
@@ -1140,19 +1159,37 @@
                       {% endif %}
 
                       {% if colWidthLabel %}
+                        {% set mbUnitAnchoMm = mailboxGroup.ancho ?? 0 %}
+                        {% set hasMbWidth = mbRows > 0 and mbCols > 0 and mbUnitAnchoMm > 0 %}
+                        {% set mbGroupWidthMm = hasMbWidth ? (mbCols * mbUnitAnchoMm)|round : 0 %}
+                        {% set mbDimW = mbCols * kuik.mb_col_width_px %}
                         <div class="width-dims-below">
-                          <div class="width-dims-row" style="--colsN: {{ totalCols }};">
-                            {% for col in groupCols %}
-                              <div class="col-dim">
+                          <div style="display:flex; flex-direction:row;">
+                            {% if hasMbWidth and mbSide == 'left' %}
+                              <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
                                 <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
-                                <div class="dim-value">{{ colWidthLabel }}</div>
+                                <div class="dim-value">{{ mbGroupWidthMm }}</div>
                               </div>
-                            {% endfor %}
+                            {% endif %}
+                            <div class="width-dims-row" style="--colsN: {{ totalCols }};">
+                              {% for col in groupCols %}
+                                <div class="col-dim">
+                                  <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                  <div class="dim-value">{{ colWidthLabel }}</div>
+                                </div>
+                              {% endfor %}
+                            </div>
+                            {% if hasMbWidth and mbSide == 'right' %}
+                              <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
+                                <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                <div class="dim-value">{{ mbGroupWidthMm }}</div>
+                              </div>
+                            {% endif %}
                           </div>
-                          {% if totalCols > 1 %}
-                            <div class="group-width-total" style="width: calc({{ totalCols }} * {{ kuik.col_width_px }}px);">
+                          {% if totalCols > 1 or hasMbWidth %}
+                            <div class="group-width-total" style="width: calc({{ totalCols }} * {{ kuik.col_width_px }}px{{ hasMbWidth ? (' + ' ~ mbDimW ~ 'px') : '' }});">
                               <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
-                              <div class="dim-value">{{ (colWidthLabel * totalCols) + 50 }}</div>
+                              <div class="dim-value">{{ (colWidthLabel * totalCols) + groupWidthExtraMm + mbGroupWidthMm }}</div>
                             </div>
                           {% endif %}
                         </div>

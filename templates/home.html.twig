@@ -955,8 +955,8 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultValue: layout.topCap,
         onChange: (v) => {
           layout.topCap = v;
-          // recalcula sums
           state.columns.forEach(c => {
+            trimBlocksToCap(c.top.blocks, layout.topCap);
             c.top.sum = c.top.blocks.reduce((a,b)=>a+blockHeight(b),0);
             c.bottom.sum = c.bottom.blocks.reduce((a,b)=>a+blockHeight(b),0);
           });
@@ -979,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onChange: (v) => {
           layout.singleCap = v;
           state.columns.forEach(c => {
+            trimBlocksToCap(c.single.blocks, layout.singleCap);
             c.single.sum = c.single.blocks.reduce((a,b)=>a+blockHeight(b),0);
           });
           render();
@@ -998,6 +999,27 @@ document.addEventListener('DOMContentLoaded', () => {
   function blockHeight(b){
     const nb = normalizeBlock(b);
     return parseInt(nb.h, 10) || 0;
+  }
+
+  // Al reducir una altura (superior/única), recorta los bloques que ya no
+  // caben empezando por el principio (las filas de arriba del bloque),
+  // dejando intactas las filas de abajo (pegadas a la línea divisoria).
+  function trimBlocksToCap(blocks, cap) {
+    let sum = blocks.reduce((a, b) => a + blockHeight(b), 0);
+    while (sum > cap && blocks.length) {
+      const first = blocks[0];
+      const h = blockHeight(first);
+      const excess = sum - cap;
+      const nb = normalizeBlock(first);
+      if (h <= excess || nb.type !== 'door') {
+        blocks.shift();
+        sum -= h;
+      } else {
+        blocks[0] = { ...nb, h: h - excess };
+        sum -= excess;
+      }
+    }
+    return blocks;
   }
   function isScreenBlock(b){
     return normalizeBlock(b).type === 'screen';
