@@ -347,7 +347,7 @@
       border-top:2px dashed rgba(0,0,0,.28);
     }
 
-    {% set huecoTintedUrl = tinted_image('assets/hueco2.png', bodyColor) %}
+    {% set huecoTintedUrl = tinted_image('assets/hueco6.png', bodyColor) %}
     .door{
       width:100%;
       /* Compartimento vacío que se intuye al abrir la puerta: foto real de
@@ -355,7 +355,7 @@
          PNG generado una vez por color (ver TintedImageService) — así se ve
          igual en el navegador y en la captura que hace html2canvas para el
          PDF (background-blend-mode no vale ahí, no lo soporta). */
-      background: url('{{ huecoTintedUrl ?? asset('assets/hueco2.png') }}') center top / 100% 100% no-repeat, var(--col-border, #22262b);
+      background: url('{{ huecoTintedUrl ?? asset('assets/hueco6.png') }}') center top / 100% 100% no-repeat, var(--col-border, #22262b);
       border-bottom: 1px solid rgba(0,0,0,.35);
       position:relative;
       box-sizing: border-box;

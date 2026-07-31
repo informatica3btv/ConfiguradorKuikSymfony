@@ -43,8 +43,11 @@ class TintedImageService
             return $publicUrl;
         }
 
-        if (!is_dir($cacheDir)) {
-            mkdir($cacheDir, 0775, true);
+        if (!is_dir($cacheDir) && !@mkdir($cacheDir, 0775, true) && !is_dir($cacheDir)) {
+            // Sin permisos de escritura: no rompemos la página, simplemente
+            // no hay imagen teñida disponible (la plantilla cae de vuelta a
+            // la imagen sin teñir).
+            return null;
         }
 
         if (!$this->generateTinted($sourcePath, $cachePath, $hex)) {
