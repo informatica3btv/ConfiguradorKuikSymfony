@@ -972,7 +972,7 @@
                                       {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
-                                           style="height: {{ hh * scale }}px; --door-skew: {{ (-25 * hh / 40)|round(2) }}deg; z-index: {{ 100 - loop.index }};">
+                                           style="height: {{ hh * scale }}px; --door-skew: {{ min(-10, max(-22, (-25 * hh / 40)))|round(2) }}deg; z-index: {{ 100 - loop.index }};">
                                        <div class="door-leaf">
 
                                         {% if btype == 'screen' %}
@@ -1016,7 +1016,7 @@
                                       {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
-                                           style="height: {{ hh * scale }}px; --door-skew: {{ (-25 * hh / 40)|round(2) }}deg; z-index: {{ 100 - loop.index }};">
+                                           style="height: {{ hh * scale }}px; --door-skew: {{ min(-10, max(-22, (-25 * hh / 40)))|round(2) }}deg; z-index: {{ 100 - loop.index }};">
                                        <div class="door-leaf">
 
                                         {% if btype == 'screen' %}
@@ -1060,7 +1060,7 @@
                                       {% set doorNumber = blk.doorNumber ?? null %}
 
                                       <div class="door {{ btype == 'screen' ? 'screen' : '' }} {{ btype == 'mailbox' ? 'mailbox' : '' }} {{ methacrylate ? 'methacrylate' : '' }}"
-                                           style="height: {{ hh * scale }}px; --door-skew: {{ (-25 * hh / 40)|round(2) }}deg; z-index: {{ 100 - loop.index }};">
+                                           style="height: {{ hh * scale }}px; --door-skew: {{ min(-10, max(-22, (-25 * hh / 40)))|round(2) }}deg; z-index: {{ 100 - loop.index }};">
                                        <div class="door-leaf">
 
                                         {% if btype == 'screen' %}
