@@ -20,3 +20,6 @@
 /phpunit.xml
 ###< symfony/phpunit-bridge ###
 .env
+
+# Imágenes teñidas por color, generadas y cacheadas en caliente (TintedImageService)
+/public/uploads/tinted/

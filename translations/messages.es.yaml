@@ -196,6 +196,10 @@ config_ajax:
         discount: Descuento
         total_with_discount: Total con descuento
         total_with_discount_iva_incl: Total con descuento (IVA incl.)
+    manual_line:
+        add: Añadir línea
+        description_placeholder: Descripción
+        delete: Eliminar línea
 
 projects:
     title: Proyectos

@@ -41,3 +41,7 @@ services:
             $colgadorReference: '%colgador.reference%'
             $instalacionReference: '%instalacion.reference%'
             $doorsPerPlate: '%doors.per_plate%'
+
+    App\Service\TintedImageService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'

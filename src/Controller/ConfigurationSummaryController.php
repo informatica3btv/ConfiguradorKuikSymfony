@@ -101,6 +101,8 @@ class ConfigurationSummaryController extends AbstractController
         $table['instalacionIva']       = (bool)  ($payload['_instalacion_iva']    ?? false);
         $table['instalacionReference'] = $this->configService->getInstalacionReference();
         $table['descuento']            = (float) ($payload['_descuento']           ?? 0);
+        $table['manualLines']          = $payload['_manualLines'] ?? [];
+        $table['configurationId']      = $configuration->getId();
 
         return $this->render('configurations/ajax.html.twig', $table);
     }

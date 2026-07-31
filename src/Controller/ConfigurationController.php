@@ -597,7 +597,7 @@ class ConfigurationController extends AbstractController
         if (isset($old['addons']) && !isset($payloadArr['addons'])) {
             $payloadArr['addons'] = $old['addons'];
         }
-        foreach (['_instalacion_precio', '_instalacion_iva', '_descuento', '_screenshots', '_acceptedProductTable', '_pdf_fecha'] as $internalKey) {
+        foreach (['_instalacion_precio', '_instalacion_iva', '_descuento', '_screenshots', '_acceptedProductTable', '_pdf_fecha', '_manualLines'] as $internalKey) {
             if (isset($old[$internalKey]) && !isset($payloadArr[$internalKey])) {
                 $payloadArr[$internalKey] = $old[$internalKey];
             }
@@ -991,6 +991,47 @@ class ConfigurationController extends AbstractController
         $payloadArr['_instalacion_precio'] = $precio;
         $payloadArr['_instalacion_iva']    = $iva;
         $payloadArr['_descuento']          = $descuento;
+        $configuration->setPayload(json_encode($payloadArr));
+
+        $em->persist($configuration);
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
+    }
+
+    /**
+     * @Route("/configuracion/lineas-manuales/{id}", name="configuration_manual_lines", methods={"POST"})
+     */
+    public function saveManualLines(
+        int $id,
+        Request $request,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            return new JsonResponse(['ok' => false], 404);
+        }
+
+        $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            return new JsonResponse(['ok' => false], 403);
+        }
+
+        $data  = json_decode($request->getContent(), true);
+        $lines = [];
+        foreach ($data['lines'] ?? [] as $line) {
+            $lines[] = [
+                'descripcion' => (string) ($line['descripcion'] ?? ''),
+                'uds'         => (int)    ($line['uds']         ?? 1),
+                'precio'      => (float)  ($line['precio']      ?? 0),
+            ];
+        }
+
+        $payloadArr = $configuration->getDecodedPayload() ?? [];
+        $payloadArr['_manualLines'] = $lines;
         $configuration->setPayload(json_encode($payloadArr));
 
         $em->persist($configuration);

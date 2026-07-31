@@ -721,6 +721,20 @@
           <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; font-weight:900;">{{ instalacionPrecio|number_format(2, ',', '.') }} €</td>
         </tr>
         {% endif %}
+
+        {% set manualLines = p._manualLines ?? [] %}
+        {% for line in manualLines %}
+          {% set lineUds    = line.uds ?? 0 %}
+          {% set linePrecio = line.precio ?? 0 %}
+          {% set lineTotal  = lineUds * linePrecio %}
+          {% set grandTotal = grandTotal + lineTotal %}
+          <tr>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">{{ lineUds }}</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7;">{{ line.descripcion ?? '' }}</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right;">{{ linePrecio|number_format(2, ',', '.') }} €</td>
+            <td style="padding:6px 8px; border:1px solid #99DFF7; text-align:right; font-weight:900;">{{ lineTotal|number_format(2, ',', '.') }} €</td>
+          </tr>
+        {% endfor %}
       </tbody>
       {% set instalacionIva    = p._instalacion_iva ?? false %}
       {% set descuento         = p._descuento ?? 0 %}
