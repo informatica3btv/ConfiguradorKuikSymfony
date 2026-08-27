@@ -628,6 +628,7 @@ class ConfigurationService
             $sizeCounts['color_door'] = 1;
             $products['color_door']   = $colorDoorRef;
             $apiInfo = $this->btvApi->getProductInfo($colorDoorRef, 1) ?? [];
+            $apiInfo['_ral'] = $payload['colorDoorRal'] ?? null;
             $productInfo['color_door'] = $apiInfo;
         }
 
@@ -637,6 +638,7 @@ class ConfigurationService
             $sizeCounts['color_body'] = 1;
             $products['color_body']   = $colorBodyRef;
             $apiInfo = $this->btvApi->getProductInfo($colorBodyRef, 1) ?? [];
+            $apiInfo['_ral'] = $payload['colorBodyRal'] ?? null;
             $productInfo['color_body'] = $apiInfo;
         }
 

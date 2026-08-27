@@ -1040,4 +1040,22 @@ class ConfigurationController extends AbstractController
         return new JsonResponse(['ok' => true]);
     }
 
+    /**
+     * Devuelve la URL de la imagen del hueco (interior de puerta) teñida
+     * con un color dado, generándola/cacheándola si hace falta. Usado
+     * desde recover.html.twig, donde el color solo se conoce en el
+     * navegador tras la búsqueda (no hay render Twig con el color a mano).
+     *
+     * @Route("/api/tinted-hueco", name="api_tinted_hueco", methods={"GET"})
+     */
+    public function tintedHueco(Request $request, \App\Service\TintedImageService $tintedImageService): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $color = (string) $request->query->get('color', '');
+        $url   = $tintedImageService->getTintedImageUrl('assets/hueco6.png', $color);
+
+        return new JsonResponse(['url' => $url]);
+    }
+
 }

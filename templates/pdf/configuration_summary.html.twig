@@ -24,8 +24,8 @@
   {%- elseif size starts with 'brazo_' %}{{ 'pdf_summary.concept.arms'|trans }} H{{ size|replace({'brazo_': ''}) }}
   {%- elseif size starts with 'pata_' %}{{ 'pdf_summary.concept.legs'|trans }} ({{ size|replace({'pata_': ''}) }} {{ 'pdf_summary.concept.col_abbr'|trans }}.)
   {%- elseif size == 'instalacion_ref' %}{{ 'pdf_summary.concept.installation'|trans }}
-  {%- elseif size == 'color_door' %}{{ 'pdf_summary.config.door_color'|trans }}
-  {%- elseif size == 'color_body' %}{{ 'pdf_summary.config.body_color'|trans }}
+  {%- elseif size == 'color_door' %}{{ 'pdf_summary.config.door_color'|trans }}{{ (info._ral ?? null) ? (' (' ~ info._ral ~ ')') : '' }}
+  {%- elseif size == 'color_body' %}{{ 'pdf_summary.config.body_color'|trans }}{{ (info._ral ?? null) ? (' (' ~ info._ral ~ ')') : '' }}
   {%- elseif size == 'placa' %}{{ 'pdf_summary.concept.plate'|trans }}
   {%- elseif size == 'colgador' %}{{ 'pdf_summary.concept.hanger'|trans }}
   {%- elseif size == 'buzon_group' %}{{ 'pdf_summary.concept.mailboxes_group'|trans }}
@@ -740,8 +740,8 @@
       {% set descuento         = p._descuento ?? 0 %}
       {% set subtotalBase      = grandTotal %}
       {% set totalAntesDesc    = instalacionIva ? subtotalBase * 1.21 : subtotalBase %}
-      {% set descuentoImporte  = totalAntesDesc * descuento / 100 %}
-      {% set totalFinal        = totalAntesDesc - descuentoImporte %}
+      {% set descuentoImporte  = subtotalBase * descuento / 100 %}
+      {% set totalFinal        = instalacionIva ? (subtotalBase - descuentoImporte) * 1.21 : (subtotalBase - descuentoImporte) %}
       <tfoot>
         {% if instalacionIva %}
         <tr>

@@ -1702,8 +1702,8 @@
         const pct         = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
         const iva         = ivaCheck ? ivaCheck.checked : false;
         const totalBefore = iva ? subtotal * 1.21 : subtotal;
-        const discount    = totalBefore * pct / 100;
-        const total       = totalBefore - discount;
+        const discount    = subtotal * pct / 100;
+        const total       = iva ? (subtotal - discount) * 1.21 : (subtotal - discount);
 
         const rSub = document.getElementById('rowSubtotal');
         const rIva = document.getElementById('rowIva');
