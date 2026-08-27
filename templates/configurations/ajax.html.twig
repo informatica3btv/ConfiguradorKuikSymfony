@@ -169,23 +169,17 @@
     <tfoot>
       {% set subtotal = subtotalBase %}
       {% set totalFinal = instalacionIva ? subtotal * 1.21 : subtotal %}
-      {% if instalacionIva and subtotal > 0 %}
-        <tr id="rowSubtotal">
-          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ 'config_ajax.totals.subtotal'|trans }}</td>
-          <td id="cellSubtotal" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ subtotal|number_format(2, ',', '.') }} €</td>
-        </tr>
-        <tr id="rowIva">
-          <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ 'config_ajax.totals.iva'|trans }}</td>
-          <td id="cellIva" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ (subtotal * 0.21)|number_format(2, ',', '.') }} €</td>
-        </tr>
-      {% endif %}
-      <tr id="rowTotalBefore" style="display:none;">
-        <td colspan="5" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ instalacionIva ? ('config_ajax.totals.total_iva_incl'|trans) : ('config_ajax.totals.total'|trans) }}</td>
-        <td id="cellTotalBefore" style="padding:10px 12px; font-size:16px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ totalFinal|number_format(2, ',', '.') }} €</td>
+      <tr id="rowSubtotal" style="display:none;">
+        <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ 'config_ajax.totals.subtotal'|trans }}</td>
+        <td id="cellSubtotal" style="padding:8px 12px; font-size:13px; text-align:right; border-top:1px solid rgba(15,23,42,.08); color:#6b7280;">{{ subtotal|number_format(2, ',', '.') }} €</td>
       </tr>
       <tr id="rowDiscount" style="display:none;">
-        <td colspan="5" style="padding:8px 12px; font-size:14px; font-weight:900; text-align:right;">{{ 'config_ajax.totals.discount'|trans }} (<span id="discountPctLabel">0</span>%)</td>
-        <td id="cellDiscount" style="padding:8px 12px; font-size:14px; font-weight:900; text-align:right;">−0,00 €</td>
+        <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ 'config_ajax.totals.discount'|trans }} (<span id="discountPctLabel">0</span>%)</td>
+        <td id="cellDiscount" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">−0,00 €</td>
+      </tr>
+      <tr id="rowIva" style="display:none;">
+        <td colspan="5" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ 'config_ajax.totals.iva'|trans }}</td>
+        <td id="cellIva" style="padding:8px 12px; font-size:13px; text-align:right; color:#6b7280;">{{ (subtotal * 0.21)|number_format(2, ',', '.') }} €</td>
       </tr>
       <tr>
         <td colspan="5" id="cellTotalLabel" style="padding:10px 12px; font-size:14px; font-weight:900; text-align:right; border-top:2px solid rgba(15,23,42,.12);">{{ instalacionIva ? ('config_ajax.totals.total_with_discount_iva_incl'|trans) : ('config_ajax.totals.total_with_discount'|trans) }}</td>

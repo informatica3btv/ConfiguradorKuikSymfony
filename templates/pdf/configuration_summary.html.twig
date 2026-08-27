@@ -743,25 +743,25 @@
       {% set descuentoImporte  = subtotalBase * descuento / 100 %}
       {% set totalFinal        = instalacionIva ? (subtotalBase - descuentoImporte) * 1.21 : (subtotalBase - descuentoImporte) %}
       <tfoot>
-        {% if instalacionIva %}
+        {% if instalacionIva or descuento > 0 %}
         <tr>
           <td colspan="3" style="padding:7px 8px; text-align:right; border-top:1px solid #99DFF7; color:#6b7280;">{{ 'pdf_summary.totals.subtotal'|trans }}</td>
           <td style="padding:7px 8px; text-align:right; border-top:1px solid #99DFF7; color:#6b7280;">{{ subtotalBase|number_format(2, ',', '.') }} €</td>
         </tr>
-        <tr>
-          <td colspan="3" style="padding:7px 8px; text-align:right; color:#6b7280;">{{ 'pdf_summary.totals.vat'|trans }} (21%)</td>
-          <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ (subtotalBase * 0.21)|number_format(2, ',', '.') }} €</td>
-        </tr>
         {% endif %}
         {% if descuento > 0 %}
         <tr>
-          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
+          <td colspan="3" style="padding:7px 8px; text-align:right; color:#6b7280;">{{ 'pdf_summary.totals.discount'|trans }} ({{ descuento % 1 == 0 ? descuento|number_format(0) : descuento|number_format(1) }}%)</td>
+          <td style="padding:7px 8px; text-align:right; color:#6b7280;">−{{ descuentoImporte|number_format(2, ',', '.') }} €</td>
         </tr>
+        {% endif %}
+        {% if instalacionIva %}
         <tr>
-          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right;">{{ 'pdf_summary.totals.discount'|trans }} ({{ descuento % 1 == 0 ? descuento|number_format(0) : descuento|number_format(1) }}%)</td>
-          <td style="padding:7px 8px; font-weight:900; text-align:right;">−{{ descuentoImporte|number_format(2, ',', '.') }} €</td>
+          <td colspan="3" style="padding:7px 8px; text-align:right; color:#6b7280;">{{ 'pdf_summary.totals.vat'|trans }} (21%)</td>
+          <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ ((subtotalBase - descuentoImporte) * 0.21)|number_format(2, ',', '.') }} €</td>
         </tr>
+        {% endif %}
+        {% if descuento > 0 %}
         <tr>
           <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total_with_discount'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
           <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalFinal|number_format(2, ',', '.') }} €</td>

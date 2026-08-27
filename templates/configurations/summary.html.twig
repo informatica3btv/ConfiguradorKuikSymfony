@@ -1698,31 +1698,31 @@
       }
 
       function recalc() {
-        const subtotal    = parseFloat(table.dataset.subtotal) || 0;
-        const pct         = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
-        const iva         = ivaCheck ? ivaCheck.checked : false;
-        const totalBefore = iva ? subtotal * 1.21 : subtotal;
-        const discount    = subtotal * pct / 100;
-        const total       = iva ? (subtotal - discount) * 1.21 : (subtotal - discount);
+        const subtotal      = parseFloat(table.dataset.subtotal) || 0;
+        const pct           = Math.min(100, Math.max(0, parseFloat(discountInp.value) || 0));
+        const iva           = ivaCheck ? ivaCheck.checked : false;
+        const discount      = subtotal * pct / 100;
+        const subtotalAfter = subtotal - discount;
+        const total         = iva ? subtotalAfter * 1.21 : subtotalAfter;
 
-        const rSub = document.getElementById('rowSubtotal');
-        const rIva = document.getElementById('rowIva');
-        if (rSub) document.getElementById('cellSubtotal').textContent = fmt(subtotal);
-        if (rIva) document.getElementById('cellIva').textContent      = fmt(subtotal * 0.21);
+        const rSub  = document.getElementById('rowSubtotal');
+        const rDisc = document.getElementById('rowDiscount');
+        const rIva  = document.getElementById('rowIva');
 
-        const rBefore = document.getElementById('rowTotalBefore');
-        const rDisc   = document.getElementById('rowDiscount');
-        if (pct > 0) {
-          if (rBefore) {
-            rBefore.style.display = '';
-            document.getElementById('cellTotalBefore').textContent = fmt(totalBefore);
-          }
-          rDisc.style.display = '';
+        if (rSub) {
+          rSub.style.display = (iva || pct > 0) ? '' : 'none';
+          document.getElementById('cellSubtotal').textContent = fmt(subtotal);
+        }
+
+        if (rDisc) {
+          rDisc.style.display = pct > 0 ? '' : 'none';
           document.getElementById('discountPctLabel').textContent = pct % 1 === 0 ? pct : pct.toFixed(1);
           document.getElementById('cellDiscount').textContent = '−' + fmt(discount);
-        } else {
-          if (rBefore) rBefore.style.display = 'none';
-          rDisc.style.display = 'none';
+        }
+
+        if (rIva) {
+          rIva.style.display = iva ? '' : 'none';
+          document.getElementById('cellIva').textContent = fmt(subtotalAfter * 0.21);
         }
 
         const lbl = document.getElementById('cellTotalLabel');
