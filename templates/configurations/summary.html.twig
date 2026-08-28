@@ -1568,6 +1568,7 @@
       total: 'summary.js.total'|trans,
       total_with_discount: 'summary.js.total_with_discount'|trans,
       iva_included: 'summary.js.iva_included'|trans,
+      iva_excluded: 'summary.js.iva_excluded'|trans,
       non_json_response: 'summary.js.non_json_response'|trans,
       image_generation_error: 'summary.js.image_generation_error'|trans,
       unexpected_error: 'summary.js.unexpected_error'|trans,
@@ -1726,7 +1727,7 @@
         }
 
         const lbl = document.getElementById('cellTotalLabel');
-        if (lbl) lbl.textContent = (pct > 0 ? window.I18N_SUMMARY.total_with_discount : window.I18N_SUMMARY.total) + (iva ? window.I18N_SUMMARY.iva_included : '');
+        if (lbl) lbl.textContent = (pct > 0 ? window.I18N_SUMMARY.total_with_discount : window.I18N_SUMMARY.total) + (iva ? window.I18N_SUMMARY.iva_included : window.I18N_SUMMARY.iva_excluded);
         document.getElementById('cellTotal').textContent = fmt(total);
       }
 

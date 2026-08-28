@@ -349,6 +349,7 @@ summary:
         total: Total
         total_with_discount: Total with discount
         iva_included: ' (VAT incl.)'
+        iva_excluded: ' (VAT excl.)'
         non_json_response: 'The server returned an error (not JSON). Check the console and the Symfony log.'
         image_generation_error: Error generating image
         unexpected_error: 'Unexpected error (check console).'
@@ -424,6 +425,7 @@ pdf_summary:
         subtotal: Subtotal
         vat: VAT
         vat_included: '(VAT incl.)'
+        vat_excluded: '(VAT excl.)'
         total: Total
         discount: Discount
         total_with_discount: Total with discount

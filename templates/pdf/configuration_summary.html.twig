@@ -761,14 +761,15 @@
           <td style="padding:7px 8px; text-align:right; color:#6b7280;">{{ ((subtotalBase - descuentoImporte) * 0.21)|number_format(2, ',', '.') }} €</td>
         </tr>
         {% endif %}
+        {% set vatSuffix = ' ' ~ (instalacionIva ? ('pdf_summary.totals.vat_included'|trans) : ('pdf_summary.totals.vat_excluded'|trans)) %}
         {% if descuento > 0 %}
         <tr>
-          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total_with_discount'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total_with_discount'|trans }}{{ vatSuffix }}</td>
           <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalFinal|number_format(2, ',', '.') }} €</td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total'|trans }}{{ instalacionIva ? (' ' ~ ('pdf_summary.totals.vat_included'|trans)) : '' }}</td>
+          <td colspan="3" style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ 'pdf_summary.totals.total'|trans }}{{ vatSuffix }}</td>
           <td style="padding:7px 8px; font-weight:900; text-align:right; border-top:2px solid #00AFEA;">{{ totalAntesDesc|number_format(2, ',', '.') }} €</td>
         </tr>
         {% endif %}
