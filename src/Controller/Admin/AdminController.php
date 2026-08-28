@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\AttributesType;
+use App\Service\StatsService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +20,16 @@ class AdminController extends AbstractController
 
         return $this->render('admin/dashboard.html.twig', [
             'types' => $types,
+        ]);
+    }
+
+    /**
+     * @Route("/admin/stats", name="admin_stats")
+     */
+    public function stats(StatsService $statsService): Response
+    {
+        return $this->render('admin/stats.html.twig', [
+            'stats' => $statsService->getStats(),
         ]);
     }
 }

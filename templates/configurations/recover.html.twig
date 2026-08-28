@@ -182,11 +182,12 @@
       font-weight:900;
       color:#0b1220;
       font-size:14px;
-      margin:6px 0 12px;
+      margin:6px 0 18px;
       text-align:center;
     }
 
     .cols{
+      position:relative;
       display:grid;
       grid-template-columns: repeat(var(--colsN), 140px);
       justify-content:center;
@@ -218,8 +219,7 @@
       border-right-width:4px;
       border-top-width:8px;
       border-bottom-width:8px;
-      border-radius:12px;
-      overflow:hidden;
+      overflow:visible;
       background:#f7f7f7;
     }
 
@@ -234,32 +234,204 @@
       height:calc(90px * var(--hscale));
       display:flex;
       flex-direction:column;
-      overflow:hidden;
+      overflow:visible;
     }
 
     .half-sep{
       border-top:2px dashed rgba(0,0,0,.28);
     }
 
-    .door{
+    /* Bisel de profundidad (fondo) del mueble, igual que en el resumen. */
+    .depth-top{
+      position:absolute;
+      top:-25px;
+      left:0px;
       width:100%;
-      border:1px solid rgba(44,62,80,.9);
-      background: var(--door-color, #3a9efc);
-      position:relative;
+      height:25px;
+      background: linear-gradient(rgba(255,255,255,.25), rgba(255,255,255,.25)), var(--col-border);
+      transform-origin: left bottom;
+      transform: skewX(-49deg);
+      z-index:1;
+    }
+    .depth-right{
+      position:absolute;
+      top:0px;
+      left:100%;
+      width:29px;
+      height: 100%;
+      background: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)), var(--col-border);
+      transform-origin: left top;
+      transform: skewY(-41deg);
+      z-index:1;
+    }
+    .depth-label{
+      position:absolute;
+      right:-48px;
+      bottom:-4px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      transform: rotate(-41deg);
+      transform-origin: right center;
+      z-index:4;
+    }
+    .depth-label .dim-row{ width:50px; }
+    .depth-label .dim-value{ white-space:nowrap; }
+    .dim-row{ display:flex; align-items:center; gap:2px; font-size:9px; }
+    .dim-row .arrow{ font-size:12px; line-height:1; color:#0b1220; }
+    .dim-row .line{ flex:1; height:1px; background:#0b1220; }
+    .dim-value{ text-align:center; font-size:11px; font-weight:900; color:#0b1220; margin-top:2px; }
+
+    /* Cota de altura (izquierda) y de anchos por columna + total (abajo),
+       igual que en el resumen. */
+    .height-dim{
+      position:absolute;
+      left:0;
+      top:20px;
+      width:38px;
       display:flex;
       align-items:center;
       justify-content:center;
+      gap:6px;
+      z-index:3;
+      overflow:visible;
+    }
+    .vdim-line{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      height:100%;
+      flex-shrink:0;
+    }
+    .vdim-line .varrow{ font-size:11px; line-height:1; color:#0b1220; flex-shrink:0; }
+    .vdim-line .vline{ width:2px; flex:1; min-height:10px; background:#0b1220; }
+    .group-height-label{
+      display:inline-block;
+      flex-shrink:0;
+      transform: rotate(-90deg);
+      font-size:13px;
+      font-weight:900;
+      color:#0b1220;
+      white-space:nowrap;
     }
 
+    .col-dim{ margin-top:4px; }
+
+    .group-width-total{ margin:8px auto 0; }
+    .group-width-total .dim-value{ font-size:13px; }
+
+    .width-dims-below{ margin-top:10px; }
+    .width-dims-row{
+      width:100%;
+      display:grid;
+      grid-template-columns: repeat(var(--colsN), var(--colW));
+      justify-content:center;
+    }
+
+    /* .door = ranura estática con el "hueco" de fondo (foto teñida del
+       color del cuerpo). .door-leaf = la hoja que gira sobre bisagra al
+       hacer click, igual que en el resumen. */
+    .door{
+      width:100%;
+      background: var(--col-border, #22262b);
+      border-bottom: 1px solid rgba(0,0,0,.35);
+      position:relative;
+      box-sizing: border-box;
+      cursor:pointer;
+      z-index:1;
+      perspective: 1400px;
+    }
+
+    .door-leaf{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      box-sizing: border-box;
+      border:1px solid rgba(255,255,255,.6);
+      background: var(--door-color, #3a9efc);
+      transform-style: preserve-3d;
+      transform-origin: right center;
+      backface-visibility: hidden;
+      transition: transform .55s cubic-bezier(.34,1.15,.64,1), box-shadow .55s ease;
+      will-change: transform;
+    }
+
+    .door-leaf::before{
+      content:"";
+      position:absolute;
+      top:0; left:0; bottom:0;
+      width:6px;
+      background: rgba(0,0,0,.32);
+      transform: rotateY(90deg) translateX(-3px);
+      transform-origin: left center;
+      opacity:0;
+      transition: opacity .5s ease;
+      pointer-events:none;
+    }
+
+    .door.is-open .door-leaf{
+      transform: skewY(var(--door-skew, 0deg)) rotateY(64deg) translateZ(14px) translateX(-4px);
+      box-shadow: -14px 10px 28px rgba(0,0,0,.5);
+      z-index:5;
+    }
+
+    .door.is-open .door-leaf::before{ opacity:1; }
+
+    .door-leaf::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(245deg, rgba(0,0,0,.5), rgba(0,0,0,.15) 40%, transparent 70%);
+      opacity:0;
+      transition: opacity .45s ease .1s;
+      pointer-events:none;
+    }
+
+    .door.is-open .door-leaf::after{ opacity:1; }
+
     .door.screen{
-      padding:6px;
-      background:var(--door-color, #3a9efc);
+      padding:0;
+    }
+
+    .door.screen .door-leaf{
+      overflow:hidden;
     }
 
     .door.screen img{
       width:125%;
       height:125%;
       object-fit:contain;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .door.mailbox{
+      padding:0;
+    }
+
+    .door.mailbox .door-leaf{
+      overflow:hidden;
+    }
+
+    .door.mailbox img{
+      position:absolute;
+      top:0; left:0;
+      width:100%;
+      height:100%;
+      object-fit:fill;
+      pointer-events:none;
+      user-select:none;
+      display:block;
+    }
+
+    .door .size-label{
+      font-weight:900;
+      font-size:16px;
+      color:#fff;
+      text-shadow:0 0 3px rgba(0,0,0,.7);
       pointer-events:none;
       user-select:none;
     }
@@ -275,6 +447,7 @@
       border-radius:999px;
       padding:2px 7px;
       line-height:1.2;
+      z-index:2;
     }
 
     .door .badges{
@@ -283,6 +456,7 @@
       top:4px;
       display:flex;
       gap:4px;
+      z-index:2;
     }
 
     .badge-mini{
@@ -332,7 +506,7 @@
       padding-bottom:155px;
       position: relative;
       display: inline-block;
-      padding-left: calc(var(--armW) - var(--armOverlap));
+      padding-left: calc(var(--armW) - var(--armOverlap) + 40px);
       padding-right: calc(var(--armW) - var(--armOverlap));
     }
 
@@ -538,6 +712,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const projName = document.getElementById('projName');
 
   const SCALE = {{ kuik.scale }};
+  const FONDO_MM = {{ kuik.fondo_mm|json_encode|raw }};
+  const H_HEIGHTS_MM = {{ kuik.h_heights_mm|json_encode|raw }};
+  const BOTTOM_CAP_ZOCALO = {{ kuik.bottom_cap_zocalo }};
+  const DEFAULT_BOTTOM_CAP = {{ kuik.default_bottom_cap }};
+  const DEFAULT_TOP_CAP = {{ kuik.default_top_cap }};
+  const TINTED_HUECO_URL = '{{ path('api_tinted_hueco') }}';
+  let currentHuecoUrl = null;
+  let allDoorEls = [];
+  const MAILBOX_IMGS = {
+    elecCon: "{{ asset('assets/buzon_kuik_electronico_con_tarjetero.png') }}",
+    elecSin: "{{ asset('assets/buzon_kuik_electronico_sin_tarjetero.png') }}",
+    mecCon:  "{{ asset('assets/buzon_kuik_mecanico_con_tarjetero.png') }}",
+    mecSin:  "{{ asset('assets/buzon_kuik_mecanico_sin_tarjetero.png') }}"
+  };
 
   function safeParse(jsonStr){
     try {
@@ -661,20 +849,49 @@ document.addEventListener('DOMContentLoaded', () => {
         halfEl.style.height = (capH * SCALE) + 'px';
       }
 
-      (blocks || []).forEach((blk) => {
+      (blocks || []).forEach((blk, blkIdx) => {
         const h = blockHeight(blk);
         const t = blockType(blk);
 
+        // .door = ranura estática (color del cuerpo + hueco teñido de fondo).
+        // .door-leaf = la hoja, gira sobre bisagra al hacer click.
         const d = document.createElement('div');
-        d.className = 'door' + (t === 'screen' ? ' screen' : '');
+        d.className = 'door' + (t === 'screen' ? ' screen' : (t === 'mailbox' ? ' mailbox' : ''));
         d.style.height = (h * SCALE) + 'px';
-        d.style.setProperty('--door-color', doorHex || '#3a9efc');
+        d.style.zIndex = String(100 - blkIdx);
+        const skewDeg = Math.min(-10, Math.max(-22, -25 * h / 40));
+        d.style.setProperty('--door-skew', skewDeg + 'deg');
+        d.addEventListener('click', () => d.classList.toggle('is-open'));
+        allDoorEls.push(d);
+
+        const leaf = document.createElement('div');
+        leaf.className = 'door-leaf';
+        leaf.style.setProperty('--door-color', doorHex || '#3a9efc');
+        d.appendChild(leaf);
 
         if (t === 'screen'){
           const img = document.createElement('img');
           img.src = "{{ asset(kuik.img_pantalla) }}";
           img.alt = "Pantalla";
-          d.appendChild(img);
+          leaf.appendChild(img);
+        } else if (t === 'mailbox'){
+          const elec = !!(blk && blk.electronico);
+          const tarj = !!(blk && blk.tarjetero);
+          const buzonImg = elec
+            ? (tarj ? MAILBOX_IMGS.elecCon : MAILBOX_IMGS.elecSin)
+            : (tarj ? MAILBOX_IMGS.mecCon : MAILBOX_IMGS.mecSin);
+
+          const img = document.createElement('img');
+          img.src = buzonImg;
+          img.alt = 'Buzón';
+          leaf.appendChild(img);
+
+          if (elec && blk && blk.plateNumber != null){
+            const num = document.createElement('div');
+            num.className = 'num';
+            num.textContent = blk.plateNumber + ',' + blk.doorNumber;
+            leaf.appendChild(num);
+          }
         } else {
           counterRef.value += 1;
           const doorIndex = counterRef.value;
@@ -682,7 +899,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const num = document.createElement('div');
           num.className = 'num';
           num.textContent = doorIndex;
-          d.appendChild(num);
+          leaf.appendChild(num);
+
+          const sizeLabel = document.createElement('div');
+          sizeLabel.className = 'size-label';
+          sizeLabel.textContent = 'H' + h;
+          leaf.appendChild(sizeLabel);
 
           const sel = getAddonForDoor(addons, doorIndex);
           const socket = !!(sel && sel.socket);
@@ -693,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
             badges.className = 'badges';
             if (socket) badges.appendChild(makeBadge('ENCH'));
             if (usb) badges.appendChild(makeBadge('USB'));
-            d.appendChild(badges);
+            leaf.appendChild(badges);
           }
         }
 
@@ -757,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
     previewGroups.innerHTML = '';
     previewGroups.style.setProperty('--door-color', doorHex || '#3a9efc');
     previewGroups.style.setProperty('--col-border', bodyHex || '#000');
+    allDoorEls = [];
 
     if (!groups.length){
       const div = document.createElement('div');
@@ -770,6 +993,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const soporteSuelo = isSoporteSuelo(payload);
     const bracketType = getBracketType(payload);
     const bracketColor = getBracketColor(payload);
+
+    const isHomeType = (payload?.type || '').trim() === 'home';
+    const instalacionG = (payload?.instalacion || '').trim();
+    const bg = (payload?.fondo || '').trim();
+    const isHomeSerie400 = isHomeType && bg === '400';
+    const fondoMm = isHomeSerie400 ? 403 : (FONDO_MM[bg] ?? null);
+
+    const isZocaloG = isHomeType && instalacionG === 'zocalo';
+    const isEmpotradoLikeG = isHomeType && ['empotrado', 'soporte_suelo', 'colgado'].includes(instalacionG);
+    const gTopCap = isZocaloG ? (parseInt(payload?.topCap, 10) || DEFAULT_TOP_CAP) : DEFAULT_TOP_CAP;
+    const gBottomCap = isZocaloG ? BOTTOM_CAP_ZOCALO : DEFAULT_BOTTOM_CAP;
+    const gSingleCap = parseInt(payload?.singleCap, 10) || 180;
+    const totalHUnits = isEmpotradoLikeG ? gSingleCap : (gTopCap + gBottomCap);
+    let groupHeightLabel = H_HEIGHTS_MM[totalHUnits] ?? Math.round(totalHUnits / 10 * 125);
+    if (isZocaloG) groupHeightLabel += 177;
+    const groupHeightPx = totalHUnits * SCALE;
+
+    const colWidthLabel = isHomeSerie400 ? 380 : (['300', '400', '500'].includes(bg) ? Number(bg) : null);
+    const groupWidthExtraMm = 50;
 
     groups.forEach((groupCols, groupIndex) => {
       const groupBlock = document.createElement('div');
@@ -800,9 +1042,33 @@ document.addEventListener('DOMContentLoaded', () => {
         supportWrap.appendChild(armRight);
       }
 
+      const heightDim = document.createElement('div');
+      heightDim.className = 'height-dim';
+      heightDim.style.height = groupHeightPx + 'px';
+      heightDim.innerHTML =
+        '<div class="group-height-label">' + groupHeightLabel + '</div>' +
+        '<div class="vdim-line"><span class="varrow">▲</span><span class="vline"></span><span class="varrow">▼</span></div>';
+      supportWrap.appendChild(heightDim);
+
       const cols = document.createElement('div');
       cols.className = 'cols';
       cols.style.setProperty('--colsN', groupCols.length);
+      if (fondoMm) cols.style.marginTop = '18px';
+
+      if (fondoMm){
+        const dTop = document.createElement('div');
+        dTop.className = 'depth-top';
+        const dRight = document.createElement('div');
+        dRight.className = 'depth-right';
+        const dLabel = document.createElement('div');
+        dLabel.className = 'depth-label';
+        dLabel.innerHTML =
+          '<div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>' +
+          '<div class="dim-value">' + fondoMm + '</div>';
+        cols.appendChild(dTop);
+        cols.appendChild(dRight);
+        cols.appendChild(dLabel);
+      }
 
       groupCols.forEach((col) => {
         counterRef.colIndex += 1;
@@ -810,6 +1076,39 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       supportWrap.appendChild(cols);
+
+      if (colWidthLabel !== null){
+        const widthDimsBelow = document.createElement('div');
+        widthDimsBelow.className = 'width-dims-below';
+
+        const widthDimsRow = document.createElement('div');
+        widthDimsRow.className = 'width-dims-row';
+        widthDimsRow.style.setProperty('--colsN', groupCols.length);
+
+        groupCols.forEach(() => {
+          const colDim = document.createElement('div');
+          colDim.className = 'col-dim';
+          colDim.innerHTML =
+            '<div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>' +
+            '<div class="dim-value">' + colWidthLabel + '</div>';
+          widthDimsRow.appendChild(colDim);
+        });
+
+        widthDimsBelow.appendChild(widthDimsRow);
+
+        if (groupCols.length > 1){
+          const totalMm = colWidthLabel * groupCols.length + groupWidthExtraMm;
+          const groupWidthTotal = document.createElement('div');
+          groupWidthTotal.className = 'group-width-total';
+          groupWidthTotal.style.width = 'calc(' + groupCols.length + ' * 140px)';
+          groupWidthTotal.innerHTML =
+            '<div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>' +
+            '<div class="dim-value">' + totalMm + '</div>';
+          widthDimsBelow.appendChild(groupWidthTotal);
+        }
+
+        supportWrap.appendChild(widthDimsBelow);
+      }
 
       if (soporteSuelo && bracketType === 'patas'){
         const legPositions = getLegPositions(groupCols.length);
@@ -834,6 +1133,24 @@ document.addEventListener('DOMContentLoaded', () => {
       groupBlock.appendChild(supportWrap);
       previewGroups.appendChild(groupBlock);
     });
+
+    applyTintedHueco(bodyHex);
+  }
+
+  function applyTintedHueco(bodyHex){
+    const doors = allDoorEls.slice();
+    const fallback = 'url(\'{{ asset("assets/hueco6.png") }}\') center top / 100% 100% no-repeat, ' + (bodyHex || '#22262b');
+    doors.forEach(d => { d.style.background = fallback; });
+
+    fetch(TINTED_HUECO_URL + '?color=' + encodeURIComponent((bodyHex || '').replace('#', '')))
+      .then(r => r.json())
+      .then(data => {
+        if (!data || !data.url) return;
+        currentHuecoUrl = data.url;
+        const tinted = 'url(\'' + data.url + '\') center top / 100% 100% no-repeat, ' + (bodyHex || '#22262b');
+        doors.forEach(d => { d.style.background = tinted; });
+      })
+      .catch(() => {});
   }
 
   function computeDoorCounts(columns){

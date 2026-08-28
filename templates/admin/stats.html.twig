@@ -1,0 +1,311 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Estadísticas{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <style>
+    :root{
+      --bg:#f6f9fc;
+      --ink:#0b1220;
+      --muted:#6b7280;
+      --line: rgba(15,23,42,.12);
+      --card:#fff;
+      --shadow: 0 18px 40px rgba(2,20,60,.10);
+      --shadow-sm: 0 10px 22px rgba(2,20,60,.10);
+      --blue:#0b76d8;
+      --blue2:#00AFEA;
+      --green:#16a34a;
+      --red:#dc2626;
+    }
+
+    .admin-wrap{ max-width:1200px; margin:26px auto 70px; padding:0 14px; }
+
+    .admin-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .admin-title{ font-size:42px; font-weight:900; letter-spacing:-.02em; margin:0; }
+    .admin-sub{ color:var(--muted); margin-top:8px; font-size:16px; }
+
+    .btn-back{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 16px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      text-decoration:none;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .btn-back:hover{ box-shadow: var(--shadow-sm); }
+
+    .stat-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:16px;
+      margin-top:22px;
+    }
+    @media (max-width: 1000px){ .stat-grid{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px){ .stat-grid{ grid-template-columns: 1fr; } }
+
+    .stat-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-label{
+      font-size:13px;
+      font-weight:800;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.02em;
+    }
+    .stat-value{
+      font-size:32px;
+      font-weight:900;
+      margin-top:6px;
+      letter-spacing:-.02em;
+    }
+    .stat-hint{ font-size:13px; color:var(--muted); margin-top:4px; }
+
+    .section{
+      margin-top:32px;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:24px;
+      box-shadow: var(--shadow);
+    }
+    .section h3{ margin:0 0 16px; font-size:18px; font-weight:900; }
+
+    /* Barra de porcentajes de proyectos */
+    .status-bar{
+      display:flex;
+      height:26px;
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid var(--line);
+    }
+    .status-bar span{ height:100%; }
+    .status-bar .open{ background: rgba(11,118,216,.55); }
+    .status-bar .accepted{ background: var(--green); }
+    .status-bar .rejected{ background: var(--red); }
+
+    .status-legend{
+      display:flex;
+      gap:22px;
+      margin-top:14px;
+      flex-wrap:wrap;
+      font-size:14px;
+      font-weight:700;
+    }
+    .status-legend .dot{
+      display:inline-block;
+      width:10px; height:10px;
+      border-radius:50%;
+      margin-right:6px;
+    }
+    .dot.open{ background: rgba(11,118,216,.85); }
+    .dot.accepted{ background: var(--green); }
+    .dot.rejected{ background: var(--red); }
+
+    .empty-note{
+      color:var(--muted);
+      font-size:14px;
+      margin-top:10px;
+    }
+
+    .stats-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:14px;
+    }
+    .stats-table th{
+      text-align:left;
+      padding:8px 10px;
+      font-size:12px;
+      font-weight:900;
+      color:var(--muted);
+      border-bottom:1px solid var(--line);
+    }
+    .stats-table td{
+      padding:8px 10px;
+      border-bottom:1px solid var(--line);
+      vertical-align:middle;
+    }
+    .stats-table tr:last-child td{ border-bottom:0; }
+
+    .accept-bar{
+      display:inline-block;
+      width:80px;
+      height:8px;
+      border-radius:999px;
+      background: rgba(220,38,38,.18);
+      overflow:hidden;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+    .accept-bar span{
+      display:block;
+      height:100%;
+      background: var(--green);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+
+  <div class="admin-head">
+    <div>
+      <h1 class="admin-title">Estadísticas</h1>
+      <div class="admin-sub">Resumen general de proyectos y configuraciones</div>
+    </div>
+    <a href="{{ path('admin_dashboard') }}" class="btn-back">← Volver a administración</a>
+  </div>
+
+  <div class="section">
+    <h3>Proyectos ({{ stats.totalProjects }} en total)</h3>
+
+    {% if stats.totalProjects > 0 %}
+      <div class="status-bar">
+        {% if stats.pctOpen > 0 %}<span class="open" style="width:{{ stats.pctOpen }}%;"></span>{% endif %}
+        {% if stats.pctAccepted > 0 %}<span class="accepted" style="width:{{ stats.pctAccepted }}%;"></span>{% endif %}
+        {% if stats.pctRejected > 0 %}<span class="rejected" style="width:{{ stats.pctRejected }}%;"></span>{% endif %}
+      </div>
+
+      <div class="status-legend">
+        <span><span class="dot open"></span>Abiertos: {{ stats.openProjects }} ({{ stats.pctOpen }}%)</span>
+        <span><span class="dot accepted"></span>Aceptados: {{ stats.acceptedProjects }} ({{ stats.pctAccepted }}%)</span>
+        <span><span class="dot rejected"></span>Rechazados: {{ stats.rejectedProjects }} ({{ stats.pctRejected }}%)</span>
+      </div>
+    {% else %}
+      <div class="empty-note">Todavía no hay proyectos.</div>
+    {% endif %}
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Configuraciones totales</div>
+      <div class="stat-value">{{ stats.totalConfigs }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Configs. de media / proyecto</div>
+      <div class="stat-value">{{ stats.avgConfigsPerProject }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Configuraciones aceptadas</div>
+      <div class="stat-value">{{ stats.acceptedConfigsCount }}</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Precio medio (aceptadas)</div>
+      {% if stats.avgAcceptedPrice is not null %}
+        <div class="stat-value">{{ stats.avgAcceptedPrice|number_format(2, ',', '.') }} €</div>
+        <div class="stat-hint">
+          de {{ stats.pricedAcceptedCount }} con precio ·
+          min {{ stats.minAcceptedPrice|number_format(0, ',', '.') }} € /
+          max {{ stats.maxAcceptedPrice|number_format(0, ',', '.') }} €
+        </div>
+      {% else %}
+        <div class="stat-value">—</div>
+        <div class="stat-hint">Sin configuraciones aceptadas con precio calculable</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Configuraciones por tipo</h3>
+
+    {% if stats.typeBreakdown|length > 0 %}
+      <table class="stats-table">
+        <thead>
+          <tr><th>Tipo</th><th>Cantidad</th><th>%</th></tr>
+        </thead>
+        <tbody>
+          {% for row in stats.typeBreakdown %}
+            <tr>
+              <td><b>{{ row.type }}</b></td>
+              <td>{{ row.count }}</td>
+              <td>{{ row.pct }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-note">Todavía no hay configuraciones.</div>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h3>Aceptación por tipo y número de columnas</h3>
+    <div class="stat-hint" style="margin-bottom:12px;">
+      Solo cuenta proyectos ya decididos (aceptados o rechazados) — los abiertos no entran aquí.
+    </div>
+
+    {% if stats.acceptanceByTypeCols|length > 0 %}
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Columnas</th>
+            <th>Aceptadas / Rechazadas</th>
+            <th>% aceptación</th>
+            <th>Precio medio aceptado</th>
+            <th>Precio máx. aceptado</th>
+            <th>Precio al que suele rechazarse</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in stats.acceptanceByTypeCols %}
+            <tr>
+              <td><b>{{ row.type }}</b></td>
+              <td>{{ row.range }}</td>
+              <td>{{ row.accepted }} / {{ row.rejected }}</td>
+              <td>
+                <div class="accept-bar">
+                  <span style="width:{{ row.pctAccepted }}%;"></span>
+                </div>
+                {{ row.pctAccepted }}%
+              </td>
+              <td>
+                {% if row.avgAcceptedPrice is not null %}
+                  {{ row.avgAcceptedPrice|number_format(0, ',', '.') }} €
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if row.maxAcceptedPrice is not null %}
+                  <b>{{ row.maxAcceptedPrice|number_format(0, ',', '.') }} €</b>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if row.avgRejectedPrice is not null %}
+                  {{ row.avgRejectedPrice|number_format(0, ',', '.') }} €
+                  {% if row.minRejectedPrice is not null %}
+                    <div class="stat-hint" style="margin:0;">mín. {{ row.minRejectedPrice|number_format(0, ',', '.') }} €</div>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-note">Todavía no hay proyectos aceptados ni rechazados.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

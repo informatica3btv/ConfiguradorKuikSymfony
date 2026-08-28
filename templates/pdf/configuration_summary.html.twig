@@ -466,7 +466,7 @@
 
   {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
   {% set colWidthLabel = isHomeSerie400 ? 380 : (fondo in ['300', '400', '500'] ? fondo : null) %}
-  {% set groupWidthExtraMm = isHomeSerie400 ? 200 : 50 %}
+  {% set groupWidthExtraMm = 50 %}
   {% set totalHUnitsPdf = isEmpotradoLike ? singleCap : (topCap + bottomCap) %}
   {% set groupHeightLabelPdf = kuik.h_heights_mm[totalHUnitsPdf] is defined ? kuik.h_heights_mm[totalHUnitsPdf] : (totalHUnitsPdf / 10 * 125)|round %}
   {% set placementLabel =

@@ -35,7 +35,7 @@
 
 {% set isHome = (type == 'home') %}
 {% set isHomeSerie400 = isHome and bg == '400' %}
-{% set fondoMm = isHomeSerie400 ? 425 : (kuik.fondo_mm[bg] ?? null) %}
+{% set fondoMm = isHomeSerie400 ? 403 : (kuik.fondo_mm[bg] ?? null) %}
 {% set isZocalo = (isHome and instalacion == 'zocalo') %}
 {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo' or instalacion == 'colgado')) %}
 
@@ -59,7 +59,7 @@
 
 {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
 {% set colWidthLabel = isHomeSerie400 ? 380 : (bg in ['300', '400', '500'] ? bg : null) %}
-{% set groupWidthExtraMm = isHomeSerie400 ? 200 : 50 %}
+{% set groupWidthExtraMm = 50 %}
 {% set totalHUnits = isEmpotradoLike ? singleCap : (topCap + bottomCap) %}
 {% set groupHeightLabel = kuik.h_heights_mm[totalHUnits] is defined ? kuik.h_heights_mm[totalHUnits] : (totalHUnits / 10 * 125)|round %}
 {% if isZocalo %}
