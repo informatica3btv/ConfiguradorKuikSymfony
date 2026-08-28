@@ -1247,29 +1247,34 @@
                         {% set mbGroupWidthMm = hasMbWidth ? (mbCols * mbUnitAnchoMm)|round : 0 %}
                         {% set mbDimW = mbCols * kuik.mb_col_width_px %}
                         <div class="width-dims-below">
-                          <div style="display:flex; flex-direction:row;">
-                            {% if hasMbWidth and mbSide == 'left' %}
-                              <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
-                                <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
-                                <div class="dim-value">{{ mbGroupWidthMm }}</div>
-                              </div>
-                            {% endif %}
-                            <div class="width-dims-row" style="--colsN: {{ totalCols }};">
-                              {% for col in groupCols %}
-                                <div class="col-dim">
-                                  <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
-                                  <div class="dim-value">{{ colWidthLabel }}</div>
-                                </div>
-                              {% endfor %}
+                          {% if totalCols == 1 and not hasMbWidth %}
+                            <div class="group-width-total" style="width: calc({{ totalCols }} * {{ kuik.col_width_px }}px);">
+                              <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                              <div class="dim-value">{{ (colWidthLabel * totalCols) + groupWidthExtraMm }}</div>
                             </div>
-                            {% if hasMbWidth and mbSide == 'right' %}
-                              <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
-                                <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
-                                <div class="dim-value">{{ mbGroupWidthMm }}</div>
+                          {% else %}
+                            <div style="display:flex; flex-direction:row;">
+                              {% if hasMbWidth and mbSide == 'left' %}
+                                <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
+                                  <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                  <div class="dim-value">{{ mbGroupWidthMm }}</div>
+                                </div>
+                              {% endif %}
+                              <div class="width-dims-row" style="--colsN: {{ totalCols }};">
+                                {% for col in groupCols %}
+                                  <div class="col-dim">
+                                    <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                    <div class="dim-value">{{ colWidthLabel }}</div>
+                                  </div>
+                                {% endfor %}
                               </div>
-                            {% endif %}
-                          </div>
-                          {% if totalCols > 1 or hasMbWidth %}
+                              {% if hasMbWidth and mbSide == 'right' %}
+                                <div class="col-dim" style="width:{{ mbDimW }}px; flex-shrink:0;">
+                                  <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
+                                  <div class="dim-value">{{ mbGroupWidthMm }}</div>
+                                </div>
+                              {% endif %}
+                            </div>
                             <div class="group-width-total" style="width: calc({{ totalCols }} * {{ kuik.col_width_px }}px{{ hasMbWidth ? (' + ' ~ mbDimW ~ 'px') : '' }});">
                               <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
                               <div class="dim-value">{{ (colWidthLabel * totalCols) + groupWidthExtraMm + mbGroupWidthMm }}</div>

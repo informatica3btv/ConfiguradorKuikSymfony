@@ -1023,7 +1023,7 @@
 
                     </div>
                   </div>
-                  {% if colWidthLabel %}
+                  {% if colWidthLabel and n > 1 %}
                     <div class="dim-row">
                       <span class="arrow">&#9668;</span><span class="line"></span><span class="arrow">&#9658;</span>
                     </div>
@@ -1033,7 +1033,7 @@
                 </div>
               {% endfor %}
             </div>{# /cols-wrap #}
-            {% if colWidthLabel and n > 1 %}
+            {% if colWidthLabel %}
               <div class="group-width-total" style="width: {{ groupW }}px;">
                 <div class="dim-row">
                   <span class="arrow">&#9668;</span><span class="line"></span><span class="arrow">&#9658;</span>

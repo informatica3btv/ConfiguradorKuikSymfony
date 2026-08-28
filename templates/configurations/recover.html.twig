@@ -1081,6 +1081,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const widthDimsBelow = document.createElement('div');
         widthDimsBelow.className = 'width-dims-below';
 
+        if (groupCols.length === 1){
+          const totalMm = colWidthLabel * groupCols.length + groupWidthExtraMm;
+          const groupWidthTotal = document.createElement('div');
+          groupWidthTotal.className = 'group-width-total';
+          groupWidthTotal.style.width = 'calc(' + groupCols.length + ' * 140px)';
+          groupWidthTotal.innerHTML =
+            '<div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>' +
+            '<div class="dim-value">' + totalMm + '</div>';
+          widthDimsBelow.appendChild(groupWidthTotal);
+        } else {
         const widthDimsRow = document.createElement('div');
         widthDimsRow.className = 'width-dims-row';
         widthDimsRow.style.setProperty('--colsN', groupCols.length);
@@ -1096,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         widthDimsBelow.appendChild(widthDimsRow);
 
-        if (groupCols.length > 1){
+        {
           const totalMm = colWidthLabel * groupCols.length + groupWidthExtraMm;
           const groupWidthTotal = document.createElement('div');
           groupWidthTotal.className = 'group-width-total';
@@ -1105,6 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '<div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>' +
             '<div class="dim-value">' + totalMm + '</div>';
           widthDimsBelow.appendChild(groupWidthTotal);
+        }
         }
 
         supportWrap.appendChild(widthDimsBelow);
