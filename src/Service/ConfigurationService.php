@@ -350,6 +350,7 @@ class ConfigurationService
         if ($isBrazos && !empty($groups)) {
             foreach ($groups as $groupCols) {
                 if (!is_array($groupCols)) continue;
+                $numCols = count($groupCols);
                 $maxH = 0;
                 foreach ($groupCols as $col) {
                     $colH = 0;
@@ -371,6 +372,29 @@ class ConfigurationService
                 if ($brazo) {
                     $qty = $sizeCounts[$brazoKey];
                     $productInfo[$brazoKey] = $this->btvApi->getProductInfo($brazo->getReference(), $qty);
+                }
+
+                // Refuerzo con patas intermedias en agrupaciones anchas (5+ columnas):
+                // se descompone en kits de 5 columnas (el más grande disponible) + el resto.
+                if ($numCols >= 5) {
+                    $remaining = $numCols;
+                    $kitCounts = [];
+                    while ($remaining > 0) {
+                        $kitSize = min(5, $remaining);
+                        $kitCounts[$kitSize] = ($kitCounts[$kitSize] ?? 0) + 1;
+                        $remaining -= $kitSize;
+                    }
+                    foreach ($kitCounts as $kitSize => $qty) {
+                        $pataKey = 'pata_' . $kitSize;
+                        $pata = $this->pataRepo->findOneBy(['numColumnas' => $kitSize, 'tipo' => $tipo])
+                             ?? $this->pataRepo->findOneBy(['numColumnas' => $kitSize]);
+                        $sizeCounts[$pataKey] = ($sizeCounts[$pataKey] ?? 0) + $qty;
+                        $products[$pataKey]   = $pata;
+                        if ($pata) {
+                            $totalQty = $sizeCounts[$pataKey];
+                            $productInfo[$pataKey] = $this->btvApi->getProductInfo($pata->getReference(), $totalQty);
+                        }
+                    }
                 }
             }
         } elseif ($tipo === 'home' && !empty($groups)) {

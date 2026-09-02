@@ -26,6 +26,10 @@
 
 {% set selectedType = p.bracketType ?? '' %}
 {% set selectedColor = p.bracketColor ?? '' %}
+{% set legSrc =
+  selectedColor == 'blanco' ? asset('assets/pie_blanco.jpg') :
+  (selectedColor == 'plata' ? asset('assets/pie_plata.jpg') : asset('assets/pie_negro.jpg'))
+%}
 
 {# ✅ SOLO SINGLECAP (soporte_suelo) #}
 {% set singleCap = p.singleCap|default(kuik.default_single_cap) %}
@@ -662,7 +666,7 @@
                                     {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
                                   {% endif %}
                                   <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
-                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ legSrc }}" alt="{{ 'bracket.alt.leg'|trans }}">
                                     <button type="button" class="mb-leg-remove" title="{{ 'bracket.action.remove_leg'|trans }}">×</button>
                                   </div>
                                 {% endfor %}
@@ -750,7 +754,7 @@
                                     {% set xCenter = ((i + 1) / 2) * kuik.mb_col_width_px %}
                                   {% endif %}
                                   <div class="mb-leg-slot" data-pos="{{ i }}" style="left:{{ (xCenter - 40)|round }}px;">
-                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                                    <img class="leg-img" style="width:65px; height:{{ mbLegH }}px; object-fit:fill; display:block;" src="{{ legSrc }}" alt="{{ 'bracket.alt.leg'|trans }}">
                                     <button type="button" class="mb-leg-remove" title="{{ 'bracket.action.remove_leg'|trans }}">×</button>
                                   </div>
                                 {% endfor %}
@@ -799,7 +803,7 @@
                           {% endif %}
                           <div class="legs-under" style="flex:1;">
                             {% for pos in mbLegPositions %}
-                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ legSrc }}" alt="{{ 'bracket.alt.leg'|trans }}">
                             {% endfor %}
                           </div>
                           {% if mbSide == 'right' %}
@@ -849,7 +853,7 @@
                           {% endif %}
                           <div class="legs-under" style="flex:1;">
                             {% for pos in legPositions %}
-                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ asset(kuik.img_pie) }}" alt="{{ 'bracket.alt.leg'|trans }}">
+                              <img class="leg-img" style="grid-column: {{ pos }};" src="{{ legSrc }}" alt="{{ 'bracket.alt.leg'|trans }}">
                             {% endfor %}
                           </div>
                           {% if mbSide == 'right' %}
@@ -861,7 +865,7 @@
                           {% for pos in legPositions %}
                             <img class="leg-img"
                                  style="grid-column: {{ pos }};"
-                                 src="{{ asset(kuik.img_pie) }}"
+                                 src="{{ legSrc }}"
                                  alt="{{ 'bracket.alt.leg'|trans }}">
                           {% endfor %}
                         </div>
@@ -932,6 +936,13 @@
         plata:  '{{ asset(kuik.img_brazo_plata) }}'
       };
 
+      const legSrcMap = {
+        blanco: '{{ asset('assets/pie_blanco.jpg') }}',
+        negro:  '{{ asset('assets/pie_negro.jpg') }}',
+        plata:  '{{ asset('assets/pie_plata.jpg') }}'
+      };
+      const legImgList = Array.from(document.querySelectorAll('.leg-img'));
+
       function setSelected(list, el){
         list.forEach(x => x.classList.remove('selected'));
         el.classList.add('selected');
@@ -973,11 +984,13 @@
       function updateSupportColor(){
         const c = (inpColor.value || '').trim(); // blanco|negro|plata
 
-        // ✅ patas ahora son imagen fija (pie_negro.jpg) -> no se recolorean
-
         // brazos (cambia src a todos)
         const src = armSrcMap[c] || armSrcMap.negro;
         armList.forEach(img => { img.src = src; });
+
+        // patas: mismo color que los brazos
+        const legSrc = legSrcMap[c] || legSrcMap.negro;
+        legImgList.forEach(img => { img.src = legSrc; });
       }
 
       typeBtns.forEach(btn => {

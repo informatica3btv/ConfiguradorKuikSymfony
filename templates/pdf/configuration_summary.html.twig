@@ -428,6 +428,11 @@
     %}
   {% endif %}
 
+  {% set leg_base64 =
+    selectedColor == 'blanco' ? leg_blanco :
+    (selectedColor == 'plata' ? leg_plata : leg_negro)
+  %}
+
   {% set isHome = (type == 'home') %}
   {% set isZocalo = (isHome and instalacion == 'zocalo') %}
   {% set isEmpotradoLike = (isHome and (instalacion == 'empotrado' or instalacion == 'soporte_suelo')) %}

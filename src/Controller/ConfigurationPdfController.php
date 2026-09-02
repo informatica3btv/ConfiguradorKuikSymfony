@@ -76,7 +76,9 @@ class ConfigurationPdfController extends AbstractController
         $armPlata      = $this->loadBase64($projectDir . '/public/assets/brazo_plata.png',     'image/jpeg');
         $armNegro      = $this->loadBase64($projectDir . '/public/assets/brazo_negro.png',     'image/jpeg');
         $buzonBase64   = $this->loadBase64($projectDir . '/public/assets/buzon_kuik.png',      'image/png');
-        $legBase64     = $this->loadBase64($projectDir . '/public/assets/pie_negro.jpg',       'image/jpeg');
+        $legBlanco     = $this->loadBase64($projectDir . '/public/assets/pie_blanco.jpg',      'image/jpeg');
+        $legPlata      = $this->loadBase64($projectDir . '/public/assets/pie_plata.jpg',       'image/jpeg');
+        $legNegro      = $this->loadBase64($projectDir . '/public/assets/pie_negro.jpg',       'image/jpeg');
         $logoBase64    = $this->loadBase64($projectDir . '/public/assets/Kuik Smart Lockers Azul.png', 'image/png');
 
         $mbGroupLocalPath = realpath(__DIR__ . '/../../public/assets/buzon_agrupacion.jpg');
@@ -102,7 +104,9 @@ class ConfigurationPdfController extends AbstractController
             'arm_negro'       => $armNegro,
             'buzon_base64'    => $buzonBase64,
             'mb_group_base64' => $mbGroupBase64,
-            'leg_base64'      => $legBase64,
+            'leg_blanco'      => $legBlanco,
+            'leg_plata'       => $legPlata,
+            'leg_negro'       => $legNegro,
             'logo_base64'     => $logoBase64,
             'products'        => $productTable['products'],
             'productInfo'     => $productTable['productInfo'],

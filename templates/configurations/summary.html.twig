@@ -840,6 +840,11 @@
             %}
           {% endif %}
 
+          {% set legSrc =
+            selectedColor == 'blanco' ? asset('assets/pie_blanco.jpg') :
+            (selectedColor == 'plata' ? asset('assets/pie_plata.jpg') : asset('assets/pie_negro.jpg'))
+          %}
+
           <div class="preview-scroll">
           <div class="preview-stage" id="previewCapture">
             {% set agrupacionCombinada = p.agrupacion_combinada ?? false %}
@@ -936,7 +941,7 @@
                                 <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
                                   {% for _c in _autoCols %}
                                     {% set _xCenter = (_c - 0.5) * kuik.mb_col_width_px %}
-                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ legSrc }}" alt="Pata">
                                   {% endfor %}
                                 </div>
                               {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
@@ -944,7 +949,7 @@
                                 <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
                                   {% for _i in mbLegPos %}
                                     {% set _xCenter = (_i is even) ? ((_i / 2) + 0.5) * kuik.mb_col_width_px : ((_i + 1) / 2) * kuik.mb_col_width_px %}
-                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ legSrc }}" alt="Pata">
                                   {% endfor %}
                                 </div>
                               {% endif %}
@@ -1142,7 +1147,7 @@
                                 <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
                                   {% for _c in _autoCols %}
                                     {% set _xCenter = (_c - 0.5) * kuik.mb_col_width_px %}
-                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ legSrc }}" alt="Pata">
                                   {% endfor %}
                                 </div>
                               {% elseif selectedType == 'brazos' and mbLegPos|length > 0 %}
@@ -1150,7 +1155,7 @@
                                 <div class="mb-leg-summary" style="width:{{ kuik.mb_col_width_px * mbCols }}px; height:{{ _mbLegH }}px;">
                                   {% for _i in mbLegPos %}
                                     {% set _xCenter = (_i is even) ? ((_i / 2) + 0.5) * kuik.mb_col_width_px : ((_i + 1) / 2) * kuik.mb_col_width_px %}
-                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ asset(kuik.img_pie) }}" alt="Pata">
+                                    <img class="leg-img" style="position:absolute; left:{{ (_xCenter - 32)|round }}px; top:0; width:55px; height:{{ _mbLegH }}px; object-fit:fill; justify-self:unset;" src="{{ legSrc }}" alt="Pata">
                                   {% endfor %}
                                 </div>
                               {% endif %}
@@ -1199,7 +1204,7 @@
                             {% for pos in mbLegPositions %}
                               <img class="leg-img"
                                    style="grid-column: {{ pos }};"
-                                   src="{{ asset(kuik.img_pie) }}"
+                                   src="{{ legSrc }}"
                                    alt="Pata">
                             {% endfor %}
                           </div>
@@ -1243,7 +1248,7 @@
                           {% for pos in legPositions %}
                             <img class="leg-img"
                                  style="grid-column: {{ pos }};"
-                                 src="{{ asset(kuik.img_pie) }}"
+                                 src="{{ legSrc }}"
                                  alt="Pata">
                           {% endfor %}
                         </div>
