@@ -329,20 +329,13 @@ class ConfigurationService
             && ($payload['instalacion'] ?? '') === 'soporte_suelo'
             && ($payload['bracketType'] ?? '') === 'patas';
 
-        // Para Home con patas: 1 kit de patas por agrupación según número de columnas
+        // Para Home con patas: kits de patas por agrupación según número de columnas,
+        // descomponiendo en kits de 5 columnas (el más grande disponible) + el resto.
         if ($isPatas && !empty($groups)) {
             foreach ($groups as $groupCols) {
                 if (!is_array($groupCols)) continue;
                 $numCols = count($groupCols);
-                $pata = $this->pataRepo->findOneBy(['numColumnas' => $numCols, 'tipo' => $tipo])
-                     ?? $this->pataRepo->findOneBy(['numColumnas' => $numCols]);
-                $pataKey = 'pata_' . $numCols;
-                $sizeCounts[$pataKey] = ($sizeCounts[$pataKey] ?? 0) + 1;
-                $products[$pataKey]   = $pata;
-                if ($pata) {
-                    $qty = $sizeCounts[$pataKey];
-                    $productInfo[$pataKey] = $this->btvApi->getProductInfo($pata->getReference(), $qty);
-                }
+                $this->addPataKits($numCols, $tipo, $sizeCounts, $products, $productInfo);
             }
         }
 
@@ -377,24 +370,7 @@ class ConfigurationService
                 // Refuerzo con patas intermedias en agrupaciones anchas (5+ columnas):
                 // se descompone en kits de 5 columnas (el más grande disponible) + el resto.
                 if ($numCols >= 5) {
-                    $remaining = $numCols;
-                    $kitCounts = [];
-                    while ($remaining > 0) {
-                        $kitSize = min(5, $remaining);
-                        $kitCounts[$kitSize] = ($kitCounts[$kitSize] ?? 0) + 1;
-                        $remaining -= $kitSize;
-                    }
-                    foreach ($kitCounts as $kitSize => $qty) {
-                        $pataKey = 'pata_' . $kitSize;
-                        $pata = $this->pataRepo->findOneBy(['numColumnas' => $kitSize, 'tipo' => $tipo])
-                             ?? $this->pataRepo->findOneBy(['numColumnas' => $kitSize]);
-                        $sizeCounts[$pataKey] = ($sizeCounts[$pataKey] ?? 0) + $qty;
-                        $products[$pataKey]   = $pata;
-                        if ($pata) {
-                            $totalQty = $sizeCounts[$pataKey];
-                            $productInfo[$pataKey] = $this->btvApi->getProductInfo($pata->getReference(), $totalQty);
-                        }
-                    }
+                    $this->addPataKits($numCols, $tipo, $sizeCounts, $products, $productInfo);
                 }
             }
         } elseif ($tipo === 'home' && !empty($groups)) {
@@ -671,5 +647,33 @@ class ConfigurationService
             'productInfo' => $productInfo,
             'sizeCounts'  => $sizeCounts,
         ];
+    }
+
+    /**
+     * Añade al presupuesto los kits de patas necesarios para cubrir $numCols
+     * columnas, descomponiendo en kits de 5 columnas (el más grande disponible)
+     * más el resto, ya que las referencias solo existen para 1 a 5 columnas.
+     */
+    private function addPataKits(int $numCols, ?string $tipo, array &$sizeCounts, array &$products, array &$productInfo): void
+    {
+        $remaining = $numCols;
+        $kitCounts = [];
+        while ($remaining > 0) {
+            $kitSize = min(5, $remaining);
+            $kitCounts[$kitSize] = ($kitCounts[$kitSize] ?? 0) + 1;
+            $remaining -= $kitSize;
+        }
+
+        foreach ($kitCounts as $kitSize => $qty) {
+            $pataKey = 'pata_' . $kitSize;
+            $pata = $this->pataRepo->findOneBy(['numColumnas' => $kitSize, 'tipo' => $tipo])
+                 ?? $this->pataRepo->findOneBy(['numColumnas' => $kitSize]);
+            $sizeCounts[$pataKey] = ($sizeCounts[$pataKey] ?? 0) + $qty;
+            $products[$pataKey]   = $pata;
+            if ($pata) {
+                $totalQty = $sizeCounts[$pataKey];
+                $productInfo[$pataKey] = $this->btvApi->getProductInfo($pata->getReference(), $totalQty);
+            }
+        }
     }
 }
