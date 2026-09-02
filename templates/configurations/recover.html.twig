@@ -531,6 +531,13 @@
       right: calc(-0.56* var(--armOverlap));
     }
 
+    /* Cuando también hay patas intermedias (5+ columnas), los brazos se dibujan
+       más altos que las patas para que se distingan como el soporte principal. */
+    .arm-img.reinforced{
+      top: 20px;
+      height: calc(90px * var(--hscale) + 56px);
+    }
+
     .legs-under{
       width:100%;
       display:grid;
@@ -1028,13 +1035,15 @@ document.addEventListener('DOMContentLoaded', () => {
       supportWrap.style.setProperty('--colsN', groupCols.length);
 
       if (soporteSuelo && bracketType === 'brazos' && bracketColor){
+        const armReinforced = groupCols.length >= 5 ? ' reinforced' : '';
+
         const armLeft = document.createElement('img');
-        armLeft.className = 'arm-img left';
+        armLeft.className = 'arm-img left' + armReinforced;
         armLeft.src = getArmSrc(bracketColor);
         armLeft.alt = 'Brazo izquierdo';
 
         const armRight = document.createElement('img');
-        armRight.className = 'arm-img right';
+        armRight.className = 'arm-img right' + armReinforced;
         armRight.src = getArmSrc(bracketColor);
         armRight.alt = 'Brazo derecho';
 
@@ -1121,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         supportWrap.appendChild(widthDimsBelow);
       }
 
-      if (soporteSuelo && bracketType === 'patas'){
+      if (soporteSuelo && (bracketType === 'patas' || (bracketType === 'brazos' && groupCols.length >= 5))){
         const legPositions = getLegPositions(groupCols.length);
 
         const legs = document.createElement('div');

@@ -883,9 +883,11 @@
             <div class="preview-core" style="width: {{ totalW }}px; background: transparent;">
 
               {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-                {% set armTop = singleCap > 50 ? 42 : 20 %}
-                <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo" style="height: {{ armHeightPx }}px; top:{{ armTop }}px;">
-                <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho"  style="height: {{ armHeightPx }}px; top:{{ armTop }}px;">
+                {% set armReinforced = groupCols|length >= 5 %}
+                {% set armTop = armReinforced ? (singleCap > 50 ? 12 : -10) : (singleCap > 50 ? 42 : 20) %}
+                {% set armH = armReinforced ? (armHeightPx + 40) : armHeightPx %}
+                <img class="arm-img left"  src="{{ armSrc }}" alt="Brazo izquierdo" style="height: {{ armH }}px; top:{{ armTop }}px;">
+                <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho"  style="height: {{ armH }}px; top:{{ armTop }}px;">
               {% endif %}
 
               <table style="border-collapse:collapse;border-spacing:0;background:transparent;">
@@ -1070,8 +1072,8 @@
             </table>
 
             {# Patas como imágenes, igual que en summary, con legPositions #}
-            {% if isSoporteSuelo and selectedType == 'patas' and selectedColor %}
-              {% set legN = groupCols|length %}
+            {% set legN = groupCols|length %}
+            {% if isSoporteSuelo and (selectedType == 'patas' or (selectedType == 'brazos' and legN >= 5)) and selectedColor %}
               {% if legN == 1 %}
                 {% set legPositions = [1] %}
               {% elseif legN <= 3 %}

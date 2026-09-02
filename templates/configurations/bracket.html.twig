@@ -349,6 +349,13 @@
       right: calc(-0.2 * var(--armOverlap));
     }
 
+    /* Cuando también hay patas intermedias (5+ columnas), los brazos se dibujan
+       más altos que las patas para que se distingan como el soporte principal. */
+    .arm-img.reinforced{
+      top: 18px;
+      height: calc({{ (singleCap * scaleArm) }}px + 126px);
+    }
+
     @media (max-width: 720px){
       .support-wrap{
         --armW: 100px;
@@ -591,8 +598,9 @@
                     <div class="support-wrap" style="--colsN: {{ groupCols|length }}; --mbBlockW: {{ mbBlockW }}px;">
 
                       {# ✅ brazos por grupo #}
+                      {% set armReinforced = groupCols|length >= 5 %}
                       <img
-                        class="arm-img left js-arm {% if selectedType != 'brazos' %}hidden{% endif %}"
+                        class="arm-img left js-arm {% if armReinforced %}reinforced{% endif %} {% if selectedType != 'brazos' %}hidden{% endif %}"
                         data-arm="left"
                         src="{% if selectedColor == 'blanco' %}
                               {{ asset(kuik.img_brazo_blanco) }}
@@ -604,7 +612,7 @@
                         alt="{{ 'bracket.alt.arm_left'|trans }}">
 
                       <img
-                        class="arm-img right js-arm {% if selectedType != 'brazos' %}hidden{% endif %}"
+                        class="arm-img right js-arm {% if armReinforced %}reinforced{% endif %} {% if selectedType != 'brazos' %}hidden{% endif %}"
                         data-arm="right"
                         src="{% if selectedColor == 'blanco' %}
                               {{ asset(kuik.img_brazo_blanco) }}
@@ -832,9 +840,10 @@
                         {% endif %}
                       {% endif %}
 
+                      {% set showLegsNow = selectedType == 'patas' or (selectedType == 'brazos' and n >= 5) %}
                       {% if isLastGroup and agrupacionCombinada and mbCols > 0 %}
                         {% set mbBlockWFull = mbCols * kuik.mb_col_width_px + 8 %}
-                        <div style="display:flex;flex-direction:row;width:100%;" class="js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
+                        <div style="display:flex;flex-direction:row;width:100%;" class="js-legs {% if not showLegsNow %}hidden{% endif %}" data-n="{{ n }}">
                           {% if mbSide == 'left' %}
                             <div style="width:{{ mbBlockWFull }}px;flex-shrink:0;"></div>
                           {% endif %}
@@ -848,7 +857,7 @@
                           {% endif %}
                         </div>
                       {% else %}
-                        <div class="legs-under js-legs {% if selectedType != 'patas' %}hidden{% endif %}">
+                        <div class="legs-under js-legs {% if not showLegsNow %}hidden{% endif %}" data-n="{{ n }}">
                           {% for pos in legPositions %}
                             <img class="leg-img"
                                  style="grid-column: {{ pos }};"
@@ -951,10 +960,13 @@
           else x.classList.add('hidden');
         });
 
-        // patas (todas)
+        // patas (todas) — siempre con 'patas'; con 'brazos' solo si el grupo tiene 5+ columnas
         if (legsList.length){
-          if (v === 'patas') legsList.forEach(x => x.classList.remove('hidden'));
-          else legsList.forEach(x => x.classList.add('hidden'));
+          legsList.forEach(x => {
+            const n = parseInt(x.dataset.n || '0', 10);
+            const show = (v === 'patas') || (v === 'brazos' && n >= 5);
+            x.classList.toggle('hidden', !show);
+          });
         }
       }
 

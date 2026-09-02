@@ -914,7 +914,8 @@
                         <div class="mini-group-label">{{ 'project_configs.group'|trans({'%number%': loop.index}) }}</div>
 
                         <div class="mini-support-center">
-                          <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ singleCap > 50 ? '40px' : '14px' }};--armH:{{ (singleCap * 1.65 + 60)|round }}px;">
+                          {% set armReinforced = colsToShow|length >= 5 %}
+                        <div class="mini-support-wrap" style="--colsN: {{ colsToShow|length }};--armTop:{{ armReinforced ? (singleCap > 50 ? '10px' : '-10px') : (singleCap > 50 ? '40px' : '14px') }};--armH:{{ armReinforced ? (singleCap * 1.65 + 100)|round : (singleCap * 1.65 + 60)|round }}px;">
 
                             {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
                               <img class="mini-arm left"  src="{{ armSrc }}" alt="{{ 'project_configs.arm_left'|trans }}">
@@ -1145,8 +1146,8 @@
 
                             </div>{# /cols #}
 
-                            {% if isSoporteSuelo and selectedType == 'patas' %}
-                              {% set n = colsToShow|length %}
+                            {% set n = colsToShow|length %}
+                            {% if isSoporteSuelo and (selectedType == 'patas' or (selectedType == 'brazos' and n >= 5)) %}
                               {% if n == 1 %}{% set legPositions = [1] %}
                               {% elseif n == 2 %}{% set legPositions = [1, 2] %}
                               {% elseif n == 3 %}{% set legPositions = [1, 3] %}

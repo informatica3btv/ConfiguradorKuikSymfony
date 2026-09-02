@@ -731,6 +731,13 @@
       right: calc(-1.75 * var(--armOverlap));
     }
 
+    /* Cuando también hay patas intermedias (5+ columnas), los brazos se dibujan
+       más altos que las patas para que se distingan como el soporte principal. */
+    .arm-img.reinforced{
+      top: 35px;
+      height: calc({{ (singleCap * kuik.scale_arm + (singleCap >= 80 ? (singleCap - 70) * 4.5 : 0))|round }}px + 156px);
+    }
+
     .legs-under{
       width:100%;
       display:grid;
@@ -872,8 +879,9 @@
                       </div>
 
                       {% if isSoporteSuelo and selectedType == 'brazos' and selectedColor %}
-                        <img class="arm-img left" src="{{ armSrc }}" alt="Brazo izquierdo">
-                        <img class="arm-img right" src="{{ armSrc }}" alt="Brazo derecho">
+                        {% set armReinforced = totalCols >= 5 %}
+                        <img class="arm-img left {% if armReinforced %}reinforced{% endif %}" src="{{ armSrc }}" alt="Brazo izquierdo">
+                        <img class="arm-img right {% if armReinforced %}reinforced{% endif %}" src="{{ armSrc }}" alt="Brazo derecho">
                       {% endif %}
 
                       {% if not isHome %}
@@ -1201,8 +1209,8 @@
                         </div>
                       {% endif %}
 
-                      {% if isSoporteSuelo and selectedType == 'patas' %}
-                        {% set n = groupCols|length %}
+                      {% set n = groupCols|length %}
+                      {% if isSoporteSuelo and (selectedType == 'patas' or (selectedType == 'brazos' and n >= 5)) %}
                         {% if n == 1 %}
                           {% set legPositions = [1] %}
                         {% elseif n == 2 %}
