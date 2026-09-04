@@ -1025,7 +1025,8 @@ class ConfigurationController extends AbstractController
         }
 
         $project = $configuration->getProject();
-        if (!$project || $project->getUser() !== $this->getUser()) {
+        $isOwner = $project && $project->getUser() === $this->getUser();
+        if (!$isOwner && !$this->isGranted('ROLE_ADMIN')) {
             return new JsonResponse(['ok' => false], 403);
         }
 

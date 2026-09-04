@@ -817,7 +817,9 @@
         {% if configuration.status == 0 %}
           <a class="btn primary" id="btnEditConfig" href="{{ path('configuration_columns', { project_id: project.id, config_id: configuration.id }) }}">{{ 'summary.btn.edit_configuration'|trans }}</a>
         {% endif %}
+      {% endif %}
 
+      {% if app.user.id == project.user.id or is_granted('ROLE_ADMIN') %}
         <button class="btn primary" id="btnDescargarPdf"
           data-screenshot-url="{{ path('configuration_screenshot', { id: configuration.id }) }}"
           data-pdf-url="{{ path('configuration_pdf', { id: configuration.id }) }}">

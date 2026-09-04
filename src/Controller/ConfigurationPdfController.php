@@ -50,7 +50,8 @@ class ConfigurationPdfController extends AbstractController
 
         $project = $configuration->getProject();
 
-        if (!$project || $project->getUser() !== $this->getUser()) {
+        $isOwner = $project && $project->getUser() === $this->getUser();
+        if (!$isOwner && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException();
         }
 
