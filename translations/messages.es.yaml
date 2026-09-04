@@ -443,6 +443,8 @@ pdf_summary:
 
 home:
     page_sub: Configura el fondo, ubicación, material, colores y distribución de puertas.
+    back_to_installation: ← Cambiar tipo de instalación
+    back_to_installation_blocked: Ya no se puede cambiar el tipo de instalación, la configuración ha avanzado.
     select_prefix: Selecciona
     interior_exterior: Interior / Exterior
     interior_exterior_help: Define la ubicación de la instalación.

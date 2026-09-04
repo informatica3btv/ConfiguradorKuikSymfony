@@ -184,6 +184,15 @@ class ConfigurationController extends AbstractController
             throw $this->createNotFoundException('Configuration o Project no encontrados.');
         }
 
+        $payload = $configuration->getDecodedPayload() ?? [];
+        if (!empty($payload['groups']) || !empty($payload['columns'])) {
+            $this->addFlash('error', 'Ya no se puede cambiar el tipo de instalación: la configuración ya tiene columnas guardadas.');
+            return $this->redirectToRoute('configuration_columns', [
+                'project_id' => $project->getId(),
+                'config_id'  => $configuration->getId(),
+            ]);
+        }
+
         $options = [
             ['value' => 'empotrado',     'name' => 'Empotrado'],
             ['value' => 'zocalo',        'name' => 'Zócalo'],
@@ -287,12 +296,18 @@ class ConfigurationController extends AbstractController
             $changed = true;
         }
 
-        if ($instalacionFromQuery !== '' && (($payload['instalacion'] ?? '') !== $instalacionFromQuery)) {
+        // Una vez que ya hay columnas/agrupaciones guardadas, no se permite
+        // cambiar la instalación (ni la agrupación combinada) por query,
+        // aunque el usuario llegue aquí con el botón "atrás" del navegador,
+        // una URL manipulada, o un enlace obsoleto: se ignoran esos cambios.
+        $hasProgress = !empty($payload['groups']) || !empty($payload['columns']);
+
+        if (!$hasProgress && $instalacionFromQuery !== '' && (($payload['instalacion'] ?? '') !== $instalacionFromQuery)) {
             $payload['instalacion'] = $instalacionFromQuery;
             $changed = true;
         }
 
-        if ($agrupacionFromQuery !== null) {
+        if (!$hasProgress && $agrupacionFromQuery !== null) {
             $agrupacionValue = ($agrupacionFromQuery === '1' || $agrupacionFromQuery === 'true') ? true : false;
             if (($payload['agrupacion_combinada'] ?? null) !== $agrupacionValue) {
                 $payload['agrupacion_combinada'] = $agrupacionValue;
@@ -915,6 +930,35 @@ class ConfigurationController extends AbstractController
         $this->addFlash('success', sprintf('Configuración aceptada. Oferta NAV creada: %s.', $navOfferNumber));
 
         return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+    }
+
+    /**
+     * Comprueba si todavía se puede volver a "tipo de instalación" sin perder
+     * datos, es decir, si el payload aún no tiene columnas/agrupaciones
+     * guardadas. Se usa para revalidar el botón de volver cuando la página se
+     * restaura desde el caché del navegador (botón "atrás") y el estado real
+     * ya ha podido avanzar en otra pestaña/navegación.
+     *
+     * @Route("/api/configuration/{id}/can-go-back-to-installation", name="api_configuration_can_go_back", methods={"GET"})
+     */
+    public function canGoBackToInstallation(int $id, ConfigurationRepository $repo): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            return new JsonResponse(['canGoBack' => false], 404);
+        }
+
+        $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $payload = $configuration->getDecodedPayload() ?? [];
+        $hasProgress = !empty($payload['groups']) || !empty($payload['columns']);
+
+        return new JsonResponse(['canGoBack' => !$hasProgress]);
     }
 
     /**

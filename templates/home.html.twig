@@ -518,6 +518,7 @@
 
 {% block content %}
 <div class="page-wrap">
+  {% set payloadHasProgress = (payload.groups is defined and payload.groups is not empty) or (payload.columns is defined and payload.columns is not empty) %}
   <div class="page-head">
     <div>
       <div class="page-sub">{{ 'home.page_sub'|trans }}</div>
@@ -744,6 +745,12 @@
     {% endif %}
 
     <div class="form-actions">
+      {% if type == 'home' and instalacion and not payloadHasProgress %}
+        <a class="secondary-btn" id="btnBackToInstallation"
+           data-check-url="{{ path('api_configuration_can_go_back', { id: config_id }) }}"
+           href="{{ path('configuration_home_instalacion', { project_id: project_id, config_id: config_id }) }}">{{ 'home.back_to_installation'|trans }}</a>
+        <span id="backToInstallationBlocked" class="warn" style="display:none;">{{ 'home.back_to_installation_blocked'|trans }}</span>
+      {% endif %}
       <button type="submit" class="primary-btn">{{ 'home.next_button'|trans }}</button>
       <div id="formError" class="warn"></div>
     </div>
@@ -756,6 +763,46 @@
 
   <script>
     window.PRELOADED_CONFIG = {{ (payload ?? {})|json_encode|raw }};
+  </script>
+
+  <script>
+    (function () {
+      const btnBack = document.getElementById('btnBackToInstallation');
+      const blockedMsg = document.getElementById('backToInstallationBlocked');
+      if (!btnBack) return;
+
+      function disableBackButton() {
+        btnBack.style.display = 'none';
+        if (blockedMsg) blockedMsg.style.display = '';
+      }
+
+      function revalidate() {
+        fetch(btnBack.dataset.checkUrl, { credentials: 'same-origin' })
+          .then(r => r.ok ? r.json() : { canGoBack: false })
+          .then(data => { if (!data.canGoBack) disableBackButton(); })
+          .catch(() => {});
+      }
+
+      // Revalida siempre al mostrar la página: cubre tanto la carga normal
+      // como la restauración desde el caché del navegador (botón "atrás"),
+      // donde el HTML servido puede haber quedado desactualizado.
+      window.addEventListener('pageshow', revalidate);
+
+      btnBack.addEventListener('click', function (e) {
+        e.preventDefault();
+        const href = btnBack.getAttribute('href');
+        fetch(btnBack.dataset.checkUrl, { credentials: 'same-origin' })
+          .then(r => r.ok ? r.json() : { canGoBack: false })
+          .then(data => {
+            if (data.canGoBack) {
+              window.location.href = href;
+            } else {
+              disableBackButton();
+            }
+          })
+          .catch(() => { window.location.href = href; });
+      });
+    })();
   </script>
 
   <script>

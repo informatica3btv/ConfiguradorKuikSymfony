@@ -443,6 +443,8 @@ pdf_summary:
 
 home:
     page_sub: Configure the background, location, material, colors and door layout.
+    back_to_installation: ← Change installation type
+    back_to_installation_blocked: You can no longer change the installation type, the configuration has progressed.
     select_prefix: Select
     interior_exterior: Interior / Exterior
     interior_exterior_help: Define the installation location.
