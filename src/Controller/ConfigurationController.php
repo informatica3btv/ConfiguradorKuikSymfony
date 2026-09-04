@@ -870,6 +870,53 @@ class ConfigurationController extends AbstractController
     }
 
     /**
+     * Elimina una configuración abierta. Solo el usuario dueño del proyecto
+     * o un administrador pueden hacerlo, y solo mientras esté en estado
+     * "Abierta" (no se puede borrar una configuración cerrada o aceptada).
+     *
+     * @Route("/configuracion/eliminar/{id}", name="configuration_delete", methods={"POST"})
+     */
+    public function deleteConfiguration(
+        int $id,
+        Request $request,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
+        $project = $configuration->getProject();
+        if (!$project) {
+            throw $this->createNotFoundException('Project not found');
+        }
+
+        $isOwner = $project->getUser() === $this->getUser();
+        if (!$isOwner && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('delete_configuration_'.$id, $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($configuration->getStatus() !== Configuration::STATUS_OPEN) {
+            $this->addFlash('error', 'Solo se pueden eliminar configuraciones abiertas.');
+            return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+        }
+
+        $em->remove($configuration);
+        $em->flush();
+
+        $this->addFlash('success', sprintf('Configuración #%d eliminada.', $id));
+
+        return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+    }
+
+    /**
      * @Route("/configuracion/aceptar-configuration/{id}", name="configuration_accept", methods={"POST"})
      */
     public function aceptConfiguration(

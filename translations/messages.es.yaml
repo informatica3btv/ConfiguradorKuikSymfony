@@ -262,6 +262,9 @@ project_configs:
     copy: Copiar
     summary: Resumen
     pdf: PDF
+    delete: Eliminar
+    delete_modal_title: Eliminar configuración
+    delete_confirm: '¿Seguro que quieres eliminar la configuración #%id%? Esta acción no se puede deshacer.'
     state: Estado
     columns: Columnas
     body_color: Color cuerpo

@@ -262,6 +262,9 @@ project_configs:
     copy: Copy
     summary: Summary
     pdf: PDF
+    delete: Delete
+    delete_modal_title: Delete configuration
+    delete_confirm: 'Are you sure you want to delete configuration #%id%? This action cannot be undone.'
     state: State
     columns: Columns
     body_color: Body color

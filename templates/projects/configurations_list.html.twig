@@ -136,6 +136,13 @@
       color: #fff;
     }
 
+    .btn.danger{
+      background:#fff;
+      color:#dc2626;
+      border-color: rgba(220,38,38,.35);
+    }
+    .btn.danger:hover{ background: rgba(220,38,38,.06); }
+
     .config-body{
       margin-top:14px;
       display:grid;
@@ -661,6 +668,26 @@
     </div>
   </div>
 
+  <div class="modalx" id="deleteConfigModal" aria-hidden="true">
+    <div class="modalx__backdrop" data-close="1"></div>
+
+    <div class="modalx__dialog" role="dialog" aria-modal="true" aria-labelledby="deleteConfigTitle">
+      <div class="modalx__head">
+        <h4 class="modalx__title" id="deleteConfigTitle">{{ 'project_configs.delete_modal_title'|trans }}</h4>
+        <button type="button" class="modalx__close" aria-label="{{ 'project_configs.close'|trans }}" data-close="1">×</button>
+      </div>
+
+      <div class="modalx__body">
+        <p class="muted" id="deleteConfigMessage" style="margin:0;"></p>
+      </div>
+
+      <div class="modalx__footer">
+        <button type="button" class="btn" data-close="1">{{ 'project_configs.cancel'|trans }}</button>
+        <button type="button" class="btn danger" id="deleteConfigConfirmBtn">{{ 'project_configs.delete'|trans }}</button>
+      </div>
+    </div>
+  </div>
+
   <div class="top-actions">
     <a class="btn" href="{{ path('projects_list', { user_id: app.user.id }) }}">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -841,6 +868,18 @@
                 </svg>
                 {{ 'project_configs.pdf'|trans }}
               </a>
+            {% endif %}
+
+            {% if c.status == 0 and (app.user.id == user.id or is_granted('ROLE_ADMIN')) %}
+              <form method="post" action="{{ path('configuration_delete', { id: c.id }) }}" class="config-delete-form" style="display:inline;">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_configuration_' ~ c.id) }}">
+                <button type="submit" class="btn icon danger" data-confirm-message="{{ 'project_configs.delete_confirm'|trans({'%id%': c.id}) }}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  {{ 'project_configs.delete'|trans }}
+                </button>
+              </form>
             {% endif %}
 
           </div>
@@ -1303,6 +1342,57 @@
 
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const deleteModal = document.getElementById('deleteConfigModal');
+      const deleteMessage = document.getElementById('deleteConfigMessage');
+      const deleteConfirmBtn = document.getElementById('deleteConfigConfirmBtn');
+      if (!deleteModal || !deleteMessage || !deleteConfirmBtn) return;
+
+      let formToSubmit = null;
+
+      const openDeleteModal = (form) => {
+        formToSubmit = form;
+        const btn = form.querySelector('[data-confirm-message]');
+        deleteMessage.textContent = btn ? btn.dataset.confirmMessage : '';
+
+        deleteModal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        deleteModal.setAttribute('aria-hidden', 'false');
+      };
+
+      const closeDeleteModal = () => {
+        formToSubmit = null;
+        deleteModal.classList.remove('is-open');
+        document.body.style.overflow = '';
+        deleteModal.setAttribute('aria-hidden', 'true');
+      };
+
+      document.querySelectorAll('.config-delete-form').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+          if (form.dataset.confirmed === '1') return;
+          e.preventDefault();
+          openDeleteModal(form);
+        });
+      });
+
+      deleteConfirmBtn.addEventListener('click', () => {
+        if (formToSubmit) {
+          formToSubmit.dataset.confirmed = '1';
+          formToSubmit.submit();
+        }
+        closeDeleteModal();
+      });
+
+      deleteModal.addEventListener('click', (e) => {
+        const closeEl = e.target.closest('[data-close="1"]');
+        if (closeEl) closeDeleteModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && deleteModal.classList.contains('is-open')) closeDeleteModal();
       });
     });
   </script>
