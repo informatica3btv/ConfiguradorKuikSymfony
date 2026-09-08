@@ -943,8 +943,8 @@ class ConfigurationController extends AbstractController
         }
 
         $codCliente = trim((string) $request->request->get('cod_cliente', ''));
-        if (!preg_match('/^\d{5}$/', $codCliente)) {
-            $this->addFlash('error', 'El código de cliente debe tener 5 dígitos.');
+        if (!preg_match('/^\d{4,5}$/', $codCliente)) {
+            $this->addFlash('error', 'El código de cliente debe tener 4 o 5 dígitos.');
             return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
         }
 

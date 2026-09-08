@@ -255,7 +255,7 @@ project_configs:
     download_technical: Download technical details
     accept_and_offer: Accept configuration and create NAV offer
     accept_modal_title: Accept configuration
-    accept_modal_help: Enter the client code (5 digits) to create the offer in NAV.
+    accept_modal_help: Enter the client code (4 or 5 digits) to create the offer in NAV.
     client_code_label: Client code
     client_code_placeholder: E.g. 12345
     accept_submit: Accept and create offer

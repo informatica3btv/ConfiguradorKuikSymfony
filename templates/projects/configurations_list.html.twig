@@ -654,7 +654,7 @@
               <p class="muted" style="margin:0 0 10px;">{{ 'project_configs.accept_modal_help'|trans }}</p>
               <label for="acceptConfigCodCliente">{{ 'project_configs.client_code_label'|trans }}</label>
               <input type="text" id="acceptConfigCodCliente" name="cod_cliente"
-                     inputmode="numeric" pattern="[0-9]{5}" maxlength="5" minlength="5"
+                     inputmode="numeric" pattern="[0-9]{4,5}" maxlength="5" minlength="4"
                      placeholder="{{ 'project_configs.client_code_placeholder'|trans }}" required>
             </div>
           </div>
