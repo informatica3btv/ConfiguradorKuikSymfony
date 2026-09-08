@@ -121,14 +121,13 @@ class StatsService
                 $payload = $configuration->getDecodedPayload() ?? [];
                 $type    = trim((string) ($payload['type'] ?? '')) ?: 'sin_tipo';
                 $columns = $this->countColumns($payload);
-                $range   = $this->columnRange($columns);
                 $price   = $this->computeConfigurationTotal($configuration);
 
-                $key = $type . '|' . $range;
+                $key = $type . '|' . $columns;
                 if (!isset($buckets[$key])) {
                     $buckets[$key] = [
                         'type'           => $type,
-                        'range'          => $range,
+                        'columns'        => $columns,
                         'accepted'       => 0,
                         'rejected'       => 0,
                         'acceptedPrices' => [],
@@ -151,7 +150,7 @@ class StatsService
 
             $rows[] = [
                 'type'              => $bucket['type'],
-                'range'             => $bucket['range'],
+                'columns'           => $bucket['columns'],
                 'accepted'          => $bucket['accepted'],
                 'rejected'          => $bucket['rejected'],
                 'total'             => $total,
@@ -164,7 +163,7 @@ class StatsService
         }
 
         usort($rows, static function (array $a, array $b): int {
-            return [$a['type'], $a['range']] <=> [$b['type'], $b['range']];
+            return [$a['type'], $a['columns']] <=> [$b['type'], $b['columns']];
         });
 
         return $rows;
@@ -185,15 +184,6 @@ class StatsService
             }
         }
         return $count;
-    }
-
-    private function columnRange(int $columns): string
-    {
-        if ($columns <= 3) return '1-3';
-        if ($columns <= 6) return '4-6';
-        if ($columns <= 10) return '7-10';
-        if ($columns <= 20) return '11-20';
-        return '21+';
     }
 
     private function pct(int $part, int $total): float
