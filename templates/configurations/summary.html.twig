@@ -2852,6 +2852,7 @@
         const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
         const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });
         const legMat  = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.5, metalness: 0.3 });
+        const edgesMatAR = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 });
 
         function legPositionsForAR(n) {
           if (n === 1) return [1];
@@ -2867,9 +2868,15 @@
         }
 
         function addBoxAR(w, h, d, mat, x, y, z) {
-          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const mesh = new THREE.Mesh(geo, mat);
           mesh.position.set(x, y, z);
           inner.add(mesh);
+          // Contorno negro fino: sin esto, puertas del mismo color quedan
+          // pegadas visualmente sin distinguirse unas de otras.
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMatAR);
+          line.position.copy(mesh.position);
+          inner.add(line);
           return mesh;
         }
 
@@ -3022,8 +3029,14 @@
           arScene = new THREE.Scene();
           arCamera = new THREE.PerspectiveCamera();
 
-          const light = new THREE.HemisphereLight(0xffffff, 0x555555, 1.2);
+          const light = new THREE.HemisphereLight(0xffffff, 0x555555, 1);
           arScene.add(light);
+          const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+          dirLight.position.set(0.5, 1, 0.8);
+          arScene.add(dirLight);
+          const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.35);
+          dirLight2.position.set(-0.6, 0.4, -0.5);
+          arScene.add(dirLight2);
 
           arLockerGroup = buildARLocker();
           arLockerGroup.visible = false;
