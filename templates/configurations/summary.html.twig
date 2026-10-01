@@ -2850,6 +2850,7 @@
         root.add(inner);
 
         const depth = mmToM(data.fondoMm || 400);
+        arLockerDepthM = depth; // se usa luego para "pegar" el mueble a una pared detectada
         const colW  = mmToM(data.doorWidthMm || 380);
         const sideW = mmToM(25);
         const groupGap = mmToM(50);
@@ -2952,27 +2953,89 @@
 
       let arRenderer = null, arScene = null, arCamera = null, arReticle = null, arLockerGroup = null;
       let arHitTestSource = null, arSession = null, arPlaced = false;
+      let arLockerDepthM = 0;
+      let arPlaneDetectionOn = false;
+      // Última colocación calculada cada frame (posición + giro en Y). Tanto
+      // el seguimiento en vivo como el toque de confirmación usan estos
+      // mismos valores, así no hay que repetir el cálculo en el evento
+      // "select" (que no recibe el XRFrame directamente).
+      let arPendingPos = null;
+      let arPendingRotY = 0;
 
-      // Posiciona y orienta la taquilla sobre el punto detectado (matriz de
-      // la retícula): gira sobre el eje Y para que la fachada mire hacia la
-      // cámara, en vez de copiar la orientación de la superficie.
-      function placeLockerAtReticle() {
-        const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
-        arLockerGroup.position.copy(pos);
+      // Busca, entre los planos verticales detectados (paredes), el más
+      // cercano al punto del suelo tocado. Si hay uno cerca, la taquilla se
+      // coloca pegada a esa pared y orientada hacia afuera en vez de mirar
+      // sin más hacia la cámara.
+      function findNearbyWall(frame, referenceSpace, floorPos) {
+        if (!arPlaneDetectionOn || !frame.detectedPlanes) return null;
+
+        let best = null;
+        frame.detectedPlanes.forEach(function (plane) {
+          if (plane.orientation !== 'Vertical') return;
+          const planePose = frame.getPose(plane.planeSpace, referenceSpace);
+          if (!planePose) return;
+
+          const p = planePose.transform.position;
+          const dx = p.x - floorPos.x;
+          const dz = p.z - floorPos.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < 1.5 && (!best || dist < best.dist)) {
+            best = { pose: planePose, dist: dist };
+          }
+        });
+        return best;
+      }
+
+      // Posiciona y orienta la taquilla sobre el punto detectado: si hay una
+      // pared cerca, se pega a ella (de espaldas); si no, gira sobre el eje Y
+      // para que la fachada mire hacia la cámara.
+      function computePlacement(frame, referenceSpace, floorPos) {
+        const wall = findNearbyWall(frame, referenceSpace, floorPos);
+
+        if (wall) {
+          const o = wall.pose.transform.orientation;
+          const wallQuat = new THREE.Quaternion(o.x, o.y, o.z, o.w);
+          // En un XRPlane, el eje Y local del "planeSpace" es la normal del
+          // plano. La proyectamos sobre el suelo (ignorando su componente Y)
+          // para quedarnos solo con la dirección horizontal hacia la sala.
+          let normal = new THREE.Vector3(0, 1, 0).applyQuaternion(wallQuat);
+          normal.y = 0;
+          if (normal.lengthSq() < 0.0001) return { pos: floorPos.clone(), rotY: arPendingRotY };
+          normal.normalize();
+
+          const wallPos = new THREE.Vector3(wall.pose.transform.position.x, 0, wall.pose.transform.position.z);
+          const hitXZ = new THREE.Vector3(floorPos.x, 0, floorPos.z);
+          const distAlongNormal = hitXZ.clone().sub(wallPos).dot(normal);
+          // Punto del toque proyectado sobre la línea de la pared, y luego
+          // empujado hacia la sala la mitad del fondo del mueble, para que
+          // su parte de atrás quede pegada a la pared.
+          const onWall = hitXZ.clone().sub(normal.clone().multiplyScalar(distAlongNormal));
+          const finalXZ = onWall.add(normal.clone().multiplyScalar(arLockerDepthM / 2));
+
+          return {
+            pos: new THREE.Vector3(finalXZ.x, floorPos.y, finalXZ.z),
+            rotY: Math.atan2(normal.x, normal.z)
+          };
+        }
 
         const camPos = new THREE.Vector3();
         arCamera.getWorldPosition(camPos);
-        const dx = camPos.x - pos.x;
-        const dz = camPos.z - pos.z;
-        arLockerGroup.rotation.y = Math.atan2(dx, dz);
+        const dx = camPos.x - floorPos.x;
+        const dz = camPos.z - floorPos.z;
+        return { pos: floorPos.clone(), rotY: Math.atan2(dx, dz) };
+      }
 
+      function applyPendingPlacement() {
+        if (!arPendingPos || !arLockerGroup) return;
+        arLockerGroup.position.copy(arPendingPos);
+        arLockerGroup.rotation.y = arPendingRotY;
         arLockerGroup.visible = true;
       }
 
       function onARSelect() {
-        if (arReticle && arReticle.visible && arLockerGroup) {
+        if (arReticle && arReticle.visible && arPendingPos) {
           arPlaced = true;
-          placeLockerAtReticle();
+          applyPendingPlacement();
           setARStatus('Taquilla colocada.');
         }
       }
@@ -2987,10 +3050,16 @@
                 const pose = hits[0].getPose(referenceSpace);
                 arReticle.visible = true;
                 arReticle.matrix.fromArray(pose.transform.matrix);
+
+                const floorPos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
+                const placement = computePlacement(frame, referenceSpace, floorPos);
+                arPendingPos = placement.pos;
+                arPendingRotY = placement.rotY;
+
                 // Hasta que el usuario toque la pantalla, la taquilla va
                 // "siguiendo" la retícula en vivo, como vista previa.
                 if (!arPlaced) {
-                  placeLockerAtReticle();
+                  applyPendingPlacement();
                   setARStatus('Toca la pantalla para fijar la taquilla aquí.');
                 }
               } else {
@@ -3028,6 +3097,9 @@
         arReticle = null;
         arLockerGroup = null;
         arPlaced = false;
+        arPlaneDetectionOn = false;
+        arPendingPos = null;
+        arPendingRotY = 0;
       }
 
       let arStatusEl = null;
@@ -3083,11 +3155,17 @@
 
           return navigator.xr.requestSession('immersive-ar', {
             requiredFeatures: ['hit-test'],
-            optionalFeatures: ['dom-overlay'],
+            optionalFeatures: ['dom-overlay', 'plane-detection'],
             domOverlay: { root: arStatusEl }
           });
         }).then(function (session) {
           arSession = session;
+          // "plane-detection" es opcional: si el dispositivo/navegador no la
+          // soporta, frame.detectedPlanes vendrá vacío/indefinido y
+          // findNearbyWall() simplemente no encontrará paredes (se sigue
+          // usando el punto del suelo mirando a la cámara, como antes).
+          arPlaneDetectionOn = typeof session.enabledFeatures === 'undefined'
+            || session.enabledFeatures.includes('plane-detection');
           session.addEventListener('end', onAREnd);
           session.addEventListener('select', onARSelect);
 
