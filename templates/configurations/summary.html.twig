@@ -2946,24 +2946,29 @@
       }
 
       let arRenderer = null, arScene = null, arCamera = null, arReticle = null, arLockerGroup = null;
-      let arHitTestSource = null, arSession = null;
+      let arHitTestSource = null, arSession = null, arPlaced = false;
+
+      // Posiciona y orienta la taquilla sobre el punto detectado (matriz de
+      // la retícula): gira sobre el eje Y para que la fachada mire hacia la
+      // cámara, en vez de copiar la orientación de la superficie.
+      function placeLockerAtReticle() {
+        const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
+        arLockerGroup.position.copy(pos);
+
+        const camPos = new THREE.Vector3();
+        arCamera.getWorldPosition(camPos);
+        const dx = camPos.x - pos.x;
+        const dz = camPos.z - pos.z;
+        arLockerGroup.rotation.y = Math.atan2(dx, dz);
+
+        arLockerGroup.visible = true;
+      }
 
       function onARSelect() {
         if (arReticle && arReticle.visible && arLockerGroup) {
-          const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
-          arLockerGroup.position.copy(pos);
-
-          // La superficie detectada puede tener cualquier orientación: en
-          // vez de copiarla, giramos la taquilla sobre el eje Y para que su
-          // cara frontal (+Z en el grupo) mire hacia donde está la cámara.
-          const camPos = new THREE.Vector3();
-          arCamera.getWorldPosition(camPos);
-          const dx = camPos.x - pos.x;
-          const dz = camPos.z - pos.z;
-          arLockerGroup.rotation.y = Math.atan2(dx, dz);
-
-          arLockerGroup.visible = true;
-          setARStatus('Taquilla colocada. Toca otra vez para moverla.');
+          arPlaced = true;
+          placeLockerAtReticle();
+          setARStatus('Taquilla colocada.');
         }
       }
 
@@ -2977,10 +2982,18 @@
                 const pose = hits[0].getPose(referenceSpace);
                 arReticle.visible = true;
                 arReticle.matrix.fromArray(pose.transform.matrix);
-                if (!arLockerGroup.visible) setARStatus('Superficie encontrada: toca la pantalla para colocar la taquilla.');
+                // Hasta que el usuario toque la pantalla, la taquilla va
+                // "siguiendo" la retícula en vivo, como vista previa.
+                if (!arPlaced) {
+                  placeLockerAtReticle();
+                  setARStatus('Toca la pantalla para fijar la taquilla aquí.');
+                }
               } else {
                 arReticle.visible = false;
-                if (!arLockerGroup.visible) setARStatus('Buscando superficie… mueve el móvil despacio apuntando al suelo.');
+                if (!arPlaced) {
+                  arLockerGroup.visible = false;
+                  setARStatus('Buscando superficie… mueve el móvil despacio apuntando al suelo.');
+                }
               }
             }
           }
@@ -3009,6 +3022,7 @@
         arCamera = null;
         arReticle = null;
         arLockerGroup = null;
+        arPlaced = false;
       }
 
       let arStatusEl = null;
@@ -3017,6 +3031,7 @@
       }
 
       function startAR() {
+        arPlaced = false;
         arStatusEl = document.createElement('div');
         arStatusEl.style.cssText = 'position:fixed;left:0;right:0;bottom:24px;z-index:2001;' +
           'text-align:center;color:#fff;font:600 15px/1.4 sans-serif;' +
