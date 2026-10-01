@@ -2940,24 +2940,32 @@
         if (arReticle && arReticle.visible && arLockerGroup) {
           arLockerGroup.position.setFromMatrixPosition(arReticle.matrix);
           arLockerGroup.visible = true;
+          setARStatus('Taquilla colocada. Toca otra vez para moverla.');
         }
       }
 
       function onARFrame(timestamp, frame) {
-        if (frame) {
-          const referenceSpace = arRenderer.xr.getReferenceSpace();
-          if (arHitTestSource) {
-            const hits = frame.getHitTestResults(arHitTestSource);
-            if (hits.length > 0) {
-              const pose = hits[0].getPose(referenceSpace);
-              arReticle.visible = true;
-              arReticle.matrix.fromArray(pose.transform.matrix);
-            } else {
-              arReticle.visible = false;
+        try {
+          if (frame) {
+            const referenceSpace = arRenderer.xr.getReferenceSpace();
+            if (arHitTestSource) {
+              const hits = frame.getHitTestResults(arHitTestSource);
+              if (hits.length > 0) {
+                const pose = hits[0].getPose(referenceSpace);
+                arReticle.visible = true;
+                arReticle.matrix.fromArray(pose.transform.matrix);
+                if (!arLockerGroup.visible) setARStatus('Superficie encontrada: toca la pantalla para colocar la taquilla.');
+              } else {
+                arReticle.visible = false;
+                if (!arLockerGroup.visible) setARStatus('Buscando superficie… mueve el móvil despacio apuntando al suelo.');
+              }
             }
           }
+          arRenderer.render(arScene, arCamera);
+        } catch (err) {
+          console.error('Error en el frame de RA:', err);
+          setARStatus('Error en RA: ' + (err && err.message ? err.message : err));
         }
-        arRenderer.render(arScene, arCamera);
       }
 
       function onAREnd() {
@@ -2967,6 +2975,10 @@
             arRenderer.domElement.parentNode.removeChild(arRenderer.domElement);
           }
         }
+        if (arStatusEl && arStatusEl.parentNode) {
+          arStatusEl.parentNode.removeChild(arStatusEl);
+        }
+        arStatusEl = null;
         arHitTestSource = null;
         arSession = null;
         arRenderer = null;
@@ -2976,8 +2988,21 @@
         arLockerGroup = null;
       }
 
+      let arStatusEl = null;
+      function setARStatus(text) {
+        if (arStatusEl) arStatusEl.textContent = text;
+      }
+
       function startAR() {
+        arStatusEl = document.createElement('div');
+        arStatusEl.style.cssText = 'position:fixed;left:0;right:0;bottom:24px;z-index:2001;' +
+          'text-align:center;color:#fff;font:600 15px/1.4 sans-serif;' +
+          'text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none;padding:0 16px;';
+        setARStatus('Cargando…');
+        document.body.appendChild(arStatusEl);
+
         ensureThreeForAR().then(function () {
+          setARStatus('Iniciando cámara…');
           arScene = new THREE.Scene();
           arCamera = new THREE.PerspectiveCamera();
 
@@ -3007,7 +3032,11 @@
           arRenderer.domElement.style.zIndex = '2000';
           document.body.appendChild(arRenderer.domElement);
 
-          return navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] });
+          return navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test'],
+            optionalFeatures: ['dom-overlay'],
+            domOverlay: { root: arStatusEl }
+          });
         }).then(function (session) {
           arSession = session;
           session.addEventListener('end', onAREnd);
@@ -3021,11 +3050,12 @@
           return arSession.requestHitTestSource({ space: viewerSpace });
         }).then(function (hitTestSource) {
           arHitTestSource = hitTestSource;
+          setARStatus('Mueve el móvil despacio apuntando al suelo…');
           arRenderer.setAnimationLoop(onARFrame);
         }).catch(function (err) {
           console.error('No se pudo iniciar la Realidad Aumentada:', err);
-          alert('No se pudo iniciar la Realidad Aumentada en este dispositivo.');
-          onAREnd();
+          setARStatus('Error al iniciar RA: ' + (err && err.message ? err.message : err));
+          setTimeout(onAREnd, 4000);
         });
       }
 
