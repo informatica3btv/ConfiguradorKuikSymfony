@@ -78,7 +78,12 @@
     {% set doorBlocks = [] %}
     {% for blk in srcBlocks %}
       {% set hh = blk.h|default(blk) %}
-      {% set hmm = kuik.h_heights_mm[hh] is defined ? kuik.h_heights_mm[hh] : (hh * kuik.h_unit_mm) %}
+      {# Fórmula lineal (igual que el dibujo 2D de cada puerta), no la tabla
+         real h_heights_mm: así, dos columnas con el mismo número de
+         unidades H siempre miden lo mismo en el 3D/RA, sin huecos raros
+         entre columnas. El 3D/RA no muestra medidas, así que no hace
+         falta el valor exacto del catálogo aquí. #}
+      {% set hmm = hh * kuik.h_unit_mm %}
       {% set btype = blk.type|default('door') %}
       {% set doorBlocks = doorBlocks|merge([{
         'h': hmm,
