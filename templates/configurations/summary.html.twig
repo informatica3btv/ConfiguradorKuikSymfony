@@ -2860,6 +2860,50 @@
         const legMat  = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.5, metalness: 0.3 });
         const edgesMatAR = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 });
 
+        // Igual que en el visor 3D: compone la imagen sobre un lienzo del
+        // color de puerta y la aplica solo a la cara frontal (+z) de la
+        // caja, mediante un array de 6 materiales por caja.
+        const frontTextureMatsCacheAR = {};
+        function makeFrontTextureMatsAR(imageUrl, heightMultiplier) {
+          if (!imageUrl) return doorMat;
+          const cacheKey = imageUrl + '|' + (heightMultiplier || 1);
+          if (frontTextureMatsCacheAR[cacheKey]) return frontTextureMatsCacheAR[cacheKey];
+
+          const frontMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.4, metalness: 0.1 });
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = data.doorColor || '#3a9efc';
+            ctx.fillRect(0, 0, size, size);
+            const scale = Math.min(size / img.width, size / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale * (heightMultiplier || 1);
+            ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+            const texture = new THREE.CanvasTexture(canvas);
+            frontMat.map = texture;
+            frontMat.color.set(0xffffff);
+            frontMat.needsUpdate = true;
+          };
+          img.src = imageUrl;
+
+          const mats = [doorMat, doorMat, doorMat, doorMat, frontMat, doorMat];
+          frontTextureMatsCacheAR[cacheKey] = mats;
+          return mats;
+        }
+
+        const screenMatsAR = makeFrontTextureMatsAR(data.screenImageUrl);
+
+        function mailboxImageUrlAR(blk) {
+          const imgs = data.mailboxImages || {};
+          if (blk.electronico) return blk.tarjetero ? imgs.elecTarj : imgs.elecNoTarj;
+          return blk.tarjetero ? imgs.mecTarj : imgs.mecNoTarj;
+        }
+
         function legPositionsForAR(n) {
           if (n === 1) return [1];
           if (n === 2) return [1, 2];
@@ -2909,7 +2953,13 @@
               cursorY -= h;
               const cx = groupStartX + sideW + colIdx * colW + colW / 2;
               const cy = cursorY + h / 2 + baseY;
-              addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, doorMat, cx, cy, depth / 2);
+              let blockMat = doorMat;
+              if (blk.type === 'screen') {
+                blockMat = screenMatsAR;
+              } else if (blk.type === 'mailbox') {
+                blockMat = makeFrontTextureMatsAR(mailboxImageUrlAR(blk), 2);
+              }
+              addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, blockMat, cx, cy, depth / 2);
             });
             if (colTotalH > maxHeight) maxHeight = colTotalH;
           });
