@@ -293,6 +293,11 @@ summary:
         new_configuration: New configuration
         edit_configuration: Edit configuration
         download_pdf: Download PDF
+        view_3d: View in 3D
+        close: Close
+    view3d:
+        title: 3D view of the configuration
+        hint: 'Drag to rotate · mouse wheel to zoom · right click to pan'
     preview:
         title: Preview
         no_columns: There are no columns in this configuration.

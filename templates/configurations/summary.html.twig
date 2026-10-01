@@ -57,6 +57,41 @@
   bg == '500'  ? 'Serie 500' : '—'
 %}
 
+{# ========================================================
+   Datos para la vista 3D (ver botón "Ver en 3D" más abajo).
+   Reconstruye, de forma simplificada, la geometría a partir
+   del mismo payload que usa el dibujo 2D: una lista de grupos,
+   cada uno con sus columnas, y cada columna con sus puertas
+   (altura real en mm de cada una).
+   ======================================================== #}
+{% set groups3d = [] %}
+{% for groupCols in groups %}
+  {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+  {% set cols3d = [] %}
+  {% for col in groupCols %}
+    {% set isColEmpotrado = (col.single is defined and col.single is not empty) %}
+    {% if isColEmpotrado %}
+      {% set srcBlocks = col.single.blocks_prepared ?? col.single.blocks ?? [] %}
+    {% else %}
+      {% set srcBlocks = (col.top.blocks_prepared ?? col.top.blocks ?? [])|merge(col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
+    {% endif %}
+    {% set doorBlocks = [] %}
+    {% for blk in srcBlocks %}
+      {% set hh = blk.h|default(blk) %}
+      {% set hmm = kuik.h_heights_mm[hh] is defined ? kuik.h_heights_mm[hh] : (hh * kuik.h_unit_mm) %}
+      {% set btype = blk.type|default('door') %}
+      {% set doorBlocks = doorBlocks|merge([{
+        'h': hmm,
+        'type': btype,
+        'electronico': blk.electronico ?? false,
+        'tarjetero': blk.tarjetero ?? false
+      }]) %}
+    {% endfor %}
+    {% set cols3d = cols3d|merge([doorBlocks]) %}
+  {% endfor %}
+  {% set groups3d = groups3d|merge([cols3d]) %}
+{% endfor %}
+
 {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
 {% set colWidthLabel = isHomeSerie400 ? 380 : (bg in ['300', '400', '500'] ? bg : null) %}
 {% set groupWidthExtraMm = 50 %}
@@ -571,6 +606,57 @@
       transition:.15s;
     }
 
+    /* ===== Modal "Ver en 3D" ===== */
+    .modal3d{ display:none; position:fixed; inset:0; z-index:1000; }
+    .modal3d.is-open{ display:block; }
+    .modal3d__backdrop{
+      position:absolute; inset:0;
+      background:rgba(2,6,23,.6);
+    }
+    .modal3d__dialog{
+      position:absolute; top:4%; left:50%; transform:translateX(-50%);
+      width:min(1100px, 94vw);
+      height:88vh;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 30px 70px rgba(2,6,23,.4);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .modal3d__head{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px;
+      border-bottom:1px solid rgba(15,23,42,.08);
+    }
+    .modal3d__title{ margin:0; font-size:17px; font-weight:900; }
+    .modal3d__close{
+      border:0; background:transparent; font-size:22px; line-height:1;
+      cursor:pointer; color:#6b7280; padding:4px 8px; border-radius:8px;
+    }
+    .modal3d__close:hover{ background:rgba(2,6,23,.06); }
+    .modal3d__body{
+      position:relative;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    #viewer3d{
+      flex:1;
+      min-height:0;
+      background:#eef2f7;
+      cursor:grab;
+    }
+    #viewer3d:active{ cursor:grabbing; }
+    .modal3d__hint{
+      padding:8px 14px;
+      font-size:12px;
+      color:#6b7280;
+      text-align:center;
+      border-top:1px solid rgba(15,23,42,.06);
+    }
+
     .btn:hover{
       background: rgba(2,6,23,.03);
     }
@@ -830,6 +916,24 @@
           {{ 'summary.btn.download_pdf'|trans }}
         </button>
       {% endif %}
+
+      {% if is_granted('ROLE_ADMIN') %}
+        <button class="btn" id="btnVer3D" type="button">{{ 'summary.btn.view_3d'|trans }}</button>
+      {% endif %}
+    </div>
+
+    <div class="modal3d" id="modal3d" aria-hidden="true">
+      <div class="modal3d__backdrop" data-close3d="1"></div>
+      <div class="modal3d__dialog">
+        <div class="modal3d__head">
+          <h4 class="modal3d__title">{{ 'summary.view3d.title'|trans }}</h4>
+          <button type="button" class="modal3d__close" aria-label="{{ 'summary.btn.close'|trans }}" data-close3d="1">×</button>
+        </div>
+        <div class="modal3d__body">
+          <div id="viewer3d"></div>
+          <div class="modal3d__hint">{{ 'summary.view3d.hint'|trans }}</div>
+        </div>
+      </div>
     </div>
 
     <div class="grid">
@@ -1582,6 +1686,26 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+    window.LOCKER_3D_DATA = {{ {
+      groups: groups3d,
+      doorColor: doorColor,
+      bodyColor: bodyColor,
+      fondoMm: fondoMm ?: 400,
+      doorWidthMm: kuik.door_width_mm,
+      screenImageUrl: asset(kuik.img_pantalla),
+      isSoporteSuelo: isSoporteSuelo,
+      bracketType: selectedType,
+      mailboxImages: {
+        elecTarj:   asset('assets/buzon_kuik_electronico_con_tarjetero.png'),
+        elecNoTarj: asset('assets/buzon_kuik_electronico_sin_tarjetero.png'),
+        mecTarj:    asset('assets/buzon_kuik_mecanico_con_tarjetero.png'),
+        mecNoTarj:  asset('assets/buzon_kuik_mecanico_sin_tarjetero.png')
+      },
+      isHome: isHome
+    }|json_encode|raw }};
+  </script>
+
+  <script>
     window.I18N_SUMMARY = {{ {
       generating: 'summary.js.generating'|trans,
       download_pdf: 'summary.js.download_pdf'|trans,
@@ -1594,6 +1718,610 @@
       unexpected_error: 'summary.js.unexpected_error'|trans,
       manual_line_description_placeholder: 'config_ajax.manual_line.description_placeholder'|trans
     }|json_encode|raw }};
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btn3d   = document.getElementById('btnVer3D');
+      const modal3d = document.getElementById('modal3d');
+      const viewer  = document.getElementById('viewer3d');
+      if (!btn3d || !modal3d || !viewer) return;
+
+      let threeLoaded = false;
+      let renderer = null, scene = null, camera = null, controls = null, animationId = null;
+      const doorPivots = [];
+      const clickableMeshes = [];
+      const DOOR_OPEN_ANGLE = Math.PI * 0.6; // ~108º
+
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      function ensureThree() {
+        if (threeLoaded) return Promise.resolve();
+        return loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js')
+          .then(function () {
+            return loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');
+          })
+          .then(function () { threeLoaded = true; });
+      }
+
+      function mmToUnits(mm) { return mm / 10; } // 1 unidad de escena = 1 cm
+
+      function buildScene() {
+        const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2f7);
+
+        const amb = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(amb);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+        dir.position.set(80, 140, 120);
+        scene.add(dir);
+        const dir2 = new THREE.DirectionalLight(0xffffff, 0.3);
+        dir2.position.set(-80, 60, -100);
+        scene.add(dir2);
+
+        const depth = mmToUnits(data.fondoMm || 400);
+        const colW  = mmToUnits(data.doorWidthMm || 380);
+        const sideW = mmToUnits(25);
+        const groupGap = mmToUnits(50);
+
+        const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });
+        const legMat  = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.5, metalness: 0.3 });
+        const edges   = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 });
+
+        // Mismas posiciones de patas que usa el dibujo 2D, según el número
+        // de columnas de la agrupación.
+        function legPositionsFor(n) {
+          if (n === 1) return [1];
+          if (n === 2) return [1, 2];
+          if (n === 3) return [1, 3];
+          if (n === 4) return [2, 3];
+          if (n === 5) return [2, 4];
+          if (n === 6) return [2, 4, 6];
+          if (n === 7) return [2, 4, 6, 7];
+          if (n === 8) return [2, 4, 6, 8];
+          if (n === 9) return [2, 4, 7, 8];
+          return [2, 4, 7, 9];
+        }
+
+        // Para "pantalla" y "buzón": mismo color de puerta en todas las
+        // caras, menos la frontal (+z), donde se pega la foto real. Se
+        // compone sobre un lienzo del color de puerta (en vez de usar
+        // transparencia 3D, que dejaría ver el interior de la caja en los
+        // huecos transparentes del PNG).
+        const frontTextureMatsCache = {};
+        function makeFrontTextureMats(imageUrl, heightMultiplier) {
+          if (!imageUrl) return doorMat;
+          const cacheKey = imageUrl + '|' + (heightMultiplier || 1);
+          if (frontTextureMatsCache[cacheKey]) return frontTextureMatsCache[cacheKey];
+
+          const frontMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.4, metalness: 0.1 });
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = data.doorColor || '#3a9efc';
+            ctx.fillRect(0, 0, size, size);
+            const scale = Math.min(size / img.width, size / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale * (heightMultiplier || 1);
+            ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+            const texture = new THREE.CanvasTexture(canvas);
+            frontMat.map = texture;
+            frontMat.color.set(0xffffff);
+            frontMat.needsUpdate = true;
+          };
+          img.src = imageUrl;
+
+          const mats = [doorMat, doorMat, doorMat, doorMat, frontMat, doorMat];
+          frontTextureMatsCache[cacheKey] = mats;
+          return mats;
+        }
+
+        const screenMats = makeFrontTextureMats(data.screenImageUrl);
+
+        function mailboxImageUrl(blk) {
+          const imgs = data.mailboxImages || {};
+          if (blk.electronico) return blk.tarjetero ? imgs.elecTarj : imgs.elecNoTarj;
+          return blk.tarjetero ? imgs.mecTarj : imgs.mecNoTarj;
+        }
+
+        function addBox(w, h, d, mat, x, y, z) {
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(x, y, z);
+          scene.add(mesh);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
+          line.position.copy(mesh.position);
+          scene.add(line);
+          return mesh;
+        }
+
+        // Caja "hueca": representa una puerta como un compartimento vacío
+        // (fondo, techo, suelo y dos lados), sin tapa frontal, para que se
+        // vea el interior en vez de un bloque sólido.
+        function addOpenBox(w, h, d, mat, x, y, z) {
+          const t = Math.max(0.5, Math.min(w, h) * 0.03);
+          addBox(w, h, t, mat, x, y, z - d / 2 + t / 2);       // fondo
+          addBox(w, t, d, mat, x, y + h / 2 - t / 2, z);       // techo
+          addBox(w, t, d, mat, x, y - h / 2 + t / 2, z);       // suelo
+          addBox(t, h, d, mat, x - w / 2 + t / 2, y, z);       // lateral izq.
+          addBox(t, h, d, mat, x + w / 2 - t / 2, y, z);       // lateral der.
+        }
+
+        // Hoja de puerta: una tapa fina delante del hueco, con la bisagra en
+        // el borde derecho. Al pulsarla, gira alrededor de esa bisagra como
+        // una puerta real. Se añade a "clickableMeshes" para poder detectarla
+        // con el raycaster en el click.
+        function addDoorLeaf(w, h, mat, x, y, z) {
+          const t = mmToUnits(8);
+          const geo = new THREE.BoxGeometry(w, h, t);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(-w / 2, 0, 0);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
+          line.position.copy(mesh.position);
+
+          const pivot = new THREE.Group();
+          pivot.position.set(x + w / 2, y, z);
+          pivot.add(mesh);
+          pivot.add(line);
+          scene.add(pivot);
+
+          mesh.userData.doorPivotIndex = doorPivots.length;
+          doorPivots.push({ pivot: pivot, open: false });
+          clickableMeshes.push(mesh);
+        }
+
+        let cursorX = 0;
+        let maxHeight = 0;
+        const groups = Array.isArray(data.groups) ? data.groups : [];
+
+        // Si lleva patas o brazos de soporte a suelo, todo el bloque de la
+        // taquilla se eleva esa altura y son las patas las que quedan
+        // apoyadas en el suelo (y=0), no la propia taquilla.
+        const legsApply = !!(data.isSoporteSuelo && (data.bracketType === 'patas' || data.bracketType === 'brazos'));
+        const legHeight = mmToUnits(700);
+        const baseY = legsApply ? legHeight : 0;
+
+        groups.forEach(function (cols3d) {
+          if (!Array.isArray(cols3d) || cols3d.length === 0) return;
+          const numCols = cols3d.length;
+          const groupWidth = numCols * colW + sideW * 2;
+          const groupStartX = cursorX;
+
+          cols3d.forEach(function (doorBlocks, colIdx) {
+            const blocks = Array.isArray(doorBlocks) ? doorBlocks : [];
+            const colTotalH = blocks.reduce(function (s, b) { return s + mmToUnits(b.h || 125); }, 0);
+            let cursorY = colTotalH;
+            blocks.forEach(function (blk) {
+              // El primer bloque de la lista es el de más arriba en el dibujo
+              // 2D, así que aquí se apila también de arriba hacia abajo.
+              const h = mmToUnits(blk.h || 125);
+              cursorY -= h;
+              const cx = groupStartX + sideW + colIdx * colW + colW / 2;
+              const cy = cursorY + h / 2 + baseY;
+              if (blk.type === 'screen') {
+                addOpenBox(colW - 0.4, h - 0.4, depth - 2, doorMat, cx, cy, depth / 2);
+                // La pantalla no se abre: se pone a ras de la misma cara
+                // exterior que las puertas cerradas, en vez de hundida.
+                const screenDepth = mmToUnits(60);
+                const frontZ = depth + mmToUnits(4);
+                addBox(colW - 0.4, h - 0.4, screenDepth, screenMats, cx, cy, frontZ - screenDepth / 2);
+              } else if (blk.type === 'mailbox') {
+                // El buzón sí se abre, como una puerta normal, pero con la
+                // foto del buzón en la cara exterior de la hoja.
+                addOpenBox(colW - 0.4, h - 0.4, depth - 2, doorMat, cx, cy, depth / 2);
+                const mailboxMats = makeFrontTextureMats(mailboxImageUrl(blk), 2);
+                addDoorLeaf(colW - 0.4, h - 0.4, mailboxMats, cx, cy, depth);
+              } else {
+                addOpenBox(colW - 0.4, h - 0.4, depth - 2, doorMat, cx, cy, depth / 2);
+                addDoorLeaf(colW - 0.4, h - 0.4, doorMat, cx, cy, depth);
+              }
+            });
+            if (colTotalH > maxHeight) maxHeight = colTotalH;
+          });
+
+          // El tejado se añade POR ENCIMA del bloque de puertas, no comido
+          // de su altura, así que los laterales y el fondo tienen que llegar
+          // hasta ahí arriba también para que no quede un hueco detrás.
+          const totalHeightWithRoof = maxHeight + sideW;
+
+          // Laterales (paneles de cuerpo a izquierda y derecha del grupo)
+          addBox(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+          addBox(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + groupWidth - sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+
+          // Planchas de fondo, tejado y suelo (cierran el mueble por detrás, por arriba y por abajo)
+          const panelT = mmToUnits(10);
+          addBox(groupWidth, totalHeightWithRoof, panelT, bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof / 2, panelT / 2);
+          addBox(groupWidth, sideW, depth, bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof - sideW / 2, depth / 2);
+          addBox(groupWidth, panelT, depth, bodyMat, groupStartX + groupWidth / 2, baseY + panelT / 2, depth / 2);
+
+          // Patas/brazos de soporte a suelo (solo home + soporte_suelo):
+          // van desde el suelo (y=0) hasta la base de la taquilla (y=baseY).
+          if (legsApply) {
+            const legSize = mmToUnits(40) * 1.5 * 1.2;
+            const footSize = legSize * 4;
+            const footHeight = mmToUnits(15);
+            const addLegAt = function (x) {
+              addBox(legSize, legHeight, legSize, legMat, x, legHeight / 2, depth / 2);
+              // Pie: placa plana donde la pata se apoya realmente en el suelo.
+              addBox(footSize, footHeight, footSize, legMat, x, footHeight / 2, depth / 2);
+            };
+            // Brazo: poste que sube por el lateral del mueble, algo más bajo
+            // que el propio mueble (no llega hasta arriba del tejado),
+            // separado un poco hacia afuera y unido al lateral con dos
+            // puntos de anclaje.
+            const armTotalHeight = (baseY + maxHeight) * 0.92;
+            const armOuterGap = legSize * 1.6;
+            const anchorT = mmToUnits(70);
+            const anchorDepth = legSize * 0.9;
+            const addArmAt = function (x, lockerEdgeX) {
+              addBox(legSize, armTotalHeight, legSize, legMat, x, armTotalHeight / 2, depth / 2);
+              addBox(footSize, footHeight, footSize, legMat, x, footHeight / 2, depth / 2);
+
+              // Orejetas de anclaje: unen la cara interior del poste (la que
+              // mira al mueble) con el lateral del mueble, a dos alturas.
+              const dir = lockerEdgeX > x ? 1 : -1;
+              const postInnerFaceX = x + dir * legSize / 2;
+              const anchorWidth = Math.abs(lockerEdgeX - postInnerFaceX);
+              const anchorCenterX = (postInnerFaceX + lockerEdgeX) / 2;
+              [0.68, 0.88].forEach(function (frac) {
+                addBox(anchorWidth, anchorT, anchorDepth, legMat, anchorCenterX, armTotalHeight * frac, depth / 2);
+              });
+            };
+
+            if (data.bracketType === 'patas') {
+              legPositionsFor(numCols).forEach(function (pos) {
+                addLegAt(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+              });
+            } else {
+              // Brazos: un poste alto en cada extremo del grupo (desplazado
+              // hacia afuera) y, si es ancho (5+ columnas), refuerzo
+              // intermedio (patas cortas) en las mismas posiciones que usan
+              // las patas.
+              addArmAt(groupStartX - armOuterGap, groupStartX);
+              addArmAt(groupStartX + groupWidth + armOuterGap, groupStartX + groupWidth);
+              if (numCols >= 5) {
+                legPositionsFor(numCols).forEach(function (pos) {
+                  addLegAt(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+                });
+              }
+            }
+          }
+
+          cursorX = groupStartX + groupWidth + groupGap;
+        });
+
+        const totalWidth = Math.max(cursorX - groupGap, colW);
+
+        // Entorno muy esquemático (solo para "home"): un suelo y una pared
+        // de fondo neutros, para dar la idea de un portal/vestíbulo sin
+        // modelar un edificio real.
+        if (data.isHome) {
+          // Textura de ladrillos: un pequeño lienzo con 2 filas de ladrillos
+          // (la segunda desplazada media pieza, como un muro real) que luego
+          // se repite muchas veces por toda la fachada.
+          function makeBrickTexture() {
+            const brickW = 96, brickH = 24, mortar = 8;
+            const canvas = document.createElement('canvas');
+            canvas.width = brickW * 2;
+            canvas.height = brickH * 2;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#9aa0a6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#b97a52';
+            for (let row = 0; row < 2; row++) {
+              const offset = (row % 2 === 0) ? 0 : brickW / 2;
+              for (let col = -1; col < 3; col++) {
+                ctx.fillRect(col * brickW + offset + mortar / 2, row * brickH + mortar / 2, brickW - mortar, brickH - mortar);
+              }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+          }
+
+          const floorMat = new THREE.MeshStandardMaterial({ color: 0x7d8186, roughness: 0.9 });
+          const brickTexture = makeBrickTexture();
+          const margin = Math.max(totalWidth, baseY + maxHeight) * 3;
+
+          const buildingWidth = (totalWidth + margin) * 2 * 0.8;
+          const buildingHeight = (baseY + maxHeight + sideW) * 3 * 3 * 0.8 * 0.8;
+          const buildingDepth  = margin * 1.5;
+
+          const floorT = mmToUnits(20);
+          const floorWidth = buildingWidth * 3 * 0.7;
+          const floor = new THREE.Mesh(new THREE.BoxGeometry(floorWidth, floorT, depth + margin * 3), floorMat);
+          floor.position.set(totalWidth / 2, -floorT / 2, depth / 2);
+          scene.add(floor);
+
+          // El tamaño del "ladrillo" en la escena es fijo, así que la
+          // repetición de la textura depende del tamaño real de cada pieza
+          // (si no, se vería o gigante o microscópica/apretada según el
+          // ancho). Cada pieza del edificio (dos laterales + la de arriba)
+          // tiene un ancho distinto, así que cada una necesita su propia
+          // textura clonada con su propio repetido, no se puede compartir.
+          // El lienzo representa 2 ladrillos de ancho x 2 filas de alto
+          // (ladrillo real ≈ 25 x 6,5 cm), para calcular cuántas veces repetir.
+          const brickTileWidthMm  = 500;
+          const brickTileHeightMm = 130;
+          // worldLeftX/worldBottomY: esquina inferior izquierda real de la
+          // pieza, para que el patrón de ladrillos de las 3 piezas quede en
+          // fase (misma "rejilla"), en vez de que cada una empiece a contar
+          // filas/columnas desde su propio cero.
+          function makeBuildingMat(pieceWidth, pieceHeight, worldLeftX, worldBottomY) {
+            const tex = brickTexture.clone();
+            tex.needsUpdate = true;
+            const tileW = mmToUnits(brickTileWidthMm);
+            const tileH = mmToUnits(brickTileHeightMm);
+            tex.repeat.set(pieceWidth / tileW, pieceHeight / tileH);
+            tex.offset.set(
+              ((worldLeftX || 0) / tileW) % 1,
+              ((worldBottomY || 0) / tileH) % 1
+            );
+            return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
+          }
+
+          // Se desplaza el edificio hacia la derecha para que la taquilla
+          // quede situada hacia la izquierda de la fachada, no centrada.
+          const buildingOffsetX = buildingWidth * 0.22;
+          const doorCenterX = totalWidth / 2 + buildingOffsetX;
+          const doorFrontZ  = mmToUnits(5); // justo delante de la fachada, sin solaparse
+          const doorHeight  = mmToUnits(2100);
+          const doorWidth   = mmToUnits(1600);
+          const frameT      = mmToUnits(70);
+          const mullionT    = mmToUnits(50);
+
+          // Hueco de "pasillo" detrás de la puerta: en vez de un bloque
+          // macizo de ladrillo, el edificio se construye en 3 piezas (dos
+          // laterales + una superior) dejando vacía la zona de la puerta,
+          // con un fondo propio más cerca para que se vea un pasillo y no
+          // ladrillo pegado al cristal.
+          const corridorWidth  = doorWidth + frameT * 2;
+          const corridorHeight = doorHeight + frameT;
+          const corridorDepth  = Math.min(buildingDepth * 0.5, mmToUnits(3500));
+
+          const sideWidth = (buildingWidth - corridorWidth) / 2;
+          const leftPieceLeftX = doorCenterX - corridorWidth / 2 - sideWidth;
+          const leftPiece = new THREE.Mesh(
+            new THREE.BoxGeometry(sideWidth, buildingHeight, buildingDepth),
+            makeBuildingMat(sideWidth, buildingHeight, leftPieceLeftX, 0)
+          );
+          leftPiece.position.set(leftPieceLeftX + sideWidth / 2, buildingHeight / 2, -buildingDepth / 2);
+          scene.add(leftPiece);
+
+          const rightPieceLeftX = doorCenterX + corridorWidth / 2;
+          const rightPiece = new THREE.Mesh(
+            new THREE.BoxGeometry(sideWidth, buildingHeight, buildingDepth),
+            makeBuildingMat(sideWidth, buildingHeight, rightPieceLeftX, 0)
+          );
+          rightPiece.position.set(rightPieceLeftX + sideWidth / 2, buildingHeight / 2, -buildingDepth / 2);
+          scene.add(rightPiece);
+
+          const topPiece = new THREE.Mesh(
+            new THREE.BoxGeometry(corridorWidth, buildingHeight - corridorHeight, buildingDepth),
+            makeBuildingMat(corridorWidth, buildingHeight - corridorHeight, doorCenterX - corridorWidth / 2, corridorHeight)
+          );
+          topPiece.position.set(doorCenterX, corridorHeight + (buildingHeight - corridorHeight) / 2, -buildingDepth / 2);
+          scene.add(topPiece);
+
+          // Interior del pasillo: paredes laterales y fondo, en un tono
+          // neutro (no ladrillo), para que se note que es un espacio hueco.
+          const corridorMat = new THREE.MeshStandardMaterial({ color: 0xe8e5de, roughness: 0.9 });
+          const corridorWallT = mmToUnits(15);
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWallT, corridorHeight, corridorDepth), corridorMat)
+            .translateX(doorCenterX - corridorWidth / 2 + corridorWallT / 2).translateY(corridorHeight / 2).translateZ(-corridorDepth / 2));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWallT, corridorHeight, corridorDepth), corridorMat)
+            .translateX(doorCenterX + corridorWidth / 2 - corridorWallT / 2).translateY(corridorHeight / 2).translateZ(-corridorDepth / 2));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, corridorWallT, corridorDepth), corridorMat)
+            .translateX(doorCenterX).translateY(corridorHeight - corridorWallT / 2).translateZ(-corridorDepth / 2));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, mmToUnits(10), corridorDepth), corridorMat)
+            .translateX(doorCenterX).translateY(mmToUnits(5)).translateZ(-corridorDepth / 2));
+          // Fondo del pasillo, que lo cierra para que no se vea un hueco infinito.
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, corridorHeight, corridorWallT), corridorMat)
+            .translateX(doorCenterX).translateY(corridorHeight / 2).translateZ(-corridorDepth + corridorWallT / 2));
+
+          const frameMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.4, metalness: 0.4 });
+          const glassMat = new THREE.MeshStandardMaterial({
+            color: 0xbfe3f0, roughness: 0.1, metalness: 0.1,
+            transparent: true, opacity: 0.18
+          });
+
+          // Marco exterior (arriba, abajo, izquierda, derecha)
+          const outerW = doorWidth + frameT * 2;
+          const outerH = doorHeight + frameT;
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(outerW, frameT, frameT), frameMat).translateX(doorCenterX).translateY(doorHeight + frameT / 2).translateZ(doorFrontZ));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, outerH, frameT), frameMat).translateX(doorCenterX - outerW / 2 + frameT / 2).translateY(outerH / 2).translateZ(doorFrontZ));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, outerH, frameT), frameMat).translateX(doorCenterX + outerW / 2 - frameT / 2).translateY(outerH / 2).translateZ(doorFrontZ));
+          // Montante central entre las dos hojas
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mullionT, doorHeight, frameT), frameMat).translateX(doorCenterX).translateY(doorHeight / 2).translateZ(doorFrontZ));
+
+          // Las dos hojas de cristal
+          const leafWidth = (doorWidth - mullionT) / 2;
+          [-1, 1].forEach(function (side) {
+            const leafX = doorCenterX + side * (mullionT / 2 + leafWidth / 2);
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(leafWidth, doorHeight, mmToUnits(10)), glassMat).translateX(leafX).translateY(doorHeight / 2).translateZ(doorFrontZ));
+          });
+
+          // Ventanas en cuadrícula sobre la fachada (piezas laterales de
+          // ladrillo), por encima del hueco de la taquilla/puerta.
+          const winWidth  = mmToUnits(900);
+          const winHeight = mmToUnits(1200);
+          const winFrameT = mmToUnits(15); // marco fino, pegado a la pared
+          const winZ      = mmToUnits(3);
+          const rowSpacing = mmToUnits(2800);
+          const sideMargin = mmToUnits(350);
+          const windowBackingMat = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.85 });
+
+          function addWindow(cx, cy) {
+            // Capas en Z sin solaparse: marco (fino, pegado a la pared) →
+            // panel claro → cristal transparente, cada una por delante de la
+            // anterior, para que el cristal realmente se vea translúcido en
+            // vez de quedar escondido dentro del marco.
+            const frameZ   = winZ;
+            const backingZ = winZ + winFrameT;
+            const glassZ   = backingZ + mmToUnits(8);
+
+            scene.add(new THREE.Mesh(
+              new THREE.BoxGeometry(winWidth + winFrameT * 2, winHeight + winFrameT * 2, winFrameT),
+              frameMat
+            ).translateX(cx).translateY(cy).translateZ(frameZ));
+            // Panel claro detrás del cristal: igual que el pasillo claro
+            // detrás de la puerta, para que el cristal transparente se vea
+            // "iluminado" en vez de oscuro contra el ladrillo.
+            scene.add(new THREE.Mesh(
+              new THREE.BoxGeometry(winWidth, winHeight, mmToUnits(5)),
+              windowBackingMat
+            ).translateX(cx).translateY(cy).translateZ(backingZ));
+            scene.add(new THREE.Mesh(
+              new THREE.BoxGeometry(winWidth, winHeight, mmToUnits(10)),
+              glassMat
+            ).translateX(cx).translateY(cy).translateZ(glassZ));
+          }
+
+          function addWindowGrid(pieceLeftX, pieceWidth) {
+            const usableWidth = pieceWidth - sideMargin * 2;
+            // 2 ventanas por fila, usando todo el ancho disponible (pegadas
+            // a los márgenes) para que la del centro quede lo más cerca
+            // posible del hueco de la puerta, sin tanto vacío en medio.
+            const leftX  = pieceLeftX + sideMargin + winWidth / 2;
+            const rightX = pieceLeftX + pieceWidth - sideMargin - winWidth / 2;
+
+            const firstRowY = Math.max(doorHeight, baseY + maxHeight) + rowSpacing * 0.6;
+            for (let wy = firstRowY; wy + winHeight / 2 < buildingHeight - sideMargin; wy += rowSpacing) {
+              addWindow(leftX, wy);
+              addWindow(rightX, wy);
+            }
+          }
+
+          addWindowGrid(leftPieceLeftX, sideWidth);
+          addWindowGrid(rightPieceLeftX, sideWidth);
+        }
+
+        const sceneTotalHeight = baseY + maxHeight;
+
+        camera = new THREE.PerspectiveCamera(45, 1, 1, 5000);
+        const dist = Math.max(totalWidth, sceneTotalHeight, depth) * 1.8 + 50;
+        camera.position.set(totalWidth / 2 + dist * 0.6, sceneTotalHeight * 0.7 + dist * 0.35, dist * 0.9);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        viewer.innerHTML = '';
+        viewer.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(totalWidth / 2, sceneTotalHeight / 2, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.update();
+
+        resizeRenderer();
+        setupDoorClicks();
+        startAnimation();
+      }
+
+      function setupDoorClicks() {
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let downX = 0, downY = 0;
+
+        renderer.domElement.addEventListener('pointerdown', function (e) {
+          downX = e.clientX;
+          downY = e.clientY;
+        });
+
+        renderer.domElement.addEventListener('pointerup', function (e) {
+          // Si hubo arrastre (rotar/paneo con OrbitControls), no se considera un clic.
+          if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) return;
+
+          const rect = renderer.domElement.getBoundingClientRect();
+          pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(pointer, camera);
+          const hits = raycaster.intersectObjects(clickableMeshes, false);
+          if (hits.length === 0) return;
+
+          const idx = hits[0].object.userData.doorPivotIndex;
+          const entry = doorPivots[idx];
+          if (entry) entry.open = !entry.open;
+        });
+      }
+
+      function startAnimation() {
+        if (animationId) cancelAnimationFrame(animationId);
+        function animate() {
+          animationId = requestAnimationFrame(animate);
+          controls.update();
+          doorPivots.forEach(function (entry) {
+            const target = entry.open ? DOOR_OPEN_ANGLE : 0;
+            entry.pivot.rotation.y += (target - entry.pivot.rotation.y) * 0.18;
+          });
+          renderer.render(scene, camera);
+        }
+        animate();
+      }
+
+      function resizeRenderer() {
+        if (!renderer || !camera || !viewer) return;
+        const w = viewer.clientWidth || 1;
+        const h = viewer.clientHeight || 1;
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+
+      function openModal() {
+        modal3d.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        modal3d.setAttribute('aria-hidden', 'false');
+
+        ensureThree().then(function () {
+          if (!renderer) {
+            buildScene();
+          } else {
+            startAnimation();
+          }
+          requestAnimationFrame(resizeRenderer);
+        }).catch(function (err) {
+          console.error('No se pudo cargar el visor 3D:', err);
+          viewer.innerHTML = '<div style="padding:24px;color:#dc2626;">No se pudo cargar el visor 3D. Revisa la consola del navegador para más detalles.</div>';
+        });
+      }
+
+      function closeModal() {
+        modal3d.classList.remove('is-open');
+        document.body.style.overflow = '';
+        modal3d.setAttribute('aria-hidden', 'true');
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+      }
+
+      btn3d.addEventListener('click', openModal);
+      modal3d.addEventListener('click', function (e) {
+        if (e.target.closest('[data-close3d="1"]')) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal3d.classList.contains('is-open')) closeModal();
+      });
+      window.addEventListener('resize', function () {
+        if (modal3d.classList.contains('is-open')) resizeRenderer();
+      });
+    });
   </script>
 
   <script>

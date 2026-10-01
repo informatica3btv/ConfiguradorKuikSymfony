@@ -293,6 +293,11 @@ summary:
         new_configuration: Nueva configuración
         edit_configuration: Editar configuración
         download_pdf: Descargar PDF
+        view_3d: Ver en 3D
+        close: Cerrar
+    view3d:
+        title: Vista 3D de la configuración
+        hint: 'Arrastra para rotar · rueda del ratón para zoom · clic derecho para desplazar'
     preview:
         title: Vista previa
         no_columns: No hay columnas en esta configuración.
