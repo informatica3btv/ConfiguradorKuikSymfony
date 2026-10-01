@@ -294,6 +294,7 @@ summary:
         edit_configuration: Editar configuración
         download_pdf: Descargar PDF
         view_3d: Ver en 3D
+        view_ar: Ver en RA
         close: Cerrar
     view3d:
         title: Vista 3D de la configuración

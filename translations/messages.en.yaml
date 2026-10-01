@@ -294,6 +294,7 @@ summary:
         edit_configuration: Edit configuration
         download_pdf: Download PDF
         view_3d: View in 3D
+        view_ar: View in AR
         close: Close
     view3d:
         title: 3D view of the configuration

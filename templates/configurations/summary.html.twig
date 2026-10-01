@@ -919,6 +919,7 @@
 
       {% if is_granted('ROLE_ADMIN') %}
         <button class="btn" id="btnVer3D" type="button">{{ 'summary.btn.view_3d'|trans }}</button>
+        <button class="btn" id="btnVerRA" type="button" style="display:none;">{{ 'summary.btn.view_ar'|trans }}</button>
       {% endif %}
     </div>
 
@@ -2788,6 +2789,247 @@
           btnPdf.textContent = window.I18N_SUMMARY.download_pdf;
         }, 2000);
       });
+    });
+  </script>
+
+  {# ============================================================
+     "Ver en RA" — funcionalidad totalmente aparte de "Ver en 3D".
+     No comparte código con el visor 3D (solo lee los mismos datos
+     de window.LOCKER_3D_DATA, que son datos, no comportamiento),
+     así que un cambio aquí nunca puede romper el botón de 3D.
+     Usa WebXR (de momento solo Android/Chrome; iOS no lo soporta).
+     ============================================================ #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnAR = document.getElementById('btnVerRA');
+      if (!btnAR) return;
+
+      // El botón empieza oculto (style="display:none" en el HTML) y solo
+      // se muestra si el propio navegador confirma que soporta RA.
+      if (navigator.xr && navigator.xr.isSessionSupported) {
+        navigator.xr.isSessionSupported('immersive-ar').then(function (supported) {
+          if (supported) btnAR.style.display = '';
+        }).catch(function () {});
+      }
+
+      let threeLoadedForAR = false;
+      function loadScriptAR(src) {
+        return new Promise(function (resolve, reject) {
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      function ensureThreeForAR() {
+        if (threeLoadedForAR || (window.THREE && window.THREE.Group)) { threeLoadedForAR = true; return Promise.resolve(); }
+        return loadScriptAR('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js')
+          .then(function () { threeLoadedForAR = true; });
+      }
+
+      function mmToM(mm) { return (mm || 0) / 1000; }
+
+      // Construye el mueble (solo el mueble, sin suelo ni edificio) a
+      // tamaño real en metros, a partir de los mismos datos que usa el
+      // visor 3D normal. Es una versión simplificada a propósito: puertas
+      // macizas (sin hueco interior ni apertura al pulsar), para que esta
+      // parte sea ligera y no dependa de la lógica del otro visor.
+      function buildARLocker() {
+        const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
+        const root = new THREE.Group();
+
+        const depth = mmToM(data.fondoMm || 400);
+        const colW  = mmToM(data.doorWidthMm || 380);
+        const sideW = mmToM(25);
+        const groupGap = mmToM(50);
+
+        const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });
+        const legMat  = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.5, metalness: 0.3 });
+
+        function legPositionsForAR(n) {
+          if (n === 1) return [1];
+          if (n === 2) return [1, 2];
+          if (n === 3) return [1, 3];
+          if (n === 4) return [2, 3];
+          if (n === 5) return [2, 4];
+          if (n === 6) return [2, 4, 6];
+          if (n === 7) return [2, 4, 6, 7];
+          if (n === 8) return [2, 4, 6, 8];
+          if (n === 9) return [2, 4, 7, 8];
+          return [2, 4, 7, 9];
+        }
+
+        function addBoxAR(w, h, d, mat, x, y, z) {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+          mesh.position.set(x, y, z);
+          root.add(mesh);
+          return mesh;
+        }
+
+        const legsApply = !!(data.isSoporteSuelo && (data.bracketType === 'patas' || data.bracketType === 'brazos'));
+        const legHeight = mmToM(700);
+        const baseY = legsApply ? legHeight : 0;
+
+        let cursorX = 0;
+        let maxHeight = 0;
+        const groups = Array.isArray(data.groups) ? data.groups : [];
+
+        groups.forEach(function (cols3d) {
+          if (!Array.isArray(cols3d) || cols3d.length === 0) return;
+          const numCols = cols3d.length;
+          const groupWidth = numCols * colW + sideW * 2;
+          const groupStartX = cursorX;
+
+          cols3d.forEach(function (doorBlocks, colIdx) {
+            const blocks = Array.isArray(doorBlocks) ? doorBlocks : [];
+            const colTotalH = blocks.reduce(function (s, b) { return s + mmToM(b.h || 125); }, 0);
+            let cursorY = colTotalH;
+            blocks.forEach(function (blk) {
+              const h = mmToM(blk.h || 125);
+              cursorY -= h;
+              const cx = groupStartX + sideW + colIdx * colW + colW / 2;
+              const cy = cursorY + h / 2 + baseY;
+              addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, doorMat, cx, cy, depth / 2);
+            });
+            if (colTotalH > maxHeight) maxHeight = colTotalH;
+          });
+
+          const totalHeightWithRoof = maxHeight + sideW;
+          addBoxAR(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+          addBoxAR(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + groupWidth - sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+          addBoxAR(groupWidth, sideW, depth, bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof - sideW / 2, depth / 2);
+          addBoxAR(groupWidth, mmToM(10), depth, bodyMat, groupStartX + groupWidth / 2, baseY + mmToM(5), depth / 2);
+
+          if (legsApply) {
+            const legSize = mmToM(40) * 1.5 * 1.2;
+            const addLegAR = function (x) {
+              addBoxAR(legSize, legHeight, legSize, legMat, x, legHeight / 2, depth / 2);
+            };
+            if (data.bracketType === 'patas') {
+              legPositionsForAR(numCols).forEach(function (pos) {
+                addLegAR(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+              });
+            } else {
+              addLegAR(groupStartX + sideW / 2);
+              addLegAR(groupStartX + groupWidth - sideW / 2);
+              if (numCols >= 5) {
+                legPositionsForAR(numCols).forEach(function (pos) {
+                  addLegAR(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+                });
+              }
+            }
+          }
+
+          cursorX = groupStartX + groupWidth + groupGap;
+        });
+
+        // Centra el mueble sobre el punto donde el usuario toque la
+        // pantalla (si no, se colocaría con la esquina ahí).
+        const totalWidth = Math.max(cursorX - groupGap, colW);
+        root.position.x = -totalWidth / 2;
+
+        return root;
+      }
+
+      let arRenderer = null, arScene = null, arCamera = null, arReticle = null, arLockerGroup = null;
+      let arHitTestSource = null, arSession = null;
+
+      function onARSelect() {
+        if (arReticle && arReticle.visible && arLockerGroup) {
+          arLockerGroup.position.setFromMatrixPosition(arReticle.matrix);
+          arLockerGroup.visible = true;
+        }
+      }
+
+      function onARFrame(timestamp, frame) {
+        if (frame) {
+          const referenceSpace = arRenderer.xr.getReferenceSpace();
+          if (arHitTestSource) {
+            const hits = frame.getHitTestResults(arHitTestSource);
+            if (hits.length > 0) {
+              const pose = hits[0].getPose(referenceSpace);
+              arReticle.visible = true;
+              arReticle.matrix.fromArray(pose.transform.matrix);
+            } else {
+              arReticle.visible = false;
+            }
+          }
+        }
+        arRenderer.render(arScene, arCamera);
+      }
+
+      function onAREnd() {
+        if (arRenderer) {
+          arRenderer.setAnimationLoop(null);
+          if (arRenderer.domElement && arRenderer.domElement.parentNode) {
+            arRenderer.domElement.parentNode.removeChild(arRenderer.domElement);
+          }
+        }
+        arHitTestSource = null;
+        arSession = null;
+        arRenderer = null;
+        arScene = null;
+        arCamera = null;
+        arReticle = null;
+        arLockerGroup = null;
+      }
+
+      function startAR() {
+        ensureThreeForAR().then(function () {
+          arScene = new THREE.Scene();
+          arCamera = new THREE.PerspectiveCamera();
+
+          const light = new THREE.HemisphereLight(0xffffff, 0x555555, 1.2);
+          arScene.add(light);
+
+          arLockerGroup = buildARLocker();
+          arLockerGroup.visible = false;
+          arScene.add(arLockerGroup);
+
+          arReticle = new THREE.Mesh(
+            new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+            new THREE.MeshBasicMaterial({ color: 0x44c767 })
+          );
+          arReticle.matrixAutoUpdate = false;
+          arReticle.visible = false;
+          arScene.add(arReticle);
+
+          arRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          arRenderer.setPixelRatio(window.devicePixelRatio || 1);
+          arRenderer.setSize(window.innerWidth, window.innerHeight);
+          arRenderer.setClearColor(0x000000, 0);
+          arRenderer.xr.enabled = true;
+          arRenderer.domElement.style.position = 'fixed';
+          arRenderer.domElement.style.top = '0';
+          arRenderer.domElement.style.left = '0';
+          arRenderer.domElement.style.zIndex = '2000';
+          document.body.appendChild(arRenderer.domElement);
+
+          return navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] });
+        }).then(function (session) {
+          arSession = session;
+          session.addEventListener('end', onAREnd);
+          session.addEventListener('select', onARSelect);
+
+          arRenderer.xr.setReferenceSpaceType('local');
+          return arRenderer.xr.setSession(session).then(function () {
+            return session.requestReferenceSpace('viewer');
+          });
+        }).then(function (viewerSpace) {
+          return arSession.requestHitTestSource({ space: viewerSpace });
+        }).then(function (hitTestSource) {
+          arHitTestSource = hitTestSource;
+          arRenderer.setAnimationLoop(onARFrame);
+        }).catch(function (err) {
+          console.error('No se pudo iniciar la Realidad Aumentada:', err);
+          alert('No se pudo iniciar la Realidad Aumentada en este dispositivo.');
+          onAREnd();
+        });
+      }
+
+      btnAR.addEventListener('click', startAR);
     });
   </script>
 {% endblock %}
