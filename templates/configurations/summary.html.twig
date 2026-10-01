@@ -2837,7 +2837,12 @@
       // parte sea ligera y no dependa de la lógica del otro visor.
       function buildARLocker() {
         const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
+        // "root" es el grupo que se mueve/gira libremente al colocar la
+        // taquilla en RA; "inner" lleva el centrado horizontal del mueble,
+        // para que no se pierda cuando root.position se sobrescriba.
         const root = new THREE.Group();
+        const inner = new THREE.Group();
+        root.add(inner);
 
         const depth = mmToM(data.fondoMm || 400);
         const colW  = mmToM(data.doorWidthMm || 380);
@@ -2864,7 +2869,7 @@
         function addBoxAR(w, h, d, mat, x, y, z) {
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
           mesh.position.set(x, y, z);
-          root.add(mesh);
+          inner.add(mesh);
           return mesh;
         }
 
@@ -2928,7 +2933,7 @@
         // Centra el mueble sobre el punto donde el usuario toque la
         // pantalla (si no, se colocaría con la esquina ahí).
         const totalWidth = Math.max(cursorX - groupGap, colW);
-        root.position.x = -totalWidth / 2;
+        inner.position.x = -totalWidth / 2;
 
         return root;
       }
@@ -2938,7 +2943,18 @@
 
       function onARSelect() {
         if (arReticle && arReticle.visible && arLockerGroup) {
-          arLockerGroup.position.setFromMatrixPosition(arReticle.matrix);
+          const pos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
+          arLockerGroup.position.copy(pos);
+
+          // La superficie detectada puede tener cualquier orientación: en
+          // vez de copiarla, giramos la taquilla sobre el eje Y para que su
+          // cara frontal (+Z en el grupo) mire hacia donde está la cámara.
+          const camPos = new THREE.Vector3();
+          arCamera.getWorldPosition(camPos);
+          const dx = camPos.x - pos.x;
+          const dz = camPos.z - pos.z;
+          arLockerGroup.rotation.y = Math.atan2(dx, dz);
+
           arLockerGroup.visible = true;
           setARStatus('Taquilla colocada. Toca otra vez para moverla.');
         }
