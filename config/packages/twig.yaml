@@ -18,9 +18,9 @@ twig:
 
             # Fondo (profundidad) real del módulo en mm, según la serie (fondo/ancho de columna)
             fondo_mm:
-                '300': 600
-                '400': 600
-                '500': 600
+                '300': 300
+                '400': 400
+                '500': 500
 
             # Dimensiones físicas reales de las puertas (en mm)
             # El valor H (10,20,30...) multiplica la unidad base de 12,5 mm

@@ -78,7 +78,7 @@
   {{ parent() }}
   <style>
     :root{
-      --hscale: 3.66;
+      --hscale: {{ kuik.scale }};
 
       --bg:#f6f9fc;
       --ink:#0b1220;
@@ -374,6 +374,7 @@
       align-items:center;
       justify-content:center;
       position:relative;
+      z-index:2;
       box-sizing: border-box;
       border:1px solid rgba(255,255,255,.6);
       background: var(--door-color, #3a9efc);
@@ -460,13 +461,14 @@
       display:block;
     }
 
-    .door.methacrylate::after{
+    .door.methacrylate .door-leaf::after{
       content:"";
       position:absolute;
       inset:12px;
       background:rgba(0,0,0,.38);
       border-radius:4px;
       pointer-events:none;
+      z-index:1;
     }
 
     .door .num,
@@ -497,6 +499,8 @@
     }
 
     .door .size-label{
+      position:relative;
+      z-index:2;
       font-weight:900;
       font-size:16px;
       color:#fff;
@@ -891,15 +895,11 @@
                         <img class="arm-img right {% if armReinforced %}reinforced{% endif %}" src="{{ armSrc }}" alt="Brazo derecho">
                       {% endif %}
 
-                      {% if not isHome %}
-                        <div class="group-roof"></div>
-                      {% endif %}
-
                       <div class="cols-and-mb" style="{% if fondoMm %}margin-top:18px;{% endif %}">
 
                         {% if fondoMm %}
                           <div class="depth-top"></div>
-                          <div class="depth-right"></div>
+                          <div class="depth-right" style="height: {{ groupHeightPx + 12 }}px;"></div>
                           <div class="depth-label">
                             <div class="dim-row"><span class="arrow">◄</span><span class="line"></span><span class="arrow">►</span></div>
                             <div class="dim-value">{{ fondoMm }}</div>
