@@ -98,6 +98,41 @@
   {% set groups3d = groups3d|merge([cols3d]) %}
 {% endfor %}
 
+{# ========================================================
+   Datos para el PROTOTIPO de vista previa 3D (solo admin, solo el
+   primer grupo): igual que groups3d, pero añadiendo el número de
+   placa/puerta y el código "H" (unidades, no mm) que ya muestra la
+   vista previa normal, para poder dibujar esas mismas etiquetas
+   encima del render 3D.
+   ======================================================== #}
+{% set previewProtoCols = [] %}
+{% if groups[0] is defined and groups[0] is iterable %}
+  {% for col in groups[0] %}
+    {% set isColEmpotrado = (col.single is defined and col.single is not empty) %}
+    {% if isColEmpotrado %}
+      {% set srcBlocks = col.single.blocks_prepared ?? col.single.blocks ?? [] %}
+    {% else %}
+      {% set srcBlocks = (col.top.blocks_prepared ?? col.top.blocks ?? [])|merge(col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
+    {% endif %}
+    {% set protoBlocks = [] %}
+    {% for blk in srcBlocks %}
+      {% set hh = blk.h|default(blk) %}
+      {% set hmm = hh * kuik.h_unit_mm %}
+      {% set btype = blk.type|default('door') %}
+      {% set protoBlocks = protoBlocks|merge([{
+        'h': hmm,
+        'hUnits': hh,
+        'type': btype,
+        'electronico': blk.electronico ?? false,
+        'tarjetero': blk.tarjetero ?? false,
+        'plateNumber': blk.plateNumber ?? null,
+        'doorNumber': blk.doorNumber ?? null
+      }]) %}
+    {% endfor %}
+    {% set previewProtoCols = previewProtoCols|merge([protoBlocks]) %}
+  {% endfor %}
+{% endif %}
+
 {# Ancho de columna (mm) según la serie de fondo, y alto de la agrupación (125 por cada H10) #}
 {% set colWidthLabel = isHomeSerie400 ? 380 : (bg in ['300', '400', '500'] ? bg : null) %}
 {% set groupWidthExtraMm = 50 %}
@@ -1443,6 +1478,41 @@
 
         </div>
 
+        {% if false %}
+          {# Oculto a propósito de momento (pendiente de validar) — para
+             reactivar, cambiar "false" por is_granted('ROLE_ADMIN'). #}
+          {# ============================================================
+             Prototipo: vista previa en 3D real (solo admins, de momento).
+             Muestra ÚNICAMENTE el primer grupo, sin las etiquetas/medidas
+             de la vista previa normal (eso vendría después si se valida
+             el enfoque) — el objetivo aquí es solo comprobar que el
+             render 3D estático (sin rotar/zoom) y su captura para PDF
+             (canvas.toDataURL en vez de html2canvas) funcionan bien,
+             antes de aplicarlo a todos los grupos y añadir las etiquetas.
+             No sustituye la vista previa de arriba, que sigue intacta.
+             ============================================================ #}
+          <div style="margin-top:28px; padding-top:20px; border-top:1px dashed rgba(15,23,42,.15);">
+            <h3 style="display:flex; align-items:center; gap:8px;">
+              Prototipo: vista previa en 3D (solo admin)
+              <span style="font-size:11px; font-weight:600; color:#6b7280; background:#f1f5f9; padding:2px 8px; border-radius:999px;">beta</span>
+            </h3>
+            <p style="font-size:13px; color:#6b7280; margin:0 0 12px;">
+              Muestra solo el primer grupo. Arrastra para rotar (sin zoom); toca una puerta para abrirla/cerrarla.
+            </p>
+            <div id="previewProto3DWrap" style="display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap;">
+              <div>
+                <div id="previewProto3DTitle" style="text-align:center; font-weight:700; font-size:14px; margin-bottom:8px;"></div>
+                <canvas id="previewProto3DCanvas" width="900" height="700"
+                  style="display:block; max-width:100%; background:#ffffff; border-radius:12px; border:1px solid rgba(15,23,42,.08);"></canvas>
+              </div>
+              <button type="button" id="btnProto3DCapture" class="btn" style="align-self:center;">
+                Capturar como el PDF (toDataURL)
+              </button>
+            </div>
+            <img id="previewProto3DCaptured" style="max-width:900px; width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
+          </div>
+        {% endif %}
+
         <img id="resultadoIA"
              style="max-width:100%; margin-top:12px; display:none; border:1px solid rgba(15,23,42,.12); border-radius:12px;">
 
@@ -1736,6 +1806,33 @@
       instalacion: instalacion
     }|json_encode|raw }};
   </script>
+
+  {% if false %}
+    {# Oculto a propósito junto con la sección de arriba. #}
+    <script>
+      // Datos propios del prototipo de vista previa 3D (ver más abajo),
+      // independientes de LOCKER_3D_DATA: incluyen el número de
+      // placa/puerta y el código "H" en unidades para las etiquetas.
+      window.PREVIEW3D_PROTO_DATA = {{ {
+        group0: previewProtoCols,
+        doorColor: doorColor,
+        bodyColor: bodyColor,
+        fondoMm: fondoMm ?: 400,
+        doorWidthMm: kuik.door_width_mm,
+        screenImageUrl: asset(kuik.img_pantalla),
+        mailboxImages: {
+          elecTarj:   asset('assets/buzon_kuik_electronico_con_tarjetero.png'),
+          elecNoTarj: asset('assets/buzon_kuik_electronico_sin_tarjetero.png'),
+          mecTarj:    asset('assets/buzon_kuik_mecanico_con_tarjetero.png'),
+          mecNoTarj:  asset('assets/buzon_kuik_mecanico_sin_tarjetero.png')
+        },
+        groupLabel: (groups[0] is defined) ? ('summary.preview.group_label'|trans({'%index%': 1, '%count%': groups[0]|length})) : '',
+        groupHeightLabel: groupHeightLabel,
+        colWidthLabel: colWidthLabel,
+        totalWidthLabel: colWidthLabel ? ((colWidthLabel * (groups[0]|default([])|length)) + groupWidthExtraMm) : null
+      }|json_encode|raw }};
+    </script>
+  {% endif %}
 
   <script>
     window.I18N_SUMMARY = {{ {
@@ -3869,10 +3966,24 @@
           return mesh;
         }
 
-        // Puerta con bisagra (igual de maciza que antes, sin hueco interior
-        // detrás): la propia caja gira sobre el borde derecho al tocarla,
-        // en vez de quedar fija. "mat" puede ser un único material o el
-        // array de 6 caras con la foto de pantalla/buzón.
+        // Compartimento hueco detrás de la puerta (fondo, techo, suelo y
+        // dos laterales): sin esto, al abrir la puerta se ve vacío/a
+        // través del hueco en vez de una taquilla real.
+        function addOpenBoxAR(w, h, d, mat, x, y, z) {
+          // En metros (escala de RA), no en cm como el visor 3D: 0.5
+          // ahí sería medio metro de grosor de pared, más grande que la
+          // propia puerta.
+          const t = Math.max(0.005, Math.min(w, h) * 0.03);
+          addBoxAR(w, h, t, mat, x, y, z - d / 2 + t / 2);
+          addBoxAR(w, t, d, mat, x, y + h / 2 - t / 2, z);
+          addBoxAR(w, t, d, mat, x, y - h / 2 + t / 2, z);
+          addBoxAR(t, h, d, mat, x - w / 2 + t / 2, y, z);
+          addBoxAR(t, h, d, mat, x + w / 2 - t / 2, y, z);
+        }
+
+        // Puerta con bisagra: la propia caja gira sobre el borde derecho al
+        // tocarla, en vez de quedar fija. "mat" puede ser un único
+        // material o el array de 6 caras con la foto de pantalla/buzón.
         function addDoorLeafAR(w, h, d, mat, x, y, z) {
           const t = Math.min(d, mmToM(20));
           const geo = new THREE.BoxGeometry(w, h, t);
@@ -3920,7 +4031,9 @@
                 // La pantalla no se abre: sigue siendo una caja fija.
                 addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, screenMatsAR, cx, cy, depth / 2);
               } else {
-                // Puerta normal o buzón: se puede tocar para abrir/cerrar.
+                // Puerta normal o buzón: hueco detrás + hoja con bisagra
+                // que se puede tocar para abrir/cerrar.
+                addOpenBoxAR(colW - 0.004, h - 0.004, depth - 0.02, doorMat, cx, cy, depth / 2);
                 const blockMat = blk.type === 'mailbox' ? makeFrontTextureMatsAR(mailboxImageUrlAR(blk), 2) : doorMat;
                 addDoorLeafAR(colW - 0.004, h - 0.004, depth - 0.02, blockMat, cx, cy, depth / 2);
               }
@@ -4328,6 +4441,329 @@
       }
 
       btnAR.addEventListener('click', startAR);
+    });
+  </script>
+
+  {# ==============================================================
+     Prototipo "vista previa 3D" (solo admin). Código completamente
+     independiente del visor 3D y de RA, a propósito: aquí solo se
+     busca validar el enfoque (render estático + captura vía
+     toDataURL) para UN grupo, antes de decidir si merece la pena
+     extenderlo a todos los grupos y a las etiquetas.
+     ============================================================== #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const canvas = document.getElementById('previewProto3DCanvas');
+      if (!canvas) return;
+      const btnCapture = document.getElementById('btnProto3DCapture');
+      const capturedImg = document.getElementById('previewProto3DCaptured');
+      const titleEl = document.getElementById('previewProto3DTitle');
+      if (titleEl && window.PREVIEW3D_PROTO_DATA) {
+        titleEl.textContent = window.PREVIEW3D_PROTO_DATA.groupLabel || '';
+      }
+
+      // Puertas del prototipo: propias e independientes de las del visor
+      // 3D normal (mismo patrón que RA: nada de funciones compartidas).
+      const doorPivotsProto = [];
+      const clickableMeshesProto = [];
+      const PROTO_DOOR_OPEN_ANGLE = Math.PI * 0.6;
+
+      function loadScriptProto(src) {
+        return new Promise(function (resolve, reject) {
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      function ensureThreeProto() {
+        const base = (window.THREE && window.THREE.Group)
+          ? Promise.resolve()
+          : loadScriptProto('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js');
+        return base.then(function () {
+          if (window.THREE && window.THREE.OrbitControls) return;
+          return loadScriptProto('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');
+        });
+      }
+
+      function mmToUnitsProto(mm) { return (mm || 0) / 10; } // 1 unidad = 1cm
+
+      // Etiqueta como sprite 3D (no HTML encima del canvas): así sale
+      // también en la captura con toDataURL(), que es justo lo que tiene
+      // que alimentar al PDF. Siempre mira a cámara y se dibuja delante
+      // de todo (depthTest:false), como los números/medidas de la vista
+      // previa normal.
+      function makeLabelSpriteProto(lines, worldWidth, opts) {
+        opts = opts || {};
+        const canvasW = 320, canvasH = lines.length > 1 ? 160 : 100;
+        const c = document.createElement('canvas');
+        c.width = canvasW; c.height = canvasH;
+        const ctx = c.getContext('2d');
+        if (!opts.noBg) {
+          ctx.fillStyle = 'rgba(15,23,42,0.72)';
+          const r = 18;
+          ctx.beginPath();
+          ctx.moveTo(r, 0);
+          ctx.arcTo(canvasW, 0, canvasW, canvasH, r);
+          ctx.arcTo(canvasW, canvasH, 0, canvasH, r);
+          ctx.arcTo(0, canvasH, 0, 0, r);
+          ctx.arcTo(0, 0, canvasW, 0, r);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        lines.forEach(function (line, i) {
+          ctx.font = (i === 0 ? (lines.length === 1 ? '800 86px' : '700 58px') : '700 52px') + ' Arial, sans-serif';
+          const cy = canvasH / lines.length * (i + 0.5);
+          if (opts.noBg) {
+            // Sin fondo: un contorno oscuro fino para que se lea sobre
+            // cualquier color de puerta, en vez de la etiqueta con fondo.
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.strokeText(line, canvasW / 2, cy);
+          }
+          ctx.fillStyle = '#fff';
+          ctx.fillText(line, canvasW / 2, cy);
+        });
+        const tex = new THREE.CanvasTexture(c);
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        const h = worldWidth * (canvasH / canvasW);
+        sprite.scale.set(worldWidth, h, 1);
+        sprite.renderOrder = 10;
+        return sprite;
+      }
+
+      // Igual técnica que el visor 3D/RA: compone la imagen (pantalla o
+      // buzón) sobre un lienzo del color de puerta, aplicada solo a la
+      // cara frontal mediante un array de 6 materiales.
+      function makeFrontTextureMatProto(doorMat, doorColor, imageUrl, heightMultiplier, onReady) {
+        if (!imageUrl) return doorMat;
+        const frontMat = new THREE.MeshStandardMaterial({ color: doorColor || '#3a9efc', roughness: 0.4, metalness: 0.1 });
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function () {
+          const size = 512;
+          const c = document.createElement('canvas');
+          c.width = size; c.height = size;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = doorColor || '#3a9efc';
+          ctx.fillRect(0, 0, size, size);
+          const scale = Math.min(size / img.width, size / img.height);
+          const dw = img.width * scale;
+          const dh = img.height * scale * (heightMultiplier || 1);
+          ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+          frontMat.map = new THREE.CanvasTexture(c);
+          frontMat.color.set(0xffffff);
+          frontMat.needsUpdate = true;
+          if (onReady) onReady();
+        };
+        img.src = imageUrl;
+        return [doorMat, doorMat, doorMat, doorMat, frontMat, doorMat];
+      }
+
+      // Construye SOLO el primer grupo (prototipo), con sus propios datos
+      // (window.PREVIEW3D_PROTO_DATA, independientes de LOCKER_3D_DATA
+      // porque incluyen el número de placa/puerta y el código "H").
+      // Geometría propia y más simple que el visor 3D (puertas macizas,
+      // sin bisagra): aquí no hace falta, es una imagen estática.
+      function buildProtoGroupScene(onTextureReady) {
+        const data = window.PREVIEW3D_PROTO_DATA || {};
+        const group = data.group0 || [];
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2f7);
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 1));
+        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+        dir.position.set(2, 4, 3);
+        scene.add(dir);
+
+        const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7 });
+        const edges = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+
+        function addBoxProto(w, h, d, mat, x, y, z) {
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(x, y, z);
+          scene.add(mesh);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
+          line.position.copy(mesh.position);
+          scene.add(line);
+          return mesh;
+        }
+
+        // Puerta con bisagra, como en el visor 3D pero con código propio:
+        // la hoja gira sobre el borde derecho al tocarla (ver
+        // setupProtoDoorClicks). "label", si se pasa, se añade como hija
+        // del pivote para que se abra/cierre junto con la puerta.
+        // Compartimento hueco detrás de la puerta (fondo, techo, suelo y
+        // dos laterales), igual que en el visor 3D: sin esto, al rotar y
+        // ver la puerta abierta o de perfil se ve vacío/transparente.
+        function addOpenBoxProto(w, h, d, mat, x, y, z) {
+          const t = Math.max(0.5, Math.min(w, h) * 0.03);
+          addBoxProto(w, h, t, mat, x, y, z - d / 2 + t / 2);
+          addBoxProto(w, t, d, mat, x, y + h / 2 - t / 2, z);
+          addBoxProto(w, t, d, mat, x, y - h / 2 + t / 2, z);
+          addBoxProto(t, h, d, mat, x - w / 2 + t / 2, y, z);
+          addBoxProto(t, h, d, mat, x + w / 2 - t / 2, y, z);
+        }
+
+        function addDoorLeafProto(w, h, d, mat, x, y, z, label) {
+          const t = Math.min(d, mmToUnitsProto(20));
+          const geo = new THREE.BoxGeometry(w, h, t);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(-w / 2, 0, 0);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
+          line.position.copy(mesh.position);
+
+          const pivot = new THREE.Group();
+          pivot.position.set(x + w / 2, y, z + d / 2 - t / 2);
+          pivot.add(mesh, line);
+          if (label) {
+            label.position.set(-w / 2, 0, t / 2 + 0.6);
+            pivot.add(label);
+          }
+          scene.add(pivot);
+
+          doorPivotsProto.push({ pivot: pivot, open: false });
+          clickableMeshesProto.push(mesh);
+          return mesh;
+        }
+
+        const depth = mmToUnitsProto(data.fondoMm || 400);
+        const colW = mmToUnitsProto(data.doorWidthMm || 380);
+        const sideW = mmToUnitsProto(25);
+        const numCols = Array.isArray(group) ? group.length : 0;
+        const groupWidth = numCols * colW + sideW * 2;
+        const mailboxImgs = data.mailboxImages || {};
+
+        let maxHeight = 0;
+        group.forEach(function (doorBlocks, colIdx) {
+          const blocks = Array.isArray(doorBlocks) ? doorBlocks : [];
+          const colTotalH = blocks.reduce(function (s, b) { return s + mmToUnitsProto(b.h || 125); }, 0);
+          let cursorY = colTotalH;
+          blocks.forEach(function (blk) {
+            const h = mmToUnitsProto(blk.h || 125);
+            cursorY -= h;
+            const cx = sideW + colIdx * colW + colW / 2;
+            const cy = cursorY + h / 2;
+            const w = colW - 0.4, hh = h - 0.4, d = depth - 2;
+
+            if (blk.type === 'screen') {
+              // Hueco + pantalla fija pegada a la cara exterior (no se
+              // abre), igual que en el visor 3D.
+              addOpenBoxProto(w, hh, d, doorMat, cx, cy, depth / 2);
+              const mat = makeFrontTextureMatProto(doorMat, data.doorColor, data.screenImageUrl, 1, onTextureReady);
+              const screenDepth = mmToUnitsProto(60);
+              const frontZ = depth + mmToUnitsProto(4);
+              addBoxProto(w, hh, screenDepth, mat, cx, cy, frontZ - screenDepth / 2);
+            } else if (blk.type === 'mailbox') {
+              const imgUrl = blk.electronico
+                ? (blk.tarjetero ? mailboxImgs.elecTarj : mailboxImgs.elecNoTarj)
+                : (blk.tarjetero ? mailboxImgs.mecTarj : mailboxImgs.mecNoTarj);
+              const mat = makeFrontTextureMatProto(doorMat, data.doorColor, imgUrl, 2, onTextureReady);
+              // Los buzones también se pueden abrir, como en el visor 3D.
+              addOpenBoxProto(w, hh, d, doorMat, cx, cy, depth / 2);
+              addDoorLeafProto(w, hh, d, mat, cx, cy, depth / 2, null);
+            } else {
+              // Tamaño fijo del código "H" (basado en el ancho de columna,
+              // igual para todas), no en el alto de cada bloque: si no,
+              // las puertas más bajas (H10, H20...) salían con la letra
+              // más pequeña que las más altas.
+              const label = makeLabelSpriteProto(['H' + blk.hUnits], colW * 0.62, { noBg: true });
+              addOpenBoxProto(w, hh, d, doorMat, cx, cy, depth / 2);
+              addDoorLeafProto(w, hh, d, doorMat, cx, cy, depth / 2, label);
+            }
+          });
+          if (colTotalH > maxHeight) maxHeight = colTotalH;
+        });
+        const roofH = maxHeight + sideW;
+        addBoxProto(sideW, roofH, depth, bodyMat, sideW / 2, roofH / 2, depth / 2);
+        addBoxProto(sideW, roofH, depth, bodyMat, groupWidth - sideW / 2, roofH / 2, depth / 2);
+        addBoxProto(groupWidth, sideW, depth, bodyMat, groupWidth / 2, roofH - sideW / 2, depth / 2);
+
+        // Cámara bastante frontal (poco de 3/4), para que se parezca a la
+        // vista previa normal en vez de a un render de catálogo en ángulo.
+        const centerX = groupWidth / 2;
+        const centerY = roofH / 2;
+        const camera = new THREE.PerspectiveCamera(28, canvas.clientWidth / canvas.clientHeight, 1, 5000);
+        const dist = Math.max(groupWidth, roofH, depth) * 2.1 + 60;
+        camera.position.set(centerX + dist * 0.12, centerY + dist * 0.08, dist);
+        camera.lookAt(centerX, centerY, 0);
+
+        return { scene: scene, camera: camera, targetX: centerX, targetY: centerY };
+      }
+
+      ensureThreeProto().then(function () {
+        // preserveDrawingBuffer: imprescindible para poder exportar el
+        // contenido con toDataURL() después (si no, puede salir en
+        // blanco en algunos navegadores al leerlo justo tras renderizar).
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+
+        // Las fotos de pantalla/buzón cargan de forma asíncrona (Image.onload):
+        // hasta que no está la primera cargada no se ve nada ahí, así que
+        // se vuelve a renderizar cada vez que una termina de cargar.
+        let built = null;
+        function renderProto() {
+          if (built) renderer.render(built.scene, built.camera);
+        }
+        built = buildProtoGroupScene(renderProto);
+
+        // Se puede rotar, pero no hacer zoom (a propósito).
+        const controls = new THREE.OrbitControls(built.camera, renderer.domElement);
+        controls.target.set(built.targetX || 0, built.targetY || 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.enableZoom = false;
+        (function animateProto() {
+          requestAnimationFrame(animateProto);
+          controls.update();
+          doorPivotsProto.forEach(function (entry) {
+            const target = entry.open ? PROTO_DOOR_OPEN_ANGLE : 0;
+            entry.pivot.rotation.y += (target - entry.pivot.rotation.y) * 0.18;
+          });
+          renderProto();
+        })();
+
+        // Clic/toque en una puerta para abrirla o cerrarla, igual que en
+        // el visor 3D (distingue clic de arrastrar para rotar mirando
+        // cuánto se movió el puntero entre pointerdown y pointerup).
+        const rayProto = new THREE.Raycaster();
+        const pointerProto = new THREE.Vector2();
+        let downPosProto = null;
+        renderer.domElement.addEventListener('pointerdown', function (e) {
+          downPosProto = { x: e.clientX, y: e.clientY };
+        });
+        renderer.domElement.addEventListener('pointerup', function (e) {
+          if (!downPosProto || Math.hypot(e.clientX - downPosProto.x, e.clientY - downPosProto.y) > 5) return;
+          const rect = renderer.domElement.getBoundingClientRect();
+          pointerProto.set(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+          rayProto.setFromCamera(pointerProto, built.camera);
+          const hit = rayProto.intersectObjects(clickableMeshesProto, false)[0];
+          if (!hit) return;
+          const entry = doorPivotsProto.find(function (d) { return d.pivot === hit.object.parent; });
+          if (entry) entry.open = !entry.open;
+        });
+
+        if (btnCapture) {
+          btnCapture.addEventListener('click', function () {
+            const dataUrl = canvas.toDataURL('image/png');
+            if (capturedImg) {
+              capturedImg.src = dataUrl;
+              capturedImg.style.display = 'block';
+            }
+          });
+        }
+      }).catch(function (err) {
+        console.error('No se pudo cargar el prototipo de vista previa 3D:', err);
+      });
     });
   </script>
 {% endblock %}
