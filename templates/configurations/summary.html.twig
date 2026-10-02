@@ -620,9 +620,9 @@
       background:rgba(2,6,23,.6);
     }
     .modal3d__dialog{
-      position:absolute; top:4%; left:50%; transform:translateX(-50%);
-      width:min(1100px, 94vw);
-      height:88vh;
+      position:absolute; top:2%; left:50%; transform:translateX(-50%);
+      width:min(1600px, 98vw);
+      height:96vh;
       background:#fff;
       border-radius:16px;
       box-shadow:0 30px 70px rgba(2,6,23,.4);
@@ -661,6 +661,23 @@
       color:#6b7280;
       text-align:center;
       border-top:1px solid rgba(15,23,42,.06);
+    }
+
+    .scenario-bar{
+      display:flex; align-items:center; gap:4px; flex-wrap:wrap;
+      padding:8px 14px;
+      border-bottom:1px solid rgba(15,23,42,.06);
+    }
+    .scenario-bar__label{
+      font-size:12px; color:#6b7280; margin-right:4px;
+    }
+    .scenario-btn{
+      border:1px solid rgba(15,23,42,.1); background:#fff; color:#334155;
+      font:600 12.5px inherit; padding:6px 12px; border-radius:999px; cursor:pointer;
+    }
+    .scenario-btn:hover{ background:rgba(2,6,23,.04); }
+    .scenario-btn[aria-pressed="true"]{
+      background:#0b76d8; border-color:#0b76d8; color:#fff;
     }
 
     .btn:hover{
@@ -930,11 +947,17 @@
     </div>
 
     <div class="modal3d" id="modal3d" aria-hidden="true">
-      <div class="modal3d__backdrop" data-close3d="1"></div>
+      <div class="modal3d__backdrop"></div>
       <div class="modal3d__dialog">
         <div class="modal3d__head">
           <h4 class="modal3d__title">{{ 'summary.view3d.title'|trans }}</h4>
           <button type="button" class="modal3d__close" aria-label="{{ 'summary.btn.close'|trans }}" data-close3d="1">×</button>
+        </div>
+        <div class="scenario-bar" id="scenarioBar">
+          <span class="scenario-bar__label">{{ 'summary.view3d.scenario_label'|trans }}</span>
+          <button type="button" class="scenario-btn" data-scenario="home">{{ 'summary.view3d.scenario_building'|trans }}</button>
+          <button type="button" class="scenario-btn" data-scenario="profesional">{{ 'summary.view3d.scenario_office'|trans }}</button>
+          <button type="button" class="scenario-btn" data-scenario="exterior">{{ 'summary.view3d.scenario_exterior'|trans }}</button>
         </div>
         <div class="modal3d__body">
           <div id="viewer3d"></div>
@@ -1709,7 +1732,8 @@
         mecNoTarj:  asset('assets/buzon_kuik_mecanico_sin_tarjetero.png')
       },
       isHome: isHome,
-      isProfesional: (type == 'profesional')
+      isProfesional: (type == 'profesional'),
+      instalacion: instalacion
     }|json_encode|raw }};
   </script>
 
@@ -1739,7 +1763,49 @@
       let renderer = null, scene = null, camera = null, controls = null, animationId = null;
       const doorPivots = [];
       const clickableMeshes = [];
+      // Funciones de actualización por frame que pueda necesitar un
+      // escenario concreto (p.ej. coches circulando en el exterior tipo
+      // calle). Reciben el tiempo transcurrido (segundos) desde el frame
+      // anterior.
+      const sceneUpdaters = [];
       const DOOR_OPEN_ANGLE = Math.PI * 0.6; // ~108º
+
+      // Escenario seleccionado en la barra del modal: por defecto, el que
+      // corresponda al tipo de la configuración, pero el usuario puede
+      // cambiarlo libremente a cualquiera de los tres sin que eso afecte al
+      // propio mueble (puertas, pantallas, buzones, patas/brazos).
+      const initialLockerData = window.LOCKER_3D_DATA || {};
+      let currentScenario = initialLockerData.isHome
+        ? 'home'
+        : (initialLockerData.isProfesional ? 'profesional' : 'exterior');
+
+      const scenarioBar = document.getElementById('scenarioBar');
+      function updateScenarioButtons() {
+        if (!scenarioBar) return;
+        scenarioBar.querySelectorAll('.scenario-btn').forEach(function (b) {
+          b.setAttribute('aria-pressed', b.dataset.scenario === currentScenario ? 'true' : 'false');
+        });
+      }
+      function setScenario(name) {
+        if (name === currentScenario) return;
+        currentScenario = name;
+        updateScenarioButtons();
+        if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        if (renderer) { renderer.dispose(); renderer = null; }
+        doorPivots.length = 0;
+        clickableMeshes.length = 0;
+        sceneUpdaters.length = 0;
+        buildScene();
+        requestAnimationFrame(resizeRenderer);
+      }
+      if (scenarioBar) {
+        updateScenarioButtons();
+        scenarioBar.addEventListener('click', function (e) {
+          const btn = e.target.closest('.scenario-btn');
+          if (!btn) return;
+          ensureThree().then(function () { setScenario(btn.dataset.scenario); });
+        });
+      }
 
       function loadScript(src) {
         return new Promise(function (resolve, reject) {
@@ -1760,7 +1826,10 @@
           .then(function () { threeLoaded = true; });
       }
 
-      function mmToUnits(mm) { return mm / 10; } // 1 unidad de escena = 1 cm
+      // 1 unidad de escena = 1 cm. En el escenario "home" la taquilla se
+      // dibuja un 25% más grande (a petición expresa), ya que ahí se veía
+      // pequeña al lado del edificio; el resto de escenarios no cambian.
+      function mmToUnits(mm) { return mm / 10 * (currentScenario === 'home' ? 1.25 : 1); }
 
       function buildScene() {
         const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
@@ -1780,7 +1849,7 @@
         const depth = mmToUnits(data.fondoMm || 400);
         const colW  = mmToUnits(data.doorWidthMm || 380);
         const sideW = mmToUnits(25);
-        const groupGap = mmToUnits(50);
+        const groupGap = mmToUnits(450);
 
         const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
         const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });
@@ -1958,13 +2027,22 @@
         let cursorX = 0;
         let maxHeight = 0;
         const groups = Array.isArray(data.groups) ? data.groups : [];
+        // Rango real (x0,x1) de cada grupo de columnas, para poder dejar un
+        // hueco en la pared por cada uno (si es "empotrado") sin rellenar
+        // también el espacio/separación entre grupos.
+        const lockerGroupRanges = [];
 
         // Si lleva patas o brazos de soporte a suelo, todo el bloque de la
         // taquilla se eleva esa altura y son las patas las que quedan
-        // apoyadas en el suelo (y=0), no la propia taquilla.
+        // apoyadas en el suelo (y=0), no la propia taquilla. Si es
+        // "colgado" o "empotrado" (atornillada/encastrada en la pared, sin
+        // patas ni soporte en el suelo), también debe quedar elevada del
+        // suelo, al menos 50cm.
         const legsApply = !!(data.isSoporteSuelo && (data.bracketType === 'patas' || data.bracketType === 'brazos'));
         const legHeight = mmToUnits(700);
-        const baseY = legsApply ? legHeight : 0;
+        const isColgado = data.instalacion === 'colgado';
+        const isEmpotrado = data.instalacion === 'empotrado';
+        const baseY = legsApply ? legHeight : ((isColgado || isEmpotrado) ? mmToUnits(500) : 0);
 
         groups.forEach(function (cols3d) {
           if (!Array.isArray(cols3d) || cols3d.length === 0) return;
@@ -2072,6 +2150,7 @@
             }
           }
 
+          lockerGroupRanges.push({ x0: groupStartX, x1: groupStartX + groupWidth });
           cursorX = groupStartX + groupWidth + groupGap;
         });
 
@@ -2082,207 +2161,443 @@
         // modelar un edificio real.
         let officeCameraMaxDistZ = null;
         let officeCameraHalfWidth = null;
-        if (data.isHome) {
-          // Textura de ladrillos: un pequeño lienzo con 2 filas de ladrillos
-          // (la segunda desplazada media pieza, como un muro real) que luego
-          // se repite muchas veces por toda la fachada.
-          function makeBrickTexture() {
-            const brickW = 96, brickH = 24, mortar = 8;
+        // Distancia mínima de cámara forzada para escenarios cuyo entorno
+        // (árboles, farola, banco...) es mucho más ancho que la propia
+        // taquilla: sin esto, la cámara se queda pegada al mueble y el
+        // escenario alrededor se ve diminuto/cortado.
+        let minCameraDist = null;
+        // Posición/objetivo de cámara fijos, para escenarios con una
+        // composición concreta (p.ej. la calle del edificio) que no
+        // encajan bien con el encuadre genérico basado solo en el tamaño
+        // de la taquilla.
+        let cameraPosOverride = null;
+        let cameraTargetOverride = null;
+
+        // Margen alrededor de cada grupo de taquillas para que el hueco
+        // también cubra el arco que barren las puertas al abrirse, no solo
+        // su silueta cerrada.
+        const lockerHoleMarginX = mmToUnits(5);
+        const lockerHoleMarginY = mmToUnits(5);
+
+        // Huecos por grupo (con margen). El margen (3cm) puede ser mayor
+        // que la mitad de la separación real entre grupos (p.ej. 5cm de
+        // "groupGap"), así que un simple recorte a medias dejaría CERO
+        // pared entre huecos vecinos (el hueco entre taquillas se vería
+        // vacío). Por eso, tras darles el margen completo, se fuerza un
+        // mínimo de pared entre huecos consecutivos, encogiéndolos a medias
+        // solo lo necesario para dejar sitio a esa franja.
+        const lockerMinWallBetween = mmToUnits(20);
+        const lockerHoleSegments = lockerGroupRanges.map(function (r) {
+          return { x0: r.x0 - lockerHoleMarginX, x1: r.x1 + lockerHoleMarginX };
+        });
+        for (let i = 0; i < lockerHoleSegments.length - 1; i++) {
+          const a = lockerHoleSegments[i], b = lockerHoleSegments[i + 1];
+          const shrink = (a.x1 - b.x0 + lockerMinWallBetween) / 2;
+          if (shrink > 0) { a.x1 -= shrink; b.x0 += shrink; }
+        }
+
+        // Cuando la taquilla es "empotrada", la pared se adelanta hasta casi
+        // tocar su cara frontal (ver más abajo), así que si se deja como un
+        // plano sólido completo, las puertas al abrirse "atraviesan" la
+        // pared en pantalla. Esta función deja un hueco por cada grupo de
+        // columnas (con margen), rellenando tanto los bordes como el hueco
+        // entre grupos con el resto de la pared.
+        // matOrFn: o un material fijo (paredes de color liso, sin textura
+        // que alinear), o una función (w, h, worldLeftX, worldBottomY) =>
+        // material, para texturas tipo ladrillo/azulejo que necesitan su
+        // propio recorte alineado en cada pieza (si no, el patrón "salta"
+        // en la unión entre piezas). No se usa addBox aquí a propósito: el
+        // contorno negro que añade se veía como un corte visible en las
+        // paredes de color liso.
+        function addWallWithLockerHoles(matOrFn, x0, x1, y0, y1, z, holes, holeY0, holeY1) {
+          const isMatFn = typeof matOrFn === 'function';
+          function piece(px0, px1, py0, py1) {
+            const w = px1 - px0, h = py1 - py0;
+            if (w <= 0 || h <= 0) return;
+            const mat = isMatFn ? matOrFn(w, h, px0, py0) : matOrFn;
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+            mesh.position.set((px0 + px1) / 2, (py0 + py1) / 2, z);
+            scene.add(mesh);
+          }
+          holeY0 = Math.max(holeY0, y0); holeY1 = Math.min(holeY1, y1);
+          if (holeY0 >= holeY1) {
+            // No hay banda intermedia válida (huecos fuera de rango): la
+            // pared queda sólida en todo el ancho y alto de la pieza.
+            piece(x0, x1, y0, y1);
+            return;
+          }
+          piece(x0, x1, y0, holeY0);
+          piece(x0, x1, holeY1, y1);
+          const sorted = holes
+            .map(function (h) { return { x0: Math.max(h.x0, x0), x1: Math.min(h.x1, x1) }; })
+            .filter(function (h) { return h.x1 > h.x0; })
+            .sort(function (a, b) { return a.x0 - b.x0; });
+          let cursor = x0;
+          sorted.forEach(function (h) {
+            piece(cursor, h.x0, holeY0, holeY1);
+            cursor = Math.max(cursor, h.x1);
+          });
+          piece(cursor, x1, holeY0, holeY1);
+        }
+
+        if (currentScenario === 'home') {
+          // Entorno "home": port fiel del archivo de referencia (edificio
+          // de 4 plantas + calle con coches, árboles, farolas, jardinera y
+          // banco), con sus mismas medidas fijas (en metros, vía "mU").
+          // Todo (menos la propia taquilla, que es la real) vive dentro de
+          // un único grupo "city" que solo se desplaza en bloque para que
+          // el portal quede junto a la taquilla real, sin tener que
+          // reescalar ninguna proporción del edificio.
+          const mU = function (m) { return m * 100; }; // metros -> unidades (1 unidad = 1cm)
+          function makeHomeTex(w, h, draw, rx, ry) {
             const canvas = document.createElement('canvas');
-            canvas.width = brickW * 2;
-            canvas.height = brickH * 2;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#9aa0a6';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#b97a52';
-            for (let row = 0; row < 2; row++) {
-              const offset = (row % 2 === 0) ? 0 : brickW / 2;
-              for (let col = -1; col < 3; col++) {
-                ctx.fillRect(col * brickW + offset + mortar / 2, row * brickH + mortar / 2, brickW - mortar, brickH - mortar);
+            canvas.width = w; canvas.height = h;
+            draw(canvas.getContext('2d'), w, h);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(rx, ry);
+            return tex;
+          }
+          function rngHome(seed) {
+            return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+          }
+
+          const city = new THREE.Group();
+          scene.add(city);
+
+          // Medidas del edificio, fijas (como en el archivo original),
+          // ensanchadas solo lo justo si la taquilla no cupiera dentro.
+          const totalWidthM = totalWidth / 100;
+          const BW = Math.max(18, totalWidthM * 2 + 14);
+          const BD = 12;
+          const GFm = Math.max(3.6, (baseY + maxHeight) / 100 + 1.0);
+          const FHm = 3, NF = 4;
+          const G = 0.15; // altura de la acera, como en el archivo original
+
+          // Si es "empotrado", todo el grupo se adelanta en Z hasta casi
+          // tapar el fondo de la taquilla, para que parezca encastrada en
+          // la pared en vez de pegada delante.
+          const homeEmbedShiftZ = isEmpotrado ? Math.max(depth - mmToUnits(50), mmToUnits(10)) : 0;
+          // Desplazamiento en X: deja la taquilla real a la derecha del
+          // portal (que está en x=0 local, igual que en el archivo
+          // original), en vez de a la izquierda, para que solo ocupe esa
+          // zona de la fachada.
+          const cityOffsetX = -mU(4.0);
+          // -mU(G): la acera del archivo original está elevada esos 15cm
+          // sobre su "suelo", pero la taquilla real siempre se apoya en
+          // y=0 (no conoce esta escena), así que sin este ajuste quedaría
+          // hundida en la acera. Bajando todo el grupo esa misma altura,
+          // la acera queda a ras del y=0 real.
+          city.position.set(cityOffsetX, -mU(G), homeEmbedShiftZ);
+
+          function cbox(w, h, d, m, x, y, z, parent) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+            mesh.position.set(x, y, z);
+            (parent || city).add(mesh);
+            return mesh;
+          }
+
+          // --- Texturas (iguales que en el archivo original) ---
+          const pavingTex = makeHomeTex(512, 512, function (g, w, h) {
+            const r = rngHome(7), tones = ['#e4ddd3', '#d6cec2', '#cbc2b5', '#ebe6de', '#ddd5ca'];
+            g.fillStyle = '#f1ede6'; g.fillRect(0, 0, w, h);
+            for (let y = 0; y < 16; y++) {
+              const off = (y % 2) * 32;
+              for (let x = -1; x <= 8; x++) { g.fillStyle = tones[Math.floor(r() * 5)]; g.fillRect(x * 64 + off + 2, y * 32 + 2, 60, 28); }
+            }
+          }, mU(64) / mU(2), mU(23) / mU(2));
+          const stoneTexBase = makeHomeTex(512, 256, function (g, w, h) {
+            const r = rngHome(3), tones = ['#e2dacd', '#d6cdbd', '#ebe5da', '#cfc5b4', '#ddd4c5'];
+            g.fillStyle = '#f6f4ef'; g.fillRect(0, 0, w, h);
+            for (let y = 0; y < 6; y++) {
+              const off = (y % 2) * 64;
+              for (let x = -1; x <= 4; x++) { g.fillStyle = tones[Math.floor(r() * 5)]; g.fillRect(x * 128 + off + 4, y * 48 + 4, 120, 40); }
+            }
+          }, 1, 1);
+          const asphaltTex = makeHomeTex(256, 256, function (g, w, h) {
+            g.fillStyle = '#4b4e54'; g.fillRect(0, 0, w, h);
+            const r = rngHome(19);
+            for (let i = 0; i < 2600; i++) {
+              const v = 60 + Math.floor(r() * 40);
+              g.fillStyle = 'rgb(' + v + ',' + (v + 2) + ',' + (v + 6) + ')';
+              g.fillRect(r() * w, r() * h, 2, 2);
+            }
+          }, 20, 3);
+
+          // --- Materiales (mismos colores que el archivo original) ---
+          const M = {
+            grass: new THREE.MeshStandardMaterial({ color: 0x7fb055, roughness: 1 }),
+            pave1: new THREE.MeshStandardMaterial({ map: pavingTex, roughness: 0.95 }),
+            asphalt: new THREE.MeshStandardMaterial({ map: asphaltTex, roughness: 0.95 }),
+            paint: new THREE.MeshStandardMaterial({ color: 0xf4f4ef, roughness: 0.8 }),
+            curb: new THREE.MeshStandardMaterial({ color: 0xb9b6b0, roughness: 0.9 }),
+            stone: new THREE.MeshStandardMaterial({ map: stoneTexBase, roughness: 0.9 }),
+            facade: new THREE.MeshStandardMaterial({ color: 0xefe4cf, roughness: 0.92 }),
+            accent: new THREE.MeshStandardMaterial({ color: 0xc9825a, roughness: 0.9 }),
+            slab: new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.85 }),
+            roof: new THREE.MeshStandardMaterial({ color: 0x9a9a97, roughness: 0.95 }),
+            concrete: new THREE.MeshStandardMaterial({ color: 0xc9c6c1, roughness: 0.95 }),
+            frame: new THREE.MeshStandardMaterial({ color: 0xf5f3ef, roughness: 0.7 }),
+            darkFrame: new THREE.MeshStandardMaterial({ color: 0x30353b, roughness: 0.5, metalness: 0.4 }),
+            glass: new THREE.MeshStandardMaterial({ color: 0x6f9fcc, roughness: 0.12, metalness: 0.25 }),
+            rail: new THREE.MeshStandardMaterial({ color: 0x7f7870, roughness: 0.5, metalness: 0.4 }),
+            hedge: new THREE.MeshStandardMaterial({ color: 0x5fae4e, roughness: 0.85 }),
+            leaf1: new THREE.MeshStandardMaterial({ color: 0x4f9a3f, flatShading: true, roughness: 0.9 }),
+            leaf2: new THREE.MeshStandardMaterial({ color: 0x72bb5c, flatShading: true, roughness: 0.9 }),
+            trunk: new THREE.MeshStandardMaterial({ color: 0x8a6440, roughness: 0.9 }),
+            pit: new THREE.MeshStandardMaterial({ color: 0x5a4635, roughness: 1 }),
+            black: new THREE.MeshStandardMaterial({ color: 0x22252a, roughness: 0.55, metalness: 0.3 }),
+            wood: new THREE.MeshStandardMaterial({ color: 0xd19a55, roughness: 0.75 }),
+            bulb: new THREE.MeshStandardMaterial({ color: 0xfff3d0, emissive: 0xffe2a0, emissiveIntensity: 0.8 }),
+            tire: new THREE.MeshStandardMaterial({ color: 0x1d1f22, roughness: 0.9 }),
+            carGlass: new THREE.MeshStandardMaterial({ color: 0x2a3a4c, roughness: 0.15, metalness: 0.4 }),
+            headlight: new THREE.MeshStandardMaterial({ color: 0xfffbe8, emissive: 0xfff4c8, emissiveIntensity: 0.5 }),
+            taillight: new THREE.MeshStandardMaterial({ color: 0xd23a2f, emissive: 0x8a1a12, emissiveIntensity: 0.5 })
+          };
+
+          // --- Terreno, aceras y carretera (medidas fijas del original) ---
+          cbox(mU(64), mU(G), mU(23), M.pave1, 0, mU(G) / 2, mU(-6.5), city, true);
+          cbox(mU(64), mU(0.2), mU(0.3), M.curb, 0, mU(0.1), mU(5), city);
+          cbox(mU(64), mU(0.2), mU(0.3), M.curb, 0, mU(0.1), mU(14), city);
+
+          const roadMesh = new THREE.Mesh(new THREE.PlaneGeometry(mU(64), mU(9)), M.asphalt);
+          roadMesh.rotation.x = -Math.PI / 2;
+          roadMesh.position.set(0, mU(0.02), mU(9.5));
+          city.add(roadMesh);
+          for (let x = -31; x < 31; x += 4) cbox(mU(2), mU(0.01), mU(0.15), M.paint, mU(x + 1), mU(0.03), mU(10.6));
+          cbox(mU(64), mU(0.01), mU(0.12), M.paint, 0, mU(0.03), mU(7.3));
+          for (let i = 0; i < 7; i++) cbox(mU(3), mU(0.01), mU(0.5), M.paint, mU(-14), mU(0.03), mU(7.7 + i * 0.95));
+
+          const grassMesh = new THREE.Mesh(new THREE.PlaneGeometry(mU(320), mU(320)), M.grass);
+          grassMesh.rotation.x = -Math.PI / 2;
+          grassMesh.position.set(0, -mU(0.001), 0);
+          city.add(grassMesh);
+
+          // --- Edificio ---
+          const TOP = mU(G + GFm + FHm * NF);
+          // Si la taquilla es "empotrada", hay que dejarle un hueco en la
+          // planta baja (y el arco de apertura de sus puertas) en vez de un
+          // bloque macizo, igual que en los demás escenarios. Los huecos
+          // vienen en coordenadas de mundo; aquí se pasan a locales del
+          // grupo "city" restando su desplazamiento en X.
+          (function addGroundFloorWithHole() {
+            const gfY0 = mU(G), gfY1 = mU(G) + mU(GFm), gfZ = mU(-BD / 2);
+            const pieceX0 = -mU(BW) / 2, pieceX1 = mU(BW) / 2;
+            const holeY0 = Math.max(baseY - lockerHoleMarginY, gfY0);
+            const holeY1 = Math.min(baseY + maxHeight + lockerHoleMarginY, gfY1);
+            const holesLocal = lockerHoleSegments
+              .map(function (h) { return { x0: h.x0 - cityOffsetX, x1: h.x1 - cityOffsetX }; })
+              .map(function (h) { return { x0: Math.max(h.x0, pieceX0), x1: Math.min(h.x1, pieceX1) }; })
+              .filter(function (h) { return h.x1 > h.x0; })
+              .sort(function (a, b) { return a.x0 - b.x0; });
+
+            if (!isEmpotrado || holesLocal.length === 0 || holeY0 >= holeY1) {
+              cbox(mU(BW), mU(GFm), mU(BD), M.stone, 0, mU(G) + mU(GFm) / 2, gfZ);
+              return;
+            }
+            function strip(x0, x1, y0, y1) {
+              const w = x1 - x0, h = y1 - y0;
+              if (w <= 0 || h <= 0) return;
+              cbox(w, h, mU(BD), M.stone, (x0 + x1) / 2, (y0 + y1) / 2, gfZ);
+            }
+            strip(pieceX0, pieceX1, gfY0, holeY0);
+            strip(pieceX0, pieceX1, holeY1, gfY1);
+            let cursor = pieceX0;
+            holesLocal.forEach(function (h) {
+              strip(cursor, h.x0, holeY0, holeY1);
+              cursor = Math.max(cursor, h.x1);
+            });
+            strip(cursor, pieceX1, holeY0, holeY1);
+          })();
+          cbox(mU(BW), mU(FHm * NF), mU(BD), M.facade, 0, mU(G) + mU(GFm) + mU(FHm * NF) / 2, mU(-BD / 2));
+          [-mU(BW / 2) + mU(0.62), mU(BW / 2) - mU(0.62)].forEach(function (x) {
+            cbox(mU(1.2), mU(FHm * NF), mU(BD) + mU(0.06), M.accent, x, mU(G) + mU(GFm) + mU(FHm * NF) / 2, mU(-BD / 2));
+          });
+          for (let i = 0; i <= NF; i++) cbox(mU(BW) + mU(0.3), mU(0.22), mU(BD) + mU(0.3), M.slab, 0, mU(G) + mU(GFm) + mU(i * FHm), mU(-BD / 2));
+          cbox(mU(BW) - mU(0.1), mU(0.05), mU(BD) - mU(0.1), M.roof, 0, TOP + mU(0.12), mU(-BD / 2), city, true);
+
+          function addFacadeWindow(x, y, z, rotY, o) {
+            o = o || {};
+            const g = new THREE.Group();
+            g.position.set(x, y, z);
+            g.rotation.y = rotY;
+            city.add(g);
+            const w = o.w || 1.5, h = o.h || 1.7;
+            cbox(mU(w), mU(h), mU(0.1), M.frame, 0, 0, mU(0.02), g, true);
+            cbox(mU(w - 0.2), mU(h - 0.2), mU(0.06), M.glass, 0, 0, mU(0.05), g, true);
+            cbox(mU(0.06), mU(h - 0.2), mU(0.08), M.frame, 0, 0, mU(0.08), g, true);
+            if (!o.door) cbox(mU(w + 0.2), mU(0.08), mU(0.25), M.frame, 0, -mU(h) / 2 - mU(0.04), mU(0.12), g);
+            if (o.bars) {
+              cbox(mU(w + 0.1), mU(0.04), mU(0.04), M.rail, 0, -mU(h) / 2 + mU(0.55), mU(0.25), g);
+              cbox(mU(w + 0.1), mU(0.04), mU(0.04), M.rail, 0, -mU(h) / 2 + mU(0.05), mU(0.25), g);
+              const n = Math.round(w / 0.2);
+              for (let i = 0; i <= n; i++) {
+                const p = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.015), mU(0.015), mU(0.5), 6), M.rail);
+                p.position.set(-mU(w) / 2 + i * mU(w) / n, -mU(h) / 2 + mU(0.3), mU(0.25));
+                g.add(p);
               }
             }
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            return texture;
-          }
-
-          const floorMat = new THREE.MeshStandardMaterial({ color: 0x7d8186, roughness: 0.9 });
-          const brickTexture = makeBrickTexture();
-          const margin = Math.max(totalWidth, baseY + maxHeight) * 3;
-
-          const buildingWidth = (totalWidth + margin) * 2 * 0.8;
-          const buildingHeight = (baseY + maxHeight + sideW) * 3 * 3 * 0.8 * 0.8;
-          const buildingDepth  = margin * 1.5;
-
-          const floorT = mmToUnits(20);
-          const floorWidth = buildingWidth * 3 * 0.7;
-          const floor = new THREE.Mesh(new THREE.BoxGeometry(floorWidth, floorT, depth + margin * 3), floorMat);
-          floor.position.set(totalWidth / 2, -floorT / 2, depth / 2);
-          scene.add(floor);
-
-          // El tamaño del "ladrillo" en la escena es fijo, así que la
-          // repetición de la textura depende del tamaño real de cada pieza
-          // (si no, se vería o gigante o microscópica/apretada según el
-          // ancho). Cada pieza del edificio (dos laterales + la de arriba)
-          // tiene un ancho distinto, así que cada una necesita su propia
-          // textura clonada con su propio repetido, no se puede compartir.
-          // El lienzo representa 2 ladrillos de ancho x 2 filas de alto
-          // (ladrillo real ≈ 25 x 6,5 cm), para calcular cuántas veces repetir.
-          const brickTileWidthMm  = 500;
-          const brickTileHeightMm = 130;
-          // worldLeftX/worldBottomY: esquina inferior izquierda real de la
-          // pieza, para que el patrón de ladrillos de las 3 piezas quede en
-          // fase (misma "rejilla"), en vez de que cada una empiece a contar
-          // filas/columnas desde su propio cero.
-          function makeBuildingMat(pieceWidth, pieceHeight, worldLeftX, worldBottomY) {
-            const tex = brickTexture.clone();
-            tex.needsUpdate = true;
-            const tileW = mmToUnits(brickTileWidthMm);
-            const tileH = mmToUnits(brickTileHeightMm);
-            tex.repeat.set(pieceWidth / tileW, pieceHeight / tileH);
-            tex.offset.set(
-              ((worldLeftX || 0) / tileW) % 1,
-              ((worldBottomY || 0) / tileH) % 1
-            );
-            return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 });
-          }
-
-          // Se desplaza el edificio hacia la derecha para que la taquilla
-          // quede situada hacia la izquierda de la fachada, no centrada.
-          const buildingOffsetX = buildingWidth * 0.22;
-          const doorCenterX = totalWidth / 2 + buildingOffsetX;
-          const doorFrontZ  = mmToUnits(5); // justo delante de la fachada, sin solaparse
-          const doorHeight  = mmToUnits(2100);
-          const doorWidth   = mmToUnits(1600);
-          const frameT      = mmToUnits(70);
-          const mullionT    = mmToUnits(50);
-
-          // Hueco de "pasillo" detrás de la puerta: en vez de un bloque
-          // macizo de ladrillo, el edificio se construye en 3 piezas (dos
-          // laterales + una superior) dejando vacía la zona de la puerta,
-          // con un fondo propio más cerca para que se vea un pasillo y no
-          // ladrillo pegado al cristal.
-          const corridorWidth  = doorWidth + frameT * 2;
-          const corridorHeight = doorHeight + frameT;
-          const corridorDepth  = Math.min(buildingDepth * 0.5, mmToUnits(3500));
-
-          const sideWidth = (buildingWidth - corridorWidth) / 2;
-          const leftPieceLeftX = doorCenterX - corridorWidth / 2 - sideWidth;
-          const leftPiece = new THREE.Mesh(
-            new THREE.BoxGeometry(sideWidth, buildingHeight, buildingDepth),
-            makeBuildingMat(sideWidth, buildingHeight, leftPieceLeftX, 0)
-          );
-          leftPiece.position.set(leftPieceLeftX + sideWidth / 2, buildingHeight / 2, -buildingDepth / 2);
-          scene.add(leftPiece);
-
-          const rightPieceLeftX = doorCenterX + corridorWidth / 2;
-          const rightPiece = new THREE.Mesh(
-            new THREE.BoxGeometry(sideWidth, buildingHeight, buildingDepth),
-            makeBuildingMat(sideWidth, buildingHeight, rightPieceLeftX, 0)
-          );
-          rightPiece.position.set(rightPieceLeftX + sideWidth / 2, buildingHeight / 2, -buildingDepth / 2);
-          scene.add(rightPiece);
-
-          const topPiece = new THREE.Mesh(
-            new THREE.BoxGeometry(corridorWidth, buildingHeight - corridorHeight, buildingDepth),
-            makeBuildingMat(corridorWidth, buildingHeight - corridorHeight, doorCenterX - corridorWidth / 2, corridorHeight)
-          );
-          topPiece.position.set(doorCenterX, corridorHeight + (buildingHeight - corridorHeight) / 2, -buildingDepth / 2);
-          scene.add(topPiece);
-
-          // Interior del pasillo: paredes laterales y fondo, en un tono
-          // neutro (no ladrillo), para que se note que es un espacio hueco.
-          const corridorMat = new THREE.MeshStandardMaterial({ color: 0xe8e5de, roughness: 0.9 });
-          const corridorWallT = mmToUnits(15);
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWallT, corridorHeight, corridorDepth), corridorMat)
-            .translateX(doorCenterX - corridorWidth / 2 + corridorWallT / 2).translateY(corridorHeight / 2).translateZ(-corridorDepth / 2));
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWallT, corridorHeight, corridorDepth), corridorMat)
-            .translateX(doorCenterX + corridorWidth / 2 - corridorWallT / 2).translateY(corridorHeight / 2).translateZ(-corridorDepth / 2));
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, corridorWallT, corridorDepth), corridorMat)
-            .translateX(doorCenterX).translateY(corridorHeight - corridorWallT / 2).translateZ(-corridorDepth / 2));
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, mmToUnits(10), corridorDepth), corridorMat)
-            .translateX(doorCenterX).translateY(mmToUnits(5)).translateZ(-corridorDepth / 2));
-          // Fondo del pasillo, que lo cierra para que no se vea un hueco infinito.
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(corridorWidth, corridorHeight, corridorWallT), corridorMat)
-            .translateX(doorCenterX).translateY(corridorHeight / 2).translateZ(-corridorDepth + corridorWallT / 2));
-
-          const frameMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.4, metalness: 0.4 });
-          const glassMat = new THREE.MeshStandardMaterial({
-            color: 0xbfe3f0, roughness: 0.1, metalness: 0.1,
-            transparent: true, opacity: 0.18
-          });
-
-          // Marco exterior (arriba, abajo, izquierda, derecha)
-          const outerW = doorWidth + frameT * 2;
-          const outerH = doorHeight + frameT;
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(outerW, frameT, frameT), frameMat).translateX(doorCenterX).translateY(doorHeight + frameT / 2).translateZ(doorFrontZ));
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, outerH, frameT), frameMat).translateX(doorCenterX - outerW / 2 + frameT / 2).translateY(outerH / 2).translateZ(doorFrontZ));
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, outerH, frameT), frameMat).translateX(doorCenterX + outerW / 2 - frameT / 2).translateY(outerH / 2).translateZ(doorFrontZ));
-          // Montante central entre las dos hojas
-          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mullionT, doorHeight, frameT), frameMat).translateX(doorCenterX).translateY(doorHeight / 2).translateZ(doorFrontZ));
-
-          // Las dos hojas de cristal
-          const leafWidth = (doorWidth - mullionT) / 2;
-          [-1, 1].forEach(function (side) {
-            const leafX = doorCenterX + side * (mullionT / 2 + leafWidth / 2);
-            scene.add(new THREE.Mesh(new THREE.BoxGeometry(leafWidth, doorHeight, mmToUnits(10)), glassMat).translateX(leafX).translateY(doorHeight / 2).translateZ(doorFrontZ));
-          });
-
-          // Ventanas en cuadrícula sobre la fachada (piezas laterales de
-          // ladrillo), por encima del hueco de la taquilla/puerta.
-          const winWidth  = mmToUnits(900);
-          const winHeight = mmToUnits(1200);
-          const winFrameT = mmToUnits(15); // marco fino, pegado a la pared
-          const winZ      = mmToUnits(3);
-          const rowSpacing = mmToUnits(2800);
-          const sideMargin = mmToUnits(350);
-          const windowBackingMat = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.85 });
-
-          function addWindow(cx, cy) {
-            // Capas en Z sin solaparse: marco (fino, pegado a la pared) →
-            // panel claro → cristal transparente, cada una por delante de la
-            // anterior, para que el cristal realmente se vea translúcido en
-            // vez de quedar escondido dentro del marco.
-            const frameZ   = winZ;
-            const backingZ = winZ + winFrameT;
-            const glassZ   = backingZ + mmToUnits(8);
-
-            scene.add(new THREE.Mesh(
-              new THREE.BoxGeometry(winWidth + winFrameT * 2, winHeight + winFrameT * 2, winFrameT),
-              frameMat
-            ).translateX(cx).translateY(cy).translateZ(frameZ));
-            // Panel claro detrás del cristal: igual que el pasillo claro
-            // detrás de la puerta, para que el cristal transparente se vea
-            // "iluminado" en vez de oscuro contra el ladrillo.
-            scene.add(new THREE.Mesh(
-              new THREE.BoxGeometry(winWidth, winHeight, mmToUnits(5)),
-              windowBackingMat
-            ).translateX(cx).translateY(cy).translateZ(backingZ));
-            scene.add(new THREE.Mesh(
-              new THREE.BoxGeometry(winWidth, winHeight, mmToUnits(10)),
-              glassMat
-            ).translateX(cx).translateY(cy).translateZ(glassZ));
-          }
-
-          function addWindowGrid(pieceLeftX, pieceWidth) {
-            const usableWidth = pieceWidth - sideMargin * 2;
-            // 2 ventanas por fila, usando todo el ancho disponible (pegadas
-            // a los márgenes) para que la del centro quede lo más cerca
-            // posible del hueco de la puerta, sin tanto vacío en medio.
-            const leftX  = pieceLeftX + sideMargin + winWidth / 2;
-            const rightX = pieceLeftX + pieceWidth - sideMargin - winWidth / 2;
-
-            const firstRowY = Math.max(doorHeight, baseY + maxHeight) + rowSpacing * 0.6;
-            for (let wy = firstRowY; wy + winHeight / 2 < buildingHeight - sideMargin; wy += rowSpacing) {
-              addWindow(leftX, wy);
-              addWindow(rightX, wy);
+            if (o.balcony) {
+              const by = -mU(h) / 2 - mU(0.05);
+              cbox(mU(3.2), mU(0.16), mU(1.1), M.slab, 0, by, mU(0.6), g);
+              cbox(mU(3.2), mU(0.05), mU(0.05), M.rail, 0, by + mU(1.05), mU(1.12), g);
+              [-mU(1.57), mU(1.57)].forEach(function (sx) { cbox(mU(0.05), mU(1.0), mU(1.1), M.rail, sx, by + mU(0.55), mU(0.6), g); });
+              for (let i = 0; i <= 14; i++) {
+                const p = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.015), mU(0.015), mU(1), 6), M.rail);
+                p.position.set(-mU(1.55) + i * mU(0.221), by + mU(0.55), mU(1.12));
+                g.add(p);
+              }
             }
           }
+          for (let f = 0; f < NF; f++) {
+            const yc = mU(G) + mU(GFm) + mU(f * FHm) + mU(1.55);
+            [-6.3, -3.2, 0, 3.2, 6.3].forEach(function (x, i) {
+              const bal = (i === 1 || i === 3);
+              addFacadeWindow(mU(x), bal ? yc - mU(0.25) : yc, 0, 0, bal ? { h: 2.3, door: true, balcony: true } : {});
+              addFacadeWindow(mU(x), yc, -mU(BD), Math.PI, {});
+            });
+            [-2, -4.7, -7.3, -10].forEach(function (z) {
+              addFacadeWindow(mU(BW / 2), yc, mU(z), Math.PI / 2, {});
+              addFacadeWindow(-mU(BW / 2), yc, mU(z), -Math.PI / 2, {});
+            });
+          }
+          [-6.6, -3.6].forEach(function (x) { addFacadeWindow(mU(x), mU(G) + mU(1.9), 0, 0, { w: 1.8, h: 1.6, bars: true }); });
+          [-3, -9].forEach(function (z) {
+            addFacadeWindow(mU(BW / 2), mU(G) + mU(1.9), mU(z), Math.PI / 2, { w: 1.8, h: 1.6, bars: true });
+            addFacadeWindow(-mU(BW / 2), mU(G) + mU(1.9), mU(z), -Math.PI / 2, { w: 1.8, h: 1.6, bars: true });
+          });
+          [-5, 0, 5].forEach(function (x) { addFacadeWindow(mU(x), mU(G) + mU(1.9), -mU(BD), Math.PI, { w: 1.8, h: 1.6, bars: true }); });
 
-          addWindowGrid(leftPieceLeftX, sideWidth);
-          addWindowGrid(rightPieceLeftX, sideWidth);
-        } else if (data.isProfesional) {
+          // --- Portal ---
+          cbox(mU(3.4), mU(3), mU(0.16), M.darkFrame, 0, mU(G) + mU(1.5), mU(0.02));
+          cbox(mU(1.45), mU(2.7), mU(0.06), M.glass, mU(-0.75), mU(G) + mU(1.4), mU(0.1), city, true);
+          cbox(mU(1.45), mU(2.7), mU(0.06), M.glass, mU(0.75), mU(G) + mU(1.4), mU(0.1), city, true);
+          cbox(mU(0.04), mU(0.7), mU(0.06), M.frame, mU(-0.15), mU(G) + mU(1.3), mU(0.16), city, true);
+          cbox(mU(0.04), mU(0.7), mU(0.06), M.frame, mU(0.15), mU(G) + mU(1.3), mU(0.16), city, true);
+          cbox(mU(4.6), mU(0.22), mU(1.8), M.darkFrame, 0, mU(G) + mU(3.2), mU(0.9));
+          cbox(mU(4.2), mU(0.14), mU(1.1), M.concrete, 0, mU(G) + mU(0.07), mU(0.55));
+
+          // --- Jardinera y banco junto al portal ---
+          function addHomeHedge(x, z, w) {
+            cbox(mU(w), mU(0.4), mU(0.8), M.concrete, x, mU(G) + mU(0.2), z);
+            const hh = mU(0.6), r = mU(0.22), wU = mU(w);
+            const s = new THREE.Shape();
+            s.moveTo(-wU / 2 + r, 0); s.lineTo(wU / 2 - r, 0); s.quadraticCurveTo(wU / 2, 0, wU / 2, r);
+            s.lineTo(wU / 2, hh - r); s.quadraticCurveTo(wU / 2, hh, wU / 2 - r, hh); s.lineTo(-wU / 2 + r, hh);
+            s.quadraticCurveTo(-wU / 2, hh, -wU / 2, hh - r); s.lineTo(-wU / 2, r); s.quadraticCurveTo(-wU / 2, 0, -wU / 2 + r, 0);
+            const geo = new THREE.ExtrudeGeometry(s, { depth: mU(0.5), bevelEnabled: true, bevelThickness: mU(0.09), bevelSize: mU(0.07), bevelSegments: 3, curveSegments: 8 });
+            geo.translate(0, 0, -mU(0.25));
+            const mesh = new THREE.Mesh(geo, M.hedge);
+            mesh.position.set(x, mU(G) + mU(0.4), z);
+            city.add(mesh);
+          }
+          addHomeHedge(mU(-2.9), mU(0.55), 1.6);
+          addHomeHedge(mU(-8.6), mU(0.6), 1.4);
+
+          // El banco se coloca pasado el borde derecho de la taquilla
+          // (ahora en la zona derecha de la fachada), para no solaparse.
+          const benchLocalX = mU(4.0) + totalWidth + mU(1.5);
+          const bench = new THREE.Group();
+          bench.position.set(benchLocalX, mU(G), mU(1.1));
+          city.add(bench);
+          cbox(mU(1.25), mU(0.42), mU(0.5), M.black, 0, mU(0.21), 0, bench);
+          for (let i = 0; i < 3; i++) cbox(mU(1.32), mU(0.06), mU(0.15), M.wood, 0, mU(0.45), mU(-0.17 + i * 0.17), bench);
+
+          // --- Árboles y farolas ---
+          function homeLowpolyBlob(r, seed, m) {
+            const geo = new THREE.IcosahedronGeometry(r, 1);
+            const pos = geo.attributes.position, cache = {}, rand = rngHome(seed);
+            for (let i = 0; i < pos.count; i++) {
+              const k = pos.getX(i).toFixed(3) + ',' + pos.getY(i).toFixed(3) + ',' + pos.getZ(i).toFixed(3);
+              if (!cache[k]) cache[k] = 0.85 + rand() * 0.3;
+              pos.setXYZ(i, pos.getX(i) * cache[k], pos.getY(i) * cache[k] * 0.92, pos.getZ(i) * cache[k]);
+            }
+            geo.computeVertexNormals();
+            return new THREE.Mesh(geo, m);
+          }
+          function addHomeTree(x, z, seed, s) {
+            s = s || 1;
+            const g = new THREE.Group();
+            g.position.set(x, mU(G), z);
+            g.scale.setScalar(s);
+            city.add(g);
+            cbox(mU(1.4), mU(0.03), mU(1.4), M.pit, 0, mU(0.015), 0, g, true);
+            const t = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.13), mU(0.2), mU(3.4), 8), M.trunk);
+            t.position.y = mU(1.7);
+            g.add(t);
+            [[0, mU(4), 0, mU(1.6), M.leaf1], [-mU(0.9), mU(3.5), mU(0.3), mU(1.1), M.leaf2],
+             [mU(0.9), mU(3.6), -mU(0.2), mU(1.15), M.leaf2], [mU(0.1), mU(4.9), mU(0.2), mU(1.05), M.leaf2]]
+              .forEach(function (b, i) {
+                const m = homeLowpolyBlob(b[3], seed + i * 13, b[4]);
+                m.position.set(b[0], b[1], b[2]);
+                g.add(m);
+              });
+          }
+          [-27, -17, 17, 27].forEach(function (x, i) { addHomeTree(mU(x), mU(3.4), 11 + i * 7); });
+          [-22, -6, 9, 25].forEach(function (x, i) { addHomeTree(mU(x), mU(16.9), 40 + i * 5); });
+
+          function addHomeLamp(x, z, dir) {
+            const g = new THREE.Group();
+            g.position.set(x, mU(G), z);
+            g.rotation.y = dir;
+            city.add(g);
+            const p = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.07), mU(0.1), mU(6), 10), M.black);
+            p.position.y = mU(3);
+            g.add(p);
+            cbox(mU(0.08), mU(0.08), mU(1.4), M.black, 0, mU(5.95), mU(0.65), g);
+            cbox(mU(0.35), mU(0.15), mU(0.6), M.black, 0, mU(5.9), mU(1.35), g);
+            cbox(mU(0.28), mU(0.03), mU(0.5), M.bulb, 0, mU(5.82), mU(1.35), g, true);
+          }
+          [-22, -9, 9, 22].forEach(function (x) { addHomeLamp(mU(x), mU(4.5), 0); });
+          [-15, 0, 15].forEach(function (x) { addHomeLamp(mU(x), mU(14.6), Math.PI); });
+
+          // --- Coches circulando ---
+          function addCar(color, x, z, dir, speed) {
+            const c = new THREE.MeshStandardMaterial({ color: color, roughness: 0.35, metalness: 0.3 });
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            g.rotation.y = dir;
+            city.add(g);
+            cbox(mU(4.2), mU(0.7), mU(1.8), c, 0, mU(0.6), 0, g);
+            cbox(mU(2.3), mU(0.62), mU(1.62), M.carGlass, mU(-0.25), mU(1.25), 0, g);
+            cbox(mU(2.1), mU(0.08), mU(1.66), c, mU(-0.25), mU(1.6), 0, g);
+            [-mU(1.25), mU(0.75)].forEach(function (px) { cbox(mU(0.08), mU(0.6), mU(1.64), c, px, mU(1.25), 0, g); });
+            [[mU(2.1), mU(0.45)], [mU(2.1), -mU(0.45)]].forEach(function (p) { cbox(mU(0.04), mU(0.14), mU(0.36), M.headlight, p[0], mU(0.72), p[1], g); });
+            [[-mU(2.1), mU(0.55)], [-mU(2.1), -mU(0.55)]].forEach(function (p) { cbox(mU(0.04), mU(0.14), mU(0.32), M.taillight, p[0], mU(0.72), p[1], g); });
+            const wheels = [];
+            [[mU(1.35), mU(0.85)], [mU(1.35), -mU(0.85)], [-mU(1.35), mU(0.85)], [-mU(1.35), -mU(0.85)]].forEach(function (p) {
+              const w = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.36), mU(0.36), mU(0.26), 14), M.tire);
+              w.rotation.x = Math.PI / 2;
+              w.position.set(p[0], mU(0.36), p[1]);
+              g.add(w);
+              wheels.push(w);
+            });
+            sceneUpdaters.push(function (dt) {
+              if (!speed) return;
+              g.position.x += Math.cos(g.rotation.y) * mU(speed) * dt;
+              if (g.position.x > mU(34)) g.position.x = -mU(34);
+              if (g.position.x < -mU(34)) g.position.x = mU(34);
+              wheels.forEach(function (w) { w.rotation.y -= mU(speed) * dt / mU(0.36); });
+            });
+          }
+          addCar(0xd8483c, mU(-6), mU(9), 0, 7);
+          addCar(0xf2f2ee, mU(18), mU(9), 0, 7);
+          addCar(0xf0b632, mU(10), mU(12.3), Math.PI, 6);
+          addCar(0x2f6db5, mU(-24), mU(12.3), Math.PI, 6);
+          addCar(0x5d6670, mU(-19.2), mU(6.2), 0, 0);
+          addCar(0xe9e6df, mU(13.8), mU(6.2), Math.PI, 0);
+
+          // Encuadre de cámara fijo (igual relación que en el archivo
+          // original: posición (20,11,32), objetivo (0,5,0), en metros),
+          // trasladado a donde está ahora el grupo "city".
+          // El objetivo de la cámara es la taquilla (no el portal): se
+          // apunta a su centro en vez de a cityOffsetX, que es donde está
+          // la puerta del edificio.
+          const lockerCenterX = totalWidth / 2;
+          const lockerCenterZ = homeEmbedShiftZ + depth / 2;
+          cameraPosOverride = new THREE.Vector3(lockerCenterX + mU(20), mU(11), lockerCenterZ + mU(32));
+          cameraTargetOverride = new THREE.Vector3(lockerCenterX, mU(5), lockerCenterZ);
+        } else if (currentScenario === 'profesional') {
           // Entorno "profesional": una oficina dividida en dos salas. A la
           // izquierda, una sala de reuniones separada por una cristalera
           // (mesa + sillas). A la derecha, la zona de trabajo abierta con
@@ -2317,7 +2632,9 @@
           // salirse de la sala. Las dos salas comparten la misma
           // profundidad (están una al lado de la otra, no una detrás de
           // otra).
-          const roomBackWallZ = -mmToUnits(10);
+          // Si es "empotrado", la pared de fondo se adelanta hasta casi
+          // tapar el fondo de la taquilla, para que quede encastrada.
+          const roomBackWallZ = isEmpotrado ? Math.max(depth - mmToUnits(50), mmToUnits(10)) : -mmToUnits(10);
           const roomFrontZ    = depth + margin * 1.8;
           const roomDepth     = roomFrontZ - roomBackWallZ;
           const roomCenterZ   = (roomFrontZ + roomBackWallZ) / 2;
@@ -2352,9 +2669,16 @@
           officeCeiling.position.set(roomCenterX, roomHeight + wallT / 2, roomCenterZ);
           scene.add(officeCeiling);
 
-          const backWall = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, roomHeight, wallT), wallMatOffice);
-          backWall.position.set(roomCenterX, roomHeight / 2, roomBackWallZ - wallT / 2);
-          scene.add(backWall);
+          if (isEmpotrado) {
+            addWallWithLockerHoles(
+              wallMatOffice, roomCenterX - roomWidth / 2, roomCenterX + roomWidth / 2, 0, roomHeight, roomBackWallZ - wallT / 2,
+              lockerHoleSegments, baseY - lockerHoleMarginY, baseY + maxHeight + lockerHoleMarginY
+            );
+          } else {
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, roomHeight, wallT), wallMatOffice);
+            backWall.position.set(roomCenterX, roomHeight / 2, roomBackWallZ - wallT / 2);
+            scene.add(backWall);
+          }
 
           const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallT, roomHeight, roomDepth), wallMatOffice);
           leftWall.position.set(roomCenterX - roomWidth / 2 + wallT / 2, roomHeight / 2, roomCenterZ);
@@ -2552,12 +2876,248 @@
           // reuniones).
           officeCameraMaxDistZ = roomFrontZ - depth / 2 - margin * 0.25;
           officeCameraHalfWidth = mainAreaWidth / 2 - margin * 0.25;
+        } else if (currentScenario === 'exterior') {
+          // Entorno "exterior": fachada de comunidad de vecinos tipo plaza
+          // (fachada con ventanas y barandillas, jardineras con seto,
+          // árboles low-poly, farola y banco), siguiendo el render de
+          // referencia que pasó el cliente.
+          const margin = Math.max(totalWidth, baseY + maxHeight) * 3.2;
+          const mU = function (m) { return m * 100; }; // metros -> unidades (1 unidad = 1cm)
+
+          function makeExtTex(w, h, draw, rx, ry) {
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            draw(canvas.getContext('2d'), w, h);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(rx, ry);
+            return tex;
+          }
+          function extRng(seed) {
+            return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+          }
+
+          const floorTex = makeExtTex(512, 512, function (g, w, h) {
+            const r = extRng(7), tones = ['#e4ddd3', '#d6cec2', '#cbc2b5', '#ebe6de', '#ddd5ca'];
+            g.fillStyle = '#f3f0ea'; g.fillRect(0, 0, w, h);
+            const bw = 64, bh = 32;
+            for (let y = 0; y < h / bh; y++) {
+              const off = (y % 2) * bw / 2;
+              for (let x = -1; x <= w / bw; x++) {
+                g.fillStyle = tones[Math.floor(r() * tones.length)];
+                g.fillRect(x * bw + off + 2, y * bh + 2, bw - 4, bh - 4);
+              }
+            }
+          }, Math.max(6, (margin * 3) / mU(1.5)), Math.max(6, (margin * 3) / mU(1.5)));
+
+          const wallTexBase = makeExtTex(512, 256, function (g, w, h) {
+            const r = extRng(3), tones = ['#e2dacd', '#d6cdbd', '#ebe5da', '#cfc5b4', '#ddd4c5'];
+            g.fillStyle = '#f6f4ef'; g.fillRect(0, 0, w, h);
+            const bw = 128, bh = 48;
+            for (let y = 0; y < Math.ceil(h / bh); y++) {
+              const off = (y % 2) * bw / 2;
+              for (let x = -1; x <= w / bw; x++) {
+                g.fillStyle = tones[Math.floor(r() * tones.length)];
+                g.fillRect(x * bw + off + 4, y * bh + 4, bw - 8, bh - 8);
+              }
+            }
+          }, 1, 1);
+          // Tamaño real (en metros) del azulejo del lienzo de arriba, para
+          // poder recortar cada pieza de la pared con su propio repetido y
+          // offset alineados a una rejilla común (igual que el ladrillo del
+          // escenario "home"): si no, el patrón "salta" entre piezas cuando
+          // la pared se parte para dejar hueco a la taquilla "empotrada".
+          const wallTileW = mU(1.0), wallTileH = mU(0.47);
+          function makeExtWallMat(pieceWidth, pieceHeight, worldLeftX, worldBottomY) {
+            const tex = wallTexBase.clone();
+            tex.needsUpdate = true;
+            tex.repeat.set(pieceWidth / wallTileW, pieceHeight / wallTileH);
+            tex.offset.set(((worldLeftX || 0) / wallTileW) % 1, ((worldBottomY || 0) / wallTileH) % 1);
+            return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 });
+          }
+
+          const extFloorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.95 });
+          const extWallPlainMat = new THREE.MeshStandardMaterial({ color: 0xebe6dd, roughness: 0.95 });
+          const extFrameMat = new THREE.MeshStandardMaterial({ color: 0xf2f0ec, roughness: 0.7 });
+          const extGlassMat = new THREE.MeshStandardMaterial({ color: 0x7fa8cf, roughness: 0.15, metalness: 0.2 });
+          const extRailMat = new THREE.MeshStandardMaterial({ color: 0x8a837b, roughness: 0.5, metalness: 0.4 });
+          const extConcreteMat = new THREE.MeshStandardMaterial({ color: 0xc9c6c1, roughness: 0.95 });
+          const extHedgeMat = new THREE.MeshStandardMaterial({ color: 0x5fae4e, roughness: 0.85 });
+          const extLeaf1Mat = new THREE.MeshStandardMaterial({ color: 0x4f9a3f, flatShading: true, roughness: 0.9 });
+          const extLeaf2Mat = new THREE.MeshStandardMaterial({ color: 0x72bb5c, flatShading: true, roughness: 0.9 });
+          const extTrunkMat = new THREE.MeshStandardMaterial({ color: 0x8a6440, roughness: 0.9 });
+          const extBlackMat = new THREE.MeshStandardMaterial({ color: 0x22252a, roughness: 0.55, metalness: 0.3 });
+          const extWoodMat = new THREE.MeshStandardMaterial({ color: 0xd19a55, roughness: 0.75 });
+          const extBulbMat = new THREE.MeshStandardMaterial({ color: 0xfff3d0, emissive: 0xffe2a0, emissiveIntensity: 1 });
+
+          const extCenterX = totalWidth / 2;
+
+          const floorSize = Math.max(totalWidth, margin) * 3;
+          const extFloorMesh = new THREE.Mesh(new THREE.PlaneGeometry(floorSize, floorSize), extFloorMat);
+          extFloorMesh.rotation.x = -Math.PI / 2;
+          extFloorMesh.position.set(extCenterX, 0, depth * 0.3);
+          scene.add(extFloorMesh);
+
+          // Si es "empotrado", la pared se acerca hasta tapar casi todo el
+          // fondo de la taquilla, para que parezca encajada dentro del
+          // muro en vez de simplemente apoyada delante.
+          const wallZ = isEmpotrado ? Math.max(depth - mmToUnits(50), mmToUnits(10)) : -mmToUnits(300);
+          const wallWidth = Math.max(totalWidth + margin * 2, mU(10));
+          const lowWallH = mU(3.4), upWallH = mU(6);
+          if (isEmpotrado) {
+            // Hueco en la pared justo en la zona de la taquilla (y el arco
+            // de apertura de sus puertas), para que no se vea como si las
+            // puertas atravesaran el ladrillo al abrirse.
+            addWallWithLockerHoles(
+              makeExtWallMat, extCenterX - wallWidth / 2, extCenterX + wallWidth / 2, 0, lowWallH, wallZ,
+              lockerHoleSegments, baseY - lockerHoleMarginY, baseY + maxHeight + lockerHoleMarginY
+            );
+          } else {
+            const lowWall = new THREE.Mesh(
+              new THREE.PlaneGeometry(wallWidth, lowWallH),
+              makeExtWallMat(wallWidth, lowWallH, extCenterX - wallWidth / 2, 0)
+            );
+            lowWall.position.set(extCenterX, lowWallH / 2, wallZ);
+            scene.add(lowWall);
+          }
+          const upWall = new THREE.Mesh(new THREE.PlaneGeometry(wallWidth, upWallH), extWallPlainMat);
+          upWall.position.set(extCenterX, lowWallH + upWallH / 2, wallZ);
+          scene.add(upWall);
+          addBox(wallWidth, mU(0.12), mU(0.12), extFrameMat, extCenterX, lowWallH, wallZ + mU(0.06));
+
+          // Ventanas con barandilla, repartidas a lo largo de la fachada.
+          function addExtWindow(cx, cy) {
+            const g = new THREE.Group();
+            g.position.set(cx, cy, wallZ);
+            scene.add(g);
+            function gbox(w, h, d, mat, x, y, z) {
+              const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+              m.position.set(x, y, z);
+              g.add(m);
+              return m;
+            }
+            gbox(mU(2.3), mU(1.9), mU(0.06), extFrameMat, 0, 0, mU(0.02));
+            gbox(mU(1.0), mU(1.7), mU(0.04), extGlassMat, -mU(0.56), 0, mU(0.06));
+            gbox(mU(1.0), mU(1.7), mU(0.04), extGlassMat, mU(0.56), 0, mU(0.06));
+            gbox(mU(2.5), mU(0.08), mU(0.3), extFrameMat, 0, -mU(1.0), mU(0.15));
+            gbox(mU(2.4), mU(0.04), mU(0.04), extRailMat, 0, -mU(0.3), mU(0.28));
+            gbox(mU(2.4), mU(0.04), mU(0.04), extRailMat, 0, -mU(0.93), mU(0.28));
+            for (let i = 0; i < 11; i++) {
+              const p = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.015), mU(0.015), mU(0.65), 6), extRailMat);
+              p.position.set(-mU(1.15) + i * mU(0.23), -mU(0.62), mU(0.28));
+              g.add(p);
+            }
+          }
+          const winY = mU(4.9);
+          const winCount = Math.max(2, Math.round(wallWidth / mU(5)));
+          for (let i = 0; i < winCount; i++) {
+            const wx = extCenterX - wallWidth / 2 + mU(2.6) + i * ((wallWidth - mU(5.2)) / Math.max(1, winCount - 1));
+            addExtWindow(wx, winY);
+          }
+
+          // Jardineras con seto, a ambos lados de la taquilla.
+          function hedgePlanterExt(x, z) {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            scene.add(g);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(mU(2.0), mU(0.42), mU(0.85)), extConcreteMat);
+            base.position.set(0, mU(0.21), 0);
+            g.add(base);
+            const w = mU(1.9), h = mU(0.68), r = mU(0.25);
+            const s = new THREE.Shape();
+            s.moveTo(-w / 2 + r, 0); s.lineTo(w / 2 - r, 0); s.quadraticCurveTo(w / 2, 0, w / 2, r);
+            s.lineTo(w / 2, h - r); s.quadraticCurveTo(w / 2, h, w / 2 - r, h); s.lineTo(-w / 2 + r, h);
+            s.quadraticCurveTo(-w / 2, h, -w / 2, h - r); s.lineTo(-w / 2, r); s.quadraticCurveTo(-w / 2, 0, -w / 2 + r, 0);
+            const geo = new THREE.ExtrudeGeometry(s, { depth: mU(0.55), bevelEnabled: true, bevelThickness: mU(0.1), bevelSize: mU(0.08), bevelSegments: 4, curveSegments: 10 });
+            geo.translate(0, 0, -mU(0.275));
+            const hedgeMesh = new THREE.Mesh(geo, extHedgeMat);
+            hedgeMesh.position.y = mU(0.44);
+            g.add(hedgeMesh);
+          }
+          // La jardinera mide 1,9m de ancho (0,95m de radio): si el hueco
+          // hasta la taquilla es menor que eso, la jardinera se mete por
+          // encima del mueble. El hueco crece con el ancho de la taquilla
+          // (más columnas → más separación), no es un valor fijo.
+          const hedgeHalfW = mU(0.95);
+          const hedgeGap = mU(0.3) + totalWidth * 0.12;
+          const hedgeOffset = totalWidth / 2 + hedgeHalfW + hedgeGap;
+          hedgePlanterExt(extCenterX - hedgeOffset, mU(0.1));
+          hedgePlanterExt(extCenterX + hedgeOffset, mU(0.1));
+
+          // Árboles low-poly.
+          function extLowpolyBlob(r, detail, seed, mat) {
+            const geo = new THREE.IcosahedronGeometry(r, detail);
+            const pos = geo.attributes.position, cache = {}, rand = extRng(seed);
+            for (let i = 0; i < pos.count; i++) {
+              const k = pos.getX(i).toFixed(3) + ',' + pos.getY(i).toFixed(3) + ',' + pos.getZ(i).toFixed(3);
+              if (!cache[k]) cache[k] = 0.85 + rand() * 0.3;
+              pos.setXYZ(i, pos.getX(i) * cache[k], pos.getY(i) * cache[k] * 0.92, pos.getZ(i) * cache[k]);
+            }
+            geo.computeVertexNormals();
+            return new THREE.Mesh(geo, mat);
+          }
+          function extTree(x, z, seed) {
+            const g = new THREE.Group();
+            g.position.set(x, 0, z);
+            scene.add(g);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(mU(1.6), mU(0.5), mU(1.6)), extConcreteMat);
+            base.position.y = mU(0.25);
+            g.add(base);
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.11), mU(0.17), mU(3.2), 8), extTrunkMat);
+            trunk.position.y = mU(2.0);
+            g.add(trunk);
+            const blobs = [
+              [0, mU(4.3), 0, mU(1.5), extLeaf1Mat],
+              [-mU(0.8), mU(3.8), mU(0.3), mU(1.05), extLeaf2Mat],
+              [mU(0.8), mU(3.9), -mU(0.2), mU(1.1), extLeaf2Mat],
+              [mU(0.1), mU(5.1), mU(0.2), mU(1.0), extLeaf2Mat]
+            ];
+            blobs.forEach(function (b, i) {
+              const m = extLowpolyBlob(b[3], 1, seed + i * 13, b[4]);
+              m.position.set(b[0], b[1], b[2]);
+              g.add(m);
+            });
+          }
+          // Los árboles se adelantan bastante respecto a la fachada (no
+          // solo lateralmente): si no, la copa se mete dentro de la pared.
+          extTree(extCenterX - hedgeOffset - margin * 0.4, mU(3.2), 11);
+          extTree(extCenterX + hedgeOffset + margin * 0.4, mU(3.6), 29);
+
+          // Farola: por fuera de la jardinera, no encima.
+          const lampX = extCenterX - hedgeOffset - hedgeHalfW - mU(0.6);
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.06), mU(0.08), mU(4.4), 12), extBlackMat);
+          pole.position.set(lampX, mU(2.2), mU(0.2));
+          scene.add(pole);
+          const shade = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.28), mU(0.14), mU(0.42), 12), extBlackMat);
+          shade.position.set(lampX, mU(4.55), mU(0.2));
+          scene.add(shade);
+          const bulb = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.2), mU(0.2), mU(0.03), 16), extBulbMat);
+          bulb.position.set(lampX, mU(4.33), mU(0.2));
+          scene.add(bulb);
+
+          // Banco de madera.
+          const benchX = extCenterX + hedgeOffset + hedgeHalfW + mU(0.7);
+          const benchSeat = new THREE.Mesh(new THREE.BoxGeometry(mU(0.55), mU(0.42), mU(1.25)), extBlackMat);
+          benchSeat.position.set(benchX, mU(0.21), mU(0.9));
+          scene.add(benchSeat);
+          for (let i = 0; i < 3; i++) {
+            const slat = new THREE.Mesh(new THREE.BoxGeometry(mU(0.17), mU(0.06), mU(1.32)), extWoodMat);
+            slat.position.set(benchX - mU(0.2) + i * mU(0.2), mU(0.45), mU(0.9));
+            scene.add(slat);
+          }
+
+          // El edificio/entorno es mucho más ancho que la taquilla (árboles
+          // y banco a los lados), así que fuerzo que la cámara arranque lo
+          // bastante lejos como para ver la escena completa, no solo el
+          // mueble.
+          minCameraDist = wallWidth * 0.75;
         }
 
         const sceneTotalHeight = baseY + maxHeight;
 
-        camera = new THREE.PerspectiveCamera(45, 1, 1, 5000);
+        camera = new THREE.PerspectiveCamera(45, 1, 1, 30000);
         let dist = Math.max(totalWidth, sceneTotalHeight, depth) * 1.8 + 50;
+        if (minCameraDist !== null) dist = Math.max(dist, minCameraDist);
         let camX = totalWidth / 2 + dist * 0.6;
         let camZ = dist * 0.9;
         if (officeCameraMaxDistZ !== null) {
@@ -2568,16 +3128,37 @@
           camX = totalWidth / 2 + dist * 0.6;
           camZ = dist * 0.9;
         }
-        camera.position.set(camX, sceneTotalHeight * 0.7 + dist * 0.35, camZ);
+        if (cameraPosOverride) {
+          camera.position.copy(cameraPosOverride);
+        } else {
+          camera.position.set(camX, sceneTotalHeight * 0.7 + dist * 0.35, camZ);
+        }
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        // logarithmicDepthBuffer: el plano lejano de la cámara es muy
+        // grande (hace falta para el escenario del edificio/calle), y sin
+        // esto la precisión del buffer de profundidad se queda corta a
+        // media/larga distancia, haciendo que superficies casi pegadas
+        // (marco/cristal de las ventanas, por ejemplo) parpadeen (z-fighting).
+        renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
         viewer.innerHTML = '';
         viewer.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.target.set(totalWidth / 2, sceneTotalHeight / 2, 0);
+        if (cameraTargetOverride) {
+          controls.target.copy(cameraTargetOverride);
+        } else {
+          controls.target.set(totalWidth / 2, sceneTotalHeight / 2, 0);
+        }
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
+        // Límite de alejamiento proporcional al encuadre inicial, no un
+        // número fijo: así cada escenario (desde una taquilla sola hasta
+        // el edificio con calle) permite alejarse un poco más de lo normal
+        // pero no "perderse" en la escena. Cuando la cámara tiene una
+        // posición fija propia (p.ej. el edificio), el encuadre real no es
+        // "dist" sino la distancia a ese punto fijo.
+        const initialCamDist = cameraPosOverride ? camera.position.distanceTo(controls.target) : dist;
+        controls.maxDistance = Math.max(initialCamDist * 1.5, 500);
         controls.update();
 
         resizeRenderer();
@@ -2615,13 +3196,22 @@
 
       function startAnimation() {
         if (animationId) cancelAnimationFrame(animationId);
-        function animate() {
+        let lastT = null;
+        function animate(t) {
           animationId = requestAnimationFrame(animate);
+          // La primera llamada (más abajo) se hace a mano, sin "t" (eso
+          // solo lo da requestAnimationFrame), así que hay que comprobar
+          // que sea un número real y no solo que lastT ya tenga valor: si
+          // no, lastT quedaba en "undefined" y dt se volvía NaN para
+          // siempre desde el segundo frame (los coches dejaban de moverse).
+          const dt = (lastT === null || typeof t !== 'number') ? 0 : Math.min((t - lastT) / 1000, 0.05);
+          lastT = typeof t === 'number' ? t : lastT;
           controls.update();
           doorPivots.forEach(function (entry) {
             const target = entry.open ? DOOR_OPEN_ANGLE : 0;
             entry.pivot.rotation.y += (target - entry.pivot.rotation.y) * 0.18;
           });
+          sceneUpdaters.forEach(function (fn) { fn(dt); });
           renderer.render(scene, camera);
         }
         animate();
@@ -3198,7 +3788,7 @@
         arLockerDepthM = depth; // se usa luego para "pegar" el mueble a una pared detectada
         const colW  = mmToM(data.doorWidthMm || 380);
         const sideW = mmToM(25);
-        const groupGap = mmToM(50);
+        const groupGap = mmToM(450);
 
         const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
         const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });

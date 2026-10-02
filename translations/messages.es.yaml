@@ -299,6 +299,10 @@ summary:
     view3d:
         title: Vista 3D de la configuración
         hint: 'Arrastra para rotar · rueda del ratón para zoom · clic derecho para desplazar'
+        scenario_label: 'Escenario:'
+        scenario_building: Edificio
+        scenario_office: Oficina
+        scenario_exterior: Exterior
     preview:
         title: Vista previa
         no_columns: No hay columnas en esta configuración.

@@ -299,6 +299,10 @@ summary:
     view3d:
         title: 3D view of the configuration
         hint: 'Drag to rotate · mouse wheel to zoom · right click to pan'
+        scenario_label: 'Scenario:'
+        scenario_building: Building
+        scenario_office: Office
+        scenario_exterior: Outdoor
     preview:
         title: Preview
         no_columns: There are no columns in this configuration.
