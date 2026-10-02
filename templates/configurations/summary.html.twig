@@ -3953,11 +3953,6 @@
       let arSmoothedPos = null;
       let arSmoothedRotY = 0;
       const AR_SMOOTH_FACTOR = 0.18;
-      // Pequeño desplazamiento/giro manual aplicado con los botones, para
-      // poder afinar la colocación una vez fijada (por si el suelo
-      // detectado no queda exactamente donde se quiere).
-      const AR_NUDGE_STEP_M = 0.04;
-      const AR_NUDGE_STEP_ROT = 5 * Math.PI / 180;
       // Busca, entre los planos verticales detectados (paredes), el más
       // cercano al punto del suelo tocado. Si hay uno cerca, la taquilla se
       // coloca pegada a esa pared y orientada hacia afuera en vez de mirar
@@ -4046,38 +4041,18 @@
       }
 
       function onARSelect() {
+        // Una vez colocada, tocar la pantalla ya no hace nada: solo el
+        // botón "Reiniciar" (reposicionarARLocker) permite volver a
+        // moverla.
+        if (arPlaced) return;
         if (!arReticle || !arReticle.visible || !arPendingPos) return;
         // Un solo toque: la taquilla ya se ve siguiendo el suelo en vivo
         // (posición y orientación), así que tocar la pantalla simplemente
         // la fija donde está en ese momento.
         arPlaced = true;
         applyPendingPlacement();
-        setARStatus('Taquilla colocada. Usa los botones para afinarla si hace falta.');
+        setARStatus('Taquilla colocada.');
         showARAdjustControls(true);
-      }
-
-      // Mueve la taquilla ya colocada relativa a hacia dónde mira la cámara
-      // (adelante/atrás/lateral), no en ejes absolutos del mundo: así los
-      // botones siempre se comportan igual sin importar cómo esté girada.
-      function nudgeARLocker(rightAmount, forwardAmount) {
-        if (!arLockerGroup || !arCamera) return;
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(arCamera.quaternion);
-        forward.y = 0;
-        if (forward.lengthSq() < 0.0001) return;
-        forward.normalize();
-        const right = new THREE.Vector3(forward.z, 0, -forward.x);
-        arLockerGroup.position.addScaledVector(forward, forwardAmount * AR_NUDGE_STEP_M);
-        arLockerGroup.position.addScaledVector(right, rightAmount * AR_NUDGE_STEP_M);
-        // El ajuste manual debe persistir: si no se sincroniza aquí, el
-        // siguiente toque en pantalla (re-colocar) partiría del valor
-        // suavizado antiguo, deshaciendo el ajuste.
-        if (arSmoothedPos) arSmoothedPos.copy(arLockerGroup.position);
-      }
-
-      function nudgeARRotation(sign) {
-        if (!arLockerGroup) return;
-        arLockerGroup.rotation.y += sign * AR_NUDGE_STEP_ROT;
-        arSmoothedRotY = arLockerGroup.rotation.y;
       }
 
       // Vuelve a modo "siguiendo la retícula", para colocar la taquilla en
@@ -4188,49 +4163,28 @@
           'text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none;padding:0 16px;';
         arStatusEl.appendChild(arStatusTextEl);
 
-        // Botones de ajuste manual: mover (adelante/atrás/lateral), girar
-        // y "reubicar" (volver a modo seguimiento). Ocultos hasta que la
-        // taquilla esté colocada por primera vez.
+        // Un único botón: "Reiniciar", para volver a modo seguimiento y
+        // colocar la taquilla de nuevo. Oculto hasta que se coloca por
+        // primera vez. Una vez colocada, tocar la pantalla ya no hace
+        // nada (ver onARSelect): solo este botón permite recolocarla.
         function arBtn(label) {
           const b = document.createElement('button');
           b.type = 'button';
           b.textContent = label;
-          b.style.cssText = 'pointer-events:auto;width:52px;height:52px;border-radius:50%;' +
+          b.style.cssText = 'pointer-events:auto;border-radius:20px;padding:10px 18px;' +
             'border:1px solid rgba(255,255,255,.6);background:rgba(20,20,20,.55);' +
-            'color:#fff;font-size:20px;line-height:1;';
+            'color:#fff;font-size:15px;font-weight:600;';
           return b;
         }
         arControlsEl = document.createElement('div');
         arControlsEl.style.cssText = 'position:fixed;left:0;right:0;bottom:24px;z-index:2002;' +
-          'display:none;flex-direction:column;align-items:center;gap:10px;pointer-events:none;';
+          'display:none;justify-content:center;pointer-events:none;';
 
-        const moveRow = document.createElement('div');
-        moveRow.style.cssText = 'display:flex;gap:10px;';
-        const btnLeft = arBtn('◀'), btnFwd = arBtn('▲'), btnBack = arBtn('▼'),
-          btnRight = arBtn('▶'), btnRotL = arBtn('⟲'), btnRotR = arBtn('⟳');
-        [btnRotL, btnLeft, btnBack, btnFwd, btnRight, btnRotR].forEach(function (b) { moveRow.appendChild(b); });
-
-        const resetRow = document.createElement('div');
-        resetRow.style.cssText = 'display:flex;justify-content:center;';
-        const btnReplace = arBtn('');
-        btnReplace.title = 'Volver a colocar';
-        btnReplace.style.width = 'auto';
-        btnReplace.style.borderRadius = '20px';
-        btnReplace.style.padding = '10px 18px';
-        btnReplace.textContent = 'Reubicar';
-        resetRow.appendChild(btnReplace);
-
-        arControlsEl.appendChild(moveRow);
-        arControlsEl.appendChild(resetRow);
+        const btnReset = arBtn('Reiniciar');
+        arControlsEl.appendChild(btnReset);
         arStatusEl.appendChild(arControlsEl);
 
-        btnLeft.addEventListener('click', function () { nudgeARLocker(-1, 0); });
-        btnRight.addEventListener('click', function () { nudgeARLocker(1, 0); });
-        btnFwd.addEventListener('click', function () { nudgeARLocker(0, 1); });
-        btnBack.addEventListener('click', function () { nudgeARLocker(0, -1); });
-        btnRotL.addEventListener('click', function () { nudgeARRotation(1); });
-        btnRotR.addEventListener('click', function () { nudgeARRotation(-1); });
-        btnReplace.addEventListener('click', reposicionarARLocker);
+        btnReset.addEventListener('click', reposicionarARLocker);
 
         setARStatus('Cargando…');
         document.body.appendChild(arStatusEl);
@@ -4250,6 +4204,9 @@
           arScene.add(dirLight2);
 
           arLockerGroup = buildARLocker();
+          // Un poco más grande de lo real: a tamaño exacto se ve pequeña
+          // en la vista de la cámara del móvil.
+          arLockerGroup.scale.setScalar(1.15);
           arLockerGroup.visible = false;
           arScene.add(arLockerGroup);
 
