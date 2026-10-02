@@ -3776,6 +3776,10 @@
       // macizas (sin hueco interior ni apertura al pulsar), para que esta
       // parte sea ligera y no dependa de la lógica del otro visor.
       function buildARLocker() {
+        // Se reconstruye entera cada vez que se abre la RA: hay que vaciar
+        // las puertas/clicables de una sesión anterior.
+        arDoorPivots.length = 0;
+        arClickableMeshes.length = 0;
         const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
         // "root" es el grupo que se mueve/gira libremente al colocar la
         // taquilla en RA; "inner" lleva el centrado horizontal del mueble,
@@ -3865,6 +3869,30 @@
           return mesh;
         }
 
+        // Puerta con bisagra (igual de maciza que antes, sin hueco interior
+        // detrás): la propia caja gira sobre el borde derecho al tocarla,
+        // en vez de quedar fija. "mat" puede ser un único material o el
+        // array de 6 caras con la foto de pantalla/buzón.
+        function addDoorLeafAR(w, h, d, mat, x, y, z) {
+          const t = Math.min(d, mmToM(20));
+          const geo = new THREE.BoxGeometry(w, h, t);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(-w / 2, 0, 0);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMatAR);
+          line.position.copy(mesh.position);
+
+          const pivot = new THREE.Group();
+          pivot.position.set(x + w / 2, y, z + d / 2 - t / 2);
+          pivot.add(mesh, line);
+          inner.add(pivot);
+
+          const entry = { pivot: pivot, open: false };
+          mesh.userData.arDoorEntry = entry;
+          arDoorPivots.push(entry);
+          arClickableMeshes.push(mesh);
+          return mesh;
+        }
+
         const legsApply = !!(data.isSoporteSuelo && (data.bracketType === 'patas' || data.bracketType === 'brazos'));
         const legHeight = mmToM(700);
         const baseY = legsApply ? legHeight : 0;
@@ -3888,13 +3916,14 @@
               cursorY -= h;
               const cx = groupStartX + sideW + colIdx * colW + colW / 2;
               const cy = cursorY + h / 2 + baseY;
-              let blockMat = doorMat;
               if (blk.type === 'screen') {
-                blockMat = screenMatsAR;
-              } else if (blk.type === 'mailbox') {
-                blockMat = makeFrontTextureMatsAR(mailboxImageUrlAR(blk), 2);
+                // La pantalla no se abre: sigue siendo una caja fija.
+                addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, screenMatsAR, cx, cy, depth / 2);
+              } else {
+                // Puerta normal o buzón: se puede tocar para abrir/cerrar.
+                const blockMat = blk.type === 'mailbox' ? makeFrontTextureMatsAR(mailboxImageUrlAR(blk), 2) : doorMat;
+                addDoorLeafAR(colW - 0.004, h - 0.004, depth - 0.02, blockMat, cx, cy, depth / 2);
               }
-              addBoxAR(colW - 0.004, h - 0.004, depth - 0.02, blockMat, cx, cy, depth / 2);
             });
             if (colTotalH > maxHeight) maxHeight = colTotalH;
           });
@@ -3937,6 +3966,14 @@
       }
 
       let arRenderer = null, arScene = null, arCamera = null, arReticle = null, arLockerGroup = null;
+      // Puertas de la taquilla en RA: cada entrada es { pivot, open }. Son
+      // independientes de las del visor 3D (código propio, sin compartir
+      // funciones), con su propia detección de toques (ver
+      // handleARDoorTap) porque en RA el toque normal de pantalla sirve
+      // para colocar la taquilla, no para abrir puertas.
+      let arDoorPivots = [];
+      let arClickableMeshes = [];
+      const AR_DOOR_OPEN_ANGLE = Math.PI * 0.6;
       let arHitTestSource = null, arSession = null, arPlaced = false;
       let arLockerDepthM = 0;
       let arPlaneDetectionOn = false;
@@ -4040,11 +4077,35 @@
         arLockerGroup.visible = true;
       }
 
-      function onARSelect() {
-        // Una vez colocada, tocar la pantalla ya no hace nada: solo el
-        // botón "Reiniciar" (reposicionarARLocker) permite volver a
-        // moverla.
-        if (arPlaced) return;
+      // Toque sobre una puerta, una vez la taquilla ya está colocada: usa
+      // el rayo del propio toque (targetRaySpace del input source), no
+      // coordenadas de pantalla, que en una sesión WebXR no existen como
+      // tales. Independiente del raycaster de clics del visor 3D.
+      function handleARDoorTap(event) {
+        if (!arClickableMeshes.length || !arRenderer || !event || !event.frame || !event.inputSource) return;
+        const referenceSpace = arRenderer.xr.getReferenceSpace();
+        const pose = event.frame.getPose(event.inputSource.targetRaySpace, referenceSpace);
+        if (!pose) return;
+        const m = new THREE.Matrix4().fromArray(pose.transform.matrix);
+        const origin = new THREE.Vector3().setFromMatrixPosition(m);
+        const dir = new THREE.Vector3(0, 0, -1).transformDirection(m);
+        const ray = new THREE.Raycaster(origin, dir, 0, 10);
+        const hits = ray.intersectObjects(arClickableMeshes, false);
+        if (hits.length > 0) {
+          const entry = hits[0].object.userData.arDoorEntry;
+          if (entry) entry.open = !entry.open;
+        }
+      }
+
+      function onARSelect(event) {
+        // Una vez colocada, tocar la pantalla ya no la mueve: en vez de
+        // eso, comprueba si el toque ha sido sobre una puerta para
+        // abrirla/cerrarla. El botón "Reiniciar" sigue siendo la única
+        // forma de volver a moverla.
+        if (arPlaced) {
+          handleARDoorTap(event);
+          return;
+        }
         if (!arReticle || !arReticle.visible || !arPendingPos) return;
         // Un solo toque: la taquilla ya se ve siguiendo el suelo en vivo
         // (posición y orientación), así que tocar la pantalla simplemente
@@ -4101,6 +4162,10 @@
               }
             }
           }
+          arDoorPivots.forEach(function (entry) {
+            const target = entry.open ? AR_DOOR_OPEN_ANGLE : 0;
+            entry.pivot.rotation.y += (target - entry.pivot.rotation.y) * 0.18;
+          });
           arRenderer.render(arScene, arCamera);
         } catch (err) {
           console.error('Error en el frame de RA:', err);
