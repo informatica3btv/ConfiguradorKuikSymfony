@@ -89,7 +89,8 @@
         'h': hmm,
         'type': btype,
         'electronico': blk.electronico ?? false,
-        'tarjetero': blk.tarjetero ?? false
+        'tarjetero': blk.tarjetero ?? false,
+        'methacrylate': blk.methacrylate ?? false
       }]) %}
     {% endfor %}
     {% set cols3d = cols3d|merge([doorBlocks]) %}
@@ -1707,7 +1708,8 @@
         mecTarj:    asset('assets/buzon_kuik_mecanico_con_tarjetero.png'),
         mecNoTarj:  asset('assets/buzon_kuik_mecanico_sin_tarjetero.png')
       },
-      isHome: isHome
+      isHome: isHome,
+      isProfesional: (type == 'profesional')
     }|json_encode|raw }};
   </script>
 
@@ -1873,18 +1875,79 @@
         // el borde derecho. Al pulsarla, gira alrededor de esa bisagra como
         // una puerta real. Se añade a "clickableMeshes" para poder detectarla
         // con el raycaster en el click.
-        function addDoorLeaf(w, h, mat, x, y, z) {
-          const t = mmToUnits(8);
-          const geo = new THREE.BoxGeometry(w, h, t);
-          const mesh = new THREE.Mesh(geo, mat);
-          mesh.position.set(-w / 2, 0, 0);
-          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
-          line.position.copy(mesh.position);
+        const methacrylateGlassMat = new THREE.MeshStandardMaterial({
+          color: 0x8fdfef, roughness: 0.25, metalness: 0.0,
+          transparent: true, opacity: 0.55, side: THREE.DoubleSide
+        });
 
+        function addDoorLeaf(w, h, mat, x, y, z, methacrylate) {
+          const t = mmToUnits(8);
           const pivot = new THREE.Group();
           pivot.position.set(x + w / 2, y, z);
-          pivot.add(mesh);
-          pivot.add(line);
+
+          let mesh;
+          if (methacrylate) {
+            // Metacrilato: un marco (mismo color/grosor que una puerta
+            // normal) con una ventana de cristal translúcido empotrada en
+            // el mismo plano (no una capa por delante), ocupando ~80% del
+            // ancho y alto. Sigue siendo UNA sola hoja: se abre y cierra
+            // por la misma bisagra que las demás puertas.
+            const glassW = w * 0.7;
+            const glassH = h * 0.7;
+
+            // Marco de UNA sola pieza (un rectángulo exterior con un hueco
+            // rectangular interior, extruido), en vez de 4 listones pegados,
+            // para que no se vean las uniones entre ellos.
+            const frameShape = new THREE.Shape();
+            frameShape.moveTo(-w, -h / 2);
+            frameShape.lineTo(0, -h / 2);
+            frameShape.lineTo(0, h / 2);
+            frameShape.lineTo(-w, h / 2);
+            frameShape.lineTo(-w, -h / 2);
+            const glassHole = new THREE.Path();
+            glassHole.moveTo(-w / 2 - glassW / 2, -glassH / 2);
+            glassHole.lineTo(-w / 2 + glassW / 2, -glassH / 2);
+            glassHole.lineTo(-w / 2 + glassW / 2, glassH / 2);
+            glassHole.lineTo(-w / 2 - glassW / 2, glassH / 2);
+            glassHole.lineTo(-w / 2 - glassW / 2, -glassH / 2);
+            frameShape.holes.push(glassHole);
+
+            const frameGeo = new THREE.ExtrudeGeometry(frameShape, { depth: t, bevelEnabled: false });
+            frameGeo.translate(0, 0, -t / 2);
+            const frameMesh = new THREE.Mesh(frameGeo, mat);
+            pivot.add(frameMesh);
+            const frameLine = new THREE.LineSegments(new THREE.EdgesGeometry(frameGeo), edges);
+            pivot.add(frameLine);
+
+            const glassGeo = new THREE.BoxGeometry(glassW, glassH, t);
+            const glassMesh = new THREE.Mesh(glassGeo, methacrylateGlassMat);
+            glassMesh.position.set(-w / 2, 0, 0);
+            pivot.add(glassMesh);
+            const glassLine = new THREE.LineSegments(new THREE.EdgesGeometry(glassGeo), edges);
+            glassLine.position.copy(glassMesh.position);
+            pivot.add(glassLine);
+
+            // Toda la hoja (marco + cristal) debe reaccionar al click, no
+            // solo un listón estrecho: si no, solo se podría abrir tocando
+            // ese borde en vez de cualquier punto de la puerta.
+            scene.add(pivot);
+            const pivotIndexForDoor = doorPivots.length;
+            [frameMesh, glassMesh].forEach(function (clickable) {
+              clickable.userData.doorPivotIndex = pivotIndexForDoor;
+              clickableMeshes.push(clickable);
+            });
+            doorPivots.push({ pivot: pivot, open: false });
+            return;
+          } else {
+            const geo = new THREE.BoxGeometry(w, h, t);
+            mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(-w / 2, 0, 0);
+            const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edges);
+            line.position.copy(mesh.position);
+            pivot.add(mesh);
+            pivot.add(line);
+          }
+
           scene.add(pivot);
 
           mesh.userData.doorPivotIndex = doorPivots.length;
@@ -1935,7 +1998,7 @@
                 addDoorLeaf(colW - 0.4, h - 0.4, mailboxMats, cx, cy, depth);
               } else {
                 addOpenBox(colW - 0.4, h - 0.4, depth - 2, doorMat, cx, cy, depth / 2);
-                addDoorLeaf(colW - 0.4, h - 0.4, doorMat, cx, cy, depth);
+                addDoorLeaf(colW - 0.4, h - 0.4, doorMat, cx, cy, depth, !!blk.methacrylate);
               }
             });
             if (colTotalH > maxHeight) maxHeight = colTotalH;
@@ -2017,6 +2080,8 @@
         // Entorno muy esquemático (solo para "home"): un suelo y una pared
         // de fondo neutros, para dar la idea de un portal/vestíbulo sin
         // modelar un edificio real.
+        let officeCameraMaxDistZ = null;
+        let officeCameraHalfWidth = null;
         if (data.isHome) {
           // Textura de ladrillos: un pequeño lienzo con 2 filas de ladrillos
           // (la segunda desplazada media pieza, como un muro real) que luego
@@ -2217,13 +2282,293 @@
 
           addWindowGrid(leftPieceLeftX, sideWidth);
           addWindowGrid(rightPieceLeftX, sideWidth);
+        } else if (data.isProfesional) {
+          // Entorno "profesional": una oficina dividida en dos salas. A la
+          // izquierda, una sala de reuniones separada por una cristalera
+          // (mesa + sillas). A la derecha, la zona de trabajo abierta con
+          // la taquilla pegada a la pared de fondo y varios escritorios con
+          // pantalla delante.
+          const margin = Math.max(totalWidth, baseY + maxHeight) * 1.6;
+          const roomHeight = (baseY + maxHeight) * 2.2;
+          const wallT = mmToUnits(100);
+          const floorY = -wallT / 2;
+
+          // Zona principal (taquilla + escritorios), centrada en la propia
+          // taquilla, igual que antes.
+          const mainAreaWidth = totalWidth + margin * 2;
+          const mainAreaX0 = totalWidth / 2 - mainAreaWidth / 2;
+          const mainAreaX1 = mainAreaX0 + mainAreaWidth;
+
+          // Sala de reuniones, a la izquierda de la zona principal, con
+          // ancho fijo suficiente para la mesa (no depende del tamaño de la
+          // taquilla, al contrario que la zona principal).
+          const meetingWidth = Math.max(margin * 1.1, mmToUnits(2600));
+          const partitionX = mainAreaX0;
+          const meetingX0 = partitionX - meetingWidth;
+
+          const roomCenterX = (meetingX0 + mainAreaX1) / 2;
+          const roomWidth   = mainAreaX1 - meetingX0;
+          const roomBackX0  = meetingX0;
+
+          // La sala tiene que ENVOLVER la taquilla (que ocupa z en [0,
+          // depth]), con la taquilla pegada a la pared de fondo (como un
+          // mueble real contra la pared) y todo el espacio libre por
+          // delante, para el mobiliario y para poder orbitar la cámara sin
+          // salirse de la sala. Las dos salas comparten la misma
+          // profundidad (están una al lado de la otra, no una detrás de
+          // otra).
+          const roomBackWallZ = -mmToUnits(10);
+          const roomFrontZ    = depth + margin * 1.8;
+          const roomDepth     = roomFrontZ - roomBackWallZ;
+          const roomCenterZ   = (roomFrontZ + roomBackWallZ) / 2;
+
+          // Moqueta: textura de cuadrícula tenue, en vez de un gris liso.
+          function makeCarpetTexture() {
+            const size = 64;
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#9aa3ab';
+            ctx.fillRect(0, 0, size, size);
+            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, size, size);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(roomWidth / mmToUnits(600), roomDepth / mmToUnits(600));
+            return tex;
+          }
+          const floorMatOffice   = new THREE.MeshStandardMaterial({ map: makeCarpetTexture(), roughness: 0.97 });
+          const wallMatOffice    = new THREE.MeshStandardMaterial({ color: 0xeef0f1, roughness: 0.92 });
+          const ceilingMatOffice = new THREE.MeshStandardMaterial({ color: 0xf7f8f8, roughness: 0.9 });
+          const skirtingMat      = new THREE.MeshStandardMaterial({ color: 0xcfd3d6, roughness: 0.6 });
+
+          const officeFloor = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, wallT, roomDepth), floorMatOffice);
+          officeFloor.position.set(roomCenterX, floorY, roomCenterZ);
+          scene.add(officeFloor);
+
+          const officeCeiling = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, wallT, roomDepth), ceilingMatOffice);
+          officeCeiling.position.set(roomCenterX, roomHeight + wallT / 2, roomCenterZ);
+          scene.add(officeCeiling);
+
+          const backWall = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, roomHeight, wallT), wallMatOffice);
+          backWall.position.set(roomCenterX, roomHeight / 2, roomBackWallZ - wallT / 2);
+          scene.add(backWall);
+
+          const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallT, roomHeight, roomDepth), wallMatOffice);
+          leftWall.position.set(roomCenterX - roomWidth / 2 + wallT / 2, roomHeight / 2, roomCenterZ);
+          scene.add(leftWall);
+
+          const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallT, roomHeight, roomDepth), wallMatOffice);
+          rightWall.position.set(roomCenterX + roomWidth / 2 - wallT / 2, roomHeight / 2, roomCenterZ);
+          scene.add(rightWall);
+
+          // Zócalo fino en la base de las tres paredes.
+          const skirtH = mmToUnits(80);
+          const skirtT = mmToUnits(15);
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(roomWidth, skirtH, skirtT), skirtingMat)
+            .translateX(roomCenterX).translateY(skirtH / 2).translateZ(roomBackWallZ - skirtT / 2 + mmToUnits(2)));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(skirtT, skirtH, roomDepth), skirtingMat)
+            .translateX(roomBackX0 + skirtT / 2 - mmToUnits(2)).translateY(skirtH / 2).translateZ(roomCenterZ));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(skirtT, skirtH, roomDepth), skirtingMat)
+            .translateX(roomBackX0 + roomWidth - skirtT / 2 + mmToUnits(2)).translateY(skirtH / 2).translateZ(roomCenterZ));
+
+          // Paneles de luz empotrados en el techo (emisivos, no iluminan de
+          // verdad la escena, pero dan la sensación de fluorescentes).
+          const lightPanelMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.9, roughness: 0.6 });
+          const panelW = mmToUnits(1200), panelD = mmToUnits(300), panelT = mmToUnits(15);
+          [-1, 0, 1].forEach(function (col) {
+            [0.3, 0.65].forEach(function (frac) {
+              scene.add(new THREE.Mesh(new THREE.BoxGeometry(panelW, panelT, panelD), lightPanelMat)
+                .translateX(roomCenterX + col * roomWidth * 0.22)
+                .translateY(roomHeight - panelT / 2 - mmToUnits(2))
+                .translateZ(roomBackWallZ + roomDepth * frac));
+            });
+          });
+
+          // Ventana con persiana veneciana (lamas horizontales) en la pared
+          // de fondo, a un lado de la taquilla.
+          const officeFrameMat = new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.5, metalness: 0.3 });
+          const officeGlassMat = new THREE.MeshStandardMaterial({
+            color: 0xbfe3f0, roughness: 0.1, metalness: 0.1,
+            transparent: true, opacity: 0.2
+          });
+          const officeSillMat = new THREE.MeshStandardMaterial({ color: 0xd8dadc, roughness: 0.5 });
+          const blindMat = new THREE.MeshStandardMaterial({ color: 0xe4e1d6, roughness: 0.6, side: THREE.DoubleSide });
+          const winWidthOffice  = mmToUnits(1600);
+          const winHeightOffice = mmToUnits(1600);
+          const winFrameTOffice = mmToUnits(25);
+          const winCenterX = mainAreaX1 - margin * 0.55;
+          const winCenterY = Math.max(baseY + maxHeight * 0.9, roomHeight * 0.48);
+          const winZOffice = roomBackWallZ + wallT / 2 - mmToUnits(2);
+
+          scene.add(new THREE.Mesh(
+            new THREE.BoxGeometry(winWidthOffice + winFrameTOffice * 2, winHeightOffice + winFrameTOffice * 2, winFrameTOffice),
+            officeFrameMat
+          ).translateX(winCenterX).translateY(winCenterY).translateZ(winZOffice));
+          // Montantes de la ventana (cruz central), para que no sea un
+          // cristal liso de una sola pieza.
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(25), winHeightOffice, winFrameTOffice * 0.7), officeFrameMat)
+            .translateX(winCenterX).translateY(winCenterY).translateZ(winZOffice + mmToUnits(2)));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(winWidthOffice, mmToUnits(25), winFrameTOffice * 0.7), officeFrameMat)
+            .translateX(winCenterX).translateY(winCenterY).translateZ(winZOffice + mmToUnits(2)));
+          scene.add(new THREE.Mesh(
+            new THREE.BoxGeometry(winWidthOffice, winHeightOffice, mmToUnits(10)),
+            officeGlassMat
+          ).translateX(winCenterX).translateY(winCenterY).translateZ(winZOffice + mmToUnits(10)));
+          // Alféizar que sobresale un poco de la pared.
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(winWidthOffice + winFrameTOffice * 3, mmToUnits(25), winFrameTOffice * 3), officeSillMat)
+            .translateX(winCenterX).translateY(winCenterY - winHeightOffice / 2 - winFrameTOffice).translateZ(winZOffice + winFrameTOffice));
+          // Persiana: lamas finas, ligeramente inclinadas, cubriendo la
+          // mitad superior del cristal como si estuviera medio bajada.
+          const slatCount = 7;
+          const slatZone = winHeightOffice * 0.55;
+          const slatTopY = winCenterY + winHeightOffice / 2 - mmToUnits(15);
+          for (let i = 0; i < slatCount; i++) {
+            const slat = new THREE.Mesh(new THREE.BoxGeometry(winWidthOffice - mmToUnits(10), mmToUnits(8), mmToUnits(90)), blindMat);
+            slat.position.set(winCenterX, slatTopY - (slatZone / slatCount) * i, winZOffice + mmToUnits(25));
+            slat.rotation.x = 0.25;
+            scene.add(slat);
+          }
+
+          const legMatOffice = new THREE.MeshStandardMaterial({ color: 0x4a4f55, roughness: 0.4, metalness: 0.4 });
+          const chairMat = new THREE.MeshStandardMaterial({ color: 0x2f3338, roughness: 0.5 });
+          const tableMat = new THREE.MeshStandardMaterial({ color: 0xcfcfd2, roughness: 0.3, metalness: 0.1 });
+          const deskMat = new THREE.MeshStandardMaterial({ color: 0xb08968, roughness: 0.6 });
+          const monitorMat = new THREE.MeshStandardMaterial({ color: 0x1b1d1f, roughness: 0.3, metalness: 0.2 });
+          const plantPotMat = new THREE.MeshStandardMaterial({ color: 0x2f3338, roughness: 0.8 });
+          const plantLeafMat = new THREE.MeshStandardMaterial({ color: 0x4a8f4f, roughness: 0.85 });
+
+          // Una silla esquemática (asiento + respaldo + pata central).
+          function addChairAt(cx, cz, facingSign) {
+            const seatZ = cz + facingSign * mmToUnits(40);
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(420), mmToUnits(40), mmToUnits(420)), chairMat)
+              .translateX(cx).translateY(mmToUnits(430)).translateZ(seatZ));
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(420), mmToUnits(520), mmToUnits(40)), chairMat)
+              .translateX(cx).translateY(mmToUnits(690)).translateZ(seatZ - facingSign * mmToUnits(190)));
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(60), mmToUnits(410), mmToUnits(60)), legMatOffice)
+              .translateX(cx).translateY(mmToUnits(205)).translateZ(seatZ));
+          }
+          // Igual que addChairAt, pero orientada hacia el eje X en vez de Z
+          // (para sillas a los lados de una mesa orientada en profundidad).
+          function addChairAtX(cx, cz, facingSign) {
+            const seatX = cx + facingSign * mmToUnits(40);
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(420), mmToUnits(40), mmToUnits(420)), chairMat)
+              .translateX(seatX).translateY(mmToUnits(430)).translateZ(cz));
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(40), mmToUnits(520), mmToUnits(420)), chairMat)
+              .translateX(seatX - facingSign * mmToUnits(190)).translateY(mmToUnits(690)).translateZ(cz));
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(60), mmToUnits(410), mmToUnits(60)), legMatOffice)
+              .translateX(seatX).translateY(mmToUnits(205)).translateZ(cz));
+          }
+          function addPlantAt(px, pz) {
+            scene.add(new THREE.Mesh(new THREE.CylinderGeometry(mmToUnits(160), mmToUnits(130), mmToUnits(300), 12), plantPotMat)
+              .translateX(px).translateY(mmToUnits(150)).translateZ(pz));
+            scene.add(new THREE.Mesh(new THREE.SphereGeometry(mmToUnits(260), 10, 8), plantLeafMat)
+              .translateX(px).translateY(mmToUnits(520)).translateZ(pz));
+          }
+
+          // --- Sala de reuniones (izquierda): mesa + 6 sillas, con la mesa
+          // orientada en el otro sentido (el lado largo en Z, sillas a los
+          // lados en X), para que quepa en una sala más estrecha. ---
+          const meetingCenterX = (meetingX0 + partitionX) / 2;
+          const tableZ = roomBackWallZ + roomDepth * 0.5;
+          const tableW = mmToUnits(1200);
+          const tableD = Math.min(roomDepth * 0.5, mmToUnits(2800));
+          const tableH = mmToUnits(740);
+          const tableTopT = mmToUnits(40);
+
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(tableW, tableTopT, tableD), tableMat)
+            .translateX(meetingCenterX).translateY(tableH).translateZ(tableZ));
+          [-1, 1].forEach(function (sx) {
+            [-1, 1].forEach(function (sz) {
+              scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(60), tableH - tableTopT, mmToUnits(60)), legMatOffice)
+                .translateX(meetingCenterX + sx * (tableW / 2 - mmToUnits(80)))
+                .translateY((tableH - tableTopT) / 2)
+                .translateZ(tableZ + sz * (tableD / 2 - mmToUnits(80))));
+            });
+          });
+          [-1, 0, 1].forEach(function (frac) {
+            const cz = tableZ + frac * (tableD / 2 - mmToUnits(300));
+            addChairAtX(meetingCenterX - tableW / 2 - mmToUnits(300), cz, 1);
+            addChairAtX(meetingCenterX + tableW / 2 + mmToUnits(300), cz, -1);
+          });
+          addPlantAt(meetingX0 + margin * 0.3, roomBackWallZ + roomDepth * 0.15);
+          addPlantAt(meetingX0 + margin * 0.3, roomFrontZ - margin * 0.3);
+
+          // --- Cristalera: separa la sala de reuniones de la zona de
+          // trabajo (pared interior, no la fachada), de suelo a techo con
+          // montantes negros, como un tabique de oficina real. ---
+          const glassWallMullionMat = new THREE.MeshStandardMaterial({ color: 0x2b2e33, roughness: 0.4, metalness: 0.5 });
+          const glassWallGlassMat = new THREE.MeshStandardMaterial({
+            color: 0xbfe3f0, roughness: 0.05, metalness: 0.0,
+            transparent: true, opacity: 0.12, side: THREE.DoubleSide
+          });
+          const mullionW = mmToUnits(70);
+          const mullionCount = Math.max(3, Math.round(roomDepth / mmToUnits(1400)));
+          const mullionSpacing = roomDepth / mullionCount;
+
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(15), roomHeight, roomDepth), glassWallGlassMat)
+            .translateX(partitionX).translateY(roomHeight / 2).translateZ(roomCenterZ));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(40), mullionW, roomDepth), glassWallMullionMat)
+            .translateX(partitionX).translateY(mullionW / 2).translateZ(roomCenterZ));
+          scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(40), mullionW, roomDepth), glassWallMullionMat)
+            .translateX(partitionX).translateY(roomHeight - mullionW / 2).translateZ(roomCenterZ));
+          for (let i = 0; i <= mullionCount; i++) {
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(40), roomHeight, mullionW), glassWallMullionMat)
+              .translateX(partitionX).translateY(roomHeight / 2).translateZ(roomBackWallZ + i * mullionSpacing));
+          }
+
+          // --- Zona de trabajo (derecha): varios escritorios con pantalla,
+          // delante de la taquilla. ---
+          function addDeskAt(cx, cz) {
+            const deskW = mmToUnits(1200), deskD = mmToUnits(600), deskH = mmToUnits(740), deskTopT = mmToUnits(30);
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(deskW, deskTopT, deskD), deskMat)
+              .translateX(cx).translateY(deskH).translateZ(cz));
+            [-1, 1].forEach(function (sx) {
+              [-1, 1].forEach(function (sz) {
+                scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(40), deskH - deskTopT, mmToUnits(40)), legMatOffice)
+                  .translateX(cx + sx * (deskW / 2 - mmToUnits(40)))
+                  .translateY((deskH - deskTopT) / 2)
+                  .translateZ(cz + sz * (deskD / 2 - mmToUnits(40))));
+              });
+            });
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(500), mmToUnits(320), mmToUnits(20)), monitorMat)
+              .translateX(cx).translateY(deskH + deskTopT / 2 + mmToUnits(210)).translateZ(cz - deskD / 2 + mmToUnits(60)));
+            scene.add(new THREE.Mesh(new THREE.BoxGeometry(mmToUnits(60), mmToUnits(60), mmToUnits(60)), monitorMat)
+              .translateX(cx).translateY(deskH + deskTopT / 2 + mmToUnits(30)).translateZ(cz - deskD / 2 + mmToUnits(60)));
+            addChairAt(cx, cz + deskD / 2 + mmToUnits(260), -1);
+          }
+
+          const deskRowZ = roomBackWallZ + roomDepth * 0.6;
+          const deskSpacing = mmToUnits(1650);
+          [-1, 0, 1].forEach(function (frac) {
+            addDeskAt(totalWidth / 2 + frac * deskSpacing, deskRowZ);
+          });
+          addPlantAt(mainAreaX1 - margin * 0.35, roomFrontZ - margin * 0.3);
+
+          // La cámara debe quedarse DENTRO de la zona de trabajo (no
+          // atravesar la fachada abierta ni colarse en la sala de
+          // reuniones).
+          officeCameraMaxDistZ = roomFrontZ - depth / 2 - margin * 0.25;
+          officeCameraHalfWidth = mainAreaWidth / 2 - margin * 0.25;
         }
 
         const sceneTotalHeight = baseY + maxHeight;
 
         camera = new THREE.PerspectiveCamera(45, 1, 1, 5000);
-        const dist = Math.max(totalWidth, sceneTotalHeight, depth) * 1.8 + 50;
-        camera.position.set(totalWidth / 2 + dist * 0.6, sceneTotalHeight * 0.7 + dist * 0.35, dist * 0.9);
+        let dist = Math.max(totalWidth, sceneTotalHeight, depth) * 1.8 + 50;
+        let camX = totalWidth / 2 + dist * 0.6;
+        let camZ = dist * 0.9;
+        if (officeCameraMaxDistZ !== null) {
+          // Reescala toda la posición de cámara (no solo recorta Z) para
+          // conservar el mismo ángulo de vista, pero sin salir de la sala.
+          const scale = Math.min(1, officeCameraMaxDistZ / camZ, (officeCameraHalfWidth + totalWidth / 2) / camX);
+          dist *= scale;
+          camX = totalWidth / 2 + dist * 0.6;
+          camZ = dist * 0.9;
+        }
+        camera.position.set(camX, sceneTotalHeight * 0.7 + dist * 0.35, camZ);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         viewer.innerHTML = '';
@@ -3011,7 +3356,18 @@
       // "select" (que no recibe el XRFrame directamente).
       let arPendingPos = null;
       let arPendingRotY = 0;
-
+      // Posición/rotación suavizadas que realmente se aplican cada frame
+      // mientras se sigue la retícula: sin esto, la detección del suelo
+      // "tiembla" frame a frame y cuesta mucho fijar la taquilla justo
+      // donde se quiere.
+      let arSmoothedPos = null;
+      let arSmoothedRotY = 0;
+      const AR_SMOOTH_FACTOR = 0.18;
+      // Pequeño desplazamiento/giro manual aplicado con los botones, para
+      // poder afinar la colocación una vez fijada (por si el suelo
+      // detectado no queda exactamente donde se quiere).
+      const AR_NUDGE_STEP_M = 0.04;
+      const AR_NUDGE_STEP_ROT = 5 * Math.PI / 180;
       // Busca, entre los planos verticales detectados (paredes), el más
       // cercano al punto del suelo tocado. Si hay uno cerca, la taquilla se
       // coloca pegada a esa pared y orientada hacia afuera en vez de mirar
@@ -3064,7 +3420,8 @@
 
           return {
             pos: new THREE.Vector3(finalXZ.x, floorPos.y, finalXZ.z),
-            rotY: Math.atan2(normal.x, normal.z)
+            rotY: Math.atan2(normal.x, normal.z),
+            snapped: true
           };
         }
 
@@ -3072,22 +3429,75 @@
         arCamera.getWorldPosition(camPos);
         const dx = camPos.x - floorPos.x;
         const dz = camPos.z - floorPos.z;
-        return { pos: floorPos.clone(), rotY: Math.atan2(dx, dz) };
+        return { pos: floorPos.clone(), rotY: Math.atan2(dx, dz), snapped: false };
+      }
+
+      // Suaviza el valor nuevo hacia el anterior (interpolación exponencial),
+      // en vez de saltar directamente al último resultado del hit-test.
+      function smoothAngle(prev, next, factor) {
+        let diff = next - prev;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        return prev + diff * factor;
       }
 
       function applyPendingPlacement() {
         if (!arPendingPos || !arLockerGroup) return;
-        arLockerGroup.position.copy(arPendingPos);
-        arLockerGroup.rotation.y = arPendingRotY;
+        if (!arSmoothedPos) {
+          arSmoothedPos = arPendingPos.clone();
+          arSmoothedRotY = arPendingRotY;
+        } else {
+          arSmoothedPos.lerp(arPendingPos, AR_SMOOTH_FACTOR);
+          arSmoothedRotY = smoothAngle(arSmoothedRotY, arPendingRotY, AR_SMOOTH_FACTOR);
+        }
+        arLockerGroup.position.copy(arSmoothedPos);
+        arLockerGroup.rotation.y = arSmoothedRotY;
         arLockerGroup.visible = true;
       }
 
       function onARSelect() {
-        if (arReticle && arReticle.visible && arPendingPos) {
-          arPlaced = true;
-          applyPendingPlacement();
-          setARStatus('Taquilla colocada.');
-        }
+        if (!arReticle || !arReticle.visible || !arPendingPos) return;
+        // Un solo toque: la taquilla ya se ve siguiendo el suelo en vivo
+        // (posición y orientación), así que tocar la pantalla simplemente
+        // la fija donde está en ese momento.
+        arPlaced = true;
+        applyPendingPlacement();
+        setARStatus('Taquilla colocada. Usa los botones para afinarla si hace falta.');
+        showARAdjustControls(true);
+      }
+
+      // Mueve la taquilla ya colocada relativa a hacia dónde mira la cámara
+      // (adelante/atrás/lateral), no en ejes absolutos del mundo: así los
+      // botones siempre se comportan igual sin importar cómo esté girada.
+      function nudgeARLocker(rightAmount, forwardAmount) {
+        if (!arLockerGroup || !arCamera) return;
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(arCamera.quaternion);
+        forward.y = 0;
+        if (forward.lengthSq() < 0.0001) return;
+        forward.normalize();
+        const right = new THREE.Vector3(forward.z, 0, -forward.x);
+        arLockerGroup.position.addScaledVector(forward, forwardAmount * AR_NUDGE_STEP_M);
+        arLockerGroup.position.addScaledVector(right, rightAmount * AR_NUDGE_STEP_M);
+        // El ajuste manual debe persistir: si no se sincroniza aquí, el
+        // siguiente toque en pantalla (re-colocar) partiría del valor
+        // suavizado antiguo, deshaciendo el ajuste.
+        if (arSmoothedPos) arSmoothedPos.copy(arLockerGroup.position);
+      }
+
+      function nudgeARRotation(sign) {
+        if (!arLockerGroup) return;
+        arLockerGroup.rotation.y += sign * AR_NUDGE_STEP_ROT;
+        arSmoothedRotY = arLockerGroup.rotation.y;
+      }
+
+      // Vuelve a modo "siguiendo la retícula", para colocar la taquilla en
+      // otro punto sin tener que salir y reabrir la RA.
+      function reposicionarARLocker() {
+        arPlaced = false;
+        arSmoothedPos = null;
+        if (arLockerGroup) arLockerGroup.visible = false;
+        showARAdjustControls(false);
+        setARStatus('Mueve el móvil despacio apuntando al suelo…');
       }
 
       function onARFrame(timestamp, frame) {
@@ -3100,17 +3510,22 @@
                 const pose = hits[0].getPose(referenceSpace);
                 arReticle.visible = true;
                 arReticle.matrix.fromArray(pose.transform.matrix);
-
                 const floorPos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
+
                 const placement = computePlacement(frame, referenceSpace, floorPos);
                 arPendingPos = placement.pos;
                 arPendingRotY = placement.rotY;
 
                 // Hasta que el usuario toque la pantalla, la taquilla va
-                // "siguiendo" la retícula en vivo, como vista previa.
+                // "siguiendo" la retícula en vivo (posición y giro), como
+                // vista previa; el retículo cambia de color cuando detecta
+                // una pared cerca y va a pegar la taquilla a ella.
                 if (!arPlaced) {
+                  arReticle.material.color.set(placement.snapped ? 0x4aa3ff : 0x44c767);
                   applyPendingPlacement();
-                  setARStatus('Toca la pantalla para fijar la taquilla aquí.');
+                  setARStatus(placement.snapped
+                    ? 'Pared detectada: toca la pantalla para pegar la taquilla aquí.'
+                    : 'Toca la pantalla para fijar la taquilla aquí.');
                 }
               } else {
                 arReticle.visible = false;
@@ -3150,19 +3565,83 @@
         arPlaneDetectionOn = false;
         arPendingPos = null;
         arPendingRotY = 0;
+        arSmoothedPos = null;
+        arSmoothedRotY = 0;
+        arStatusTextEl = null;
+        arControlsEl = null;
       }
 
       let arStatusEl = null;
+      let arStatusTextEl = null;
+      let arControlsEl = null;
       function setARStatus(text) {
-        if (arStatusEl) arStatusEl.textContent = text;
+        if (arStatusTextEl) arStatusTextEl.textContent = text;
+      }
+      function showARAdjustControls(show) {
+        if (arControlsEl) arControlsEl.style.display = show ? 'flex' : 'none';
       }
 
       function startAR() {
         arPlaced = false;
+        arSmoothedPos = null;
+        arSmoothedRotY = 0;
+
+        // Raíz del "dom-overlay": todo lo que necesite recibir toques
+        // durante la sesión de RA (texto de estado + botones) tiene que
+        // vivir dentro de este elemento.
         arStatusEl = document.createElement('div');
-        arStatusEl.style.cssText = 'position:fixed;left:0;right:0;bottom:24px;z-index:2001;' +
+        arStatusEl.style.cssText = 'position:fixed;left:0;right:0;bottom:0;top:0;z-index:2001;pointer-events:none;';
+
+        arStatusTextEl = document.createElement('div');
+        arStatusTextEl.style.cssText = 'position:fixed;left:0;right:0;bottom:120px;' +
           'text-align:center;color:#fff;font:600 15px/1.4 sans-serif;' +
           'text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none;padding:0 16px;';
+        arStatusEl.appendChild(arStatusTextEl);
+
+        // Botones de ajuste manual: mover (adelante/atrás/lateral), girar
+        // y "reubicar" (volver a modo seguimiento). Ocultos hasta que la
+        // taquilla esté colocada por primera vez.
+        function arBtn(label) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = label;
+          b.style.cssText = 'pointer-events:auto;width:52px;height:52px;border-radius:50%;' +
+            'border:1px solid rgba(255,255,255,.6);background:rgba(20,20,20,.55);' +
+            'color:#fff;font-size:20px;line-height:1;';
+          return b;
+        }
+        arControlsEl = document.createElement('div');
+        arControlsEl.style.cssText = 'position:fixed;left:0;right:0;bottom:24px;z-index:2002;' +
+          'display:none;flex-direction:column;align-items:center;gap:10px;pointer-events:none;';
+
+        const moveRow = document.createElement('div');
+        moveRow.style.cssText = 'display:flex;gap:10px;';
+        const btnLeft = arBtn('◀'), btnFwd = arBtn('▲'), btnBack = arBtn('▼'),
+          btnRight = arBtn('▶'), btnRotL = arBtn('⟲'), btnRotR = arBtn('⟳');
+        [btnRotL, btnLeft, btnBack, btnFwd, btnRight, btnRotR].forEach(function (b) { moveRow.appendChild(b); });
+
+        const resetRow = document.createElement('div');
+        resetRow.style.cssText = 'display:flex;justify-content:center;';
+        const btnReplace = arBtn('');
+        btnReplace.title = 'Volver a colocar';
+        btnReplace.style.width = 'auto';
+        btnReplace.style.borderRadius = '20px';
+        btnReplace.style.padding = '10px 18px';
+        btnReplace.textContent = 'Reubicar';
+        resetRow.appendChild(btnReplace);
+
+        arControlsEl.appendChild(moveRow);
+        arControlsEl.appendChild(resetRow);
+        arStatusEl.appendChild(arControlsEl);
+
+        btnLeft.addEventListener('click', function () { nudgeARLocker(-1, 0); });
+        btnRight.addEventListener('click', function () { nudgeARLocker(1, 0); });
+        btnFwd.addEventListener('click', function () { nudgeARLocker(0, 1); });
+        btnBack.addEventListener('click', function () { nudgeARLocker(0, -1); });
+        btnRotL.addEventListener('click', function () { nudgeARRotation(1); });
+        btnRotR.addEventListener('click', function () { nudgeARRotation(-1); });
+        btnReplace.addEventListener('click', reposicionarARLocker);
+
         setARStatus('Cargando…');
         document.body.appendChild(arStatusEl);
 
