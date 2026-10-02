@@ -4103,6 +4103,28 @@
       let arSmoothedPos = null;
       let arSmoothedRotY = 0;
       const AR_SMOOTH_FACTOR = 0.18;
+      // Altura real del suelo, una vez detectada (coordenada Y del plano
+      // horizontal más bajo que se haya visto). El hit-test normal
+      // apunta al centro de la pantalla: si ahí hay un objeto (una caja,
+      // una mesa...), el rayo choca con su cara de arriba y la taquilla
+      // se queda flotando a esa altura en vez de bajar hasta el suelo de
+      // verdad. Conociendo el suelo real, se puede corregir eso.
+      let arFloorY = null;
+
+      // Recorre los planos horizontales detectados y se queda con el más
+      // bajo como "el suelo", actualizando arFloorY si encuentra uno más
+      // bajo todavía que el que ya tenía.
+      function updateArFloorY(frame, referenceSpace) {
+        if (!arPlaneDetectionOn || !frame.detectedPlanes) return;
+        frame.detectedPlanes.forEach(function (plane) {
+          if (plane.orientation !== 'Horizontal') return;
+          const pose = frame.getPose(plane.planeSpace, referenceSpace);
+          if (!pose) return;
+          const y = pose.transform.position.y;
+          if (arFloorY === null || y < arFloorY) arFloorY = y;
+        });
+      }
+
       // Busca, entre los planos verticales detectados (paredes), el más
       // cercano al punto del suelo tocado. Si hay uno cerca, la taquilla se
       // coloca pegada a esa pared y orientada hacia afuera en vez de mirar
@@ -4243,6 +4265,7 @@
         try {
           if (frame) {
             const referenceSpace = arRenderer.xr.getReferenceSpace();
+            updateArFloorY(frame, referenceSpace);
             if (arHitTestSource) {
               const hits = frame.getHitTestResults(arHitTestSource);
               if (hits.length > 0) {
@@ -4250,6 +4273,16 @@
                 arReticle.visible = true;
                 arReticle.matrix.fromArray(pose.transform.matrix);
                 const floorPos = new THREE.Vector3().setFromMatrixPosition(arReticle.matrix);
+
+                // El hit-test apunta al centro de la pantalla: si ahí hay
+                // un objeto por encima del suelo real ya detectado (una
+                // caja, una mesa...), el rayo choca con su cara de arriba
+                // y la taquilla se quedaría flotando a esa altura. Si
+                // conocemos el suelo de verdad, se corrige aquí.
+                if (arFloorY !== null && floorPos.y > arFloorY + 0.03) {
+                  floorPos.y = arFloorY;
+                  arReticle.matrix.elements[13] = arFloorY;
+                }
 
                 const placement = computePlacement(frame, referenceSpace, floorPos);
                 arPendingPos = placement.pos;
@@ -4312,6 +4345,7 @@
         arSmoothedRotY = 0;
         arStatusTextEl = null;
         arControlsEl = null;
+        arFloorY = null;
       }
 
       let arStatusEl = null;
@@ -4328,6 +4362,7 @@
         arPlaced = false;
         arSmoothedPos = null;
         arSmoothedRotY = 0;
+        arFloorY = null;
 
         // Raíz del "dom-overlay": todo lo que necesite recibir toques
         // durante la sesión de RA (texto de estado + botones) tiene que
