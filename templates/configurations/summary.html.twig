@@ -979,8 +979,12 @@
 
       {% if is_granted('ROLE_ADMIN') %}
         <button class="btn" id="btnVer3D" type="button">{{ 'summary.btn.view_3d'|trans }}</button>
-        <button class="btn" id="btnVerRA" type="button" style="display:none;">{{ 'summary.btn.view_ar'|trans }}</button>
-        <button class="btn" id="btnVerRAmv" type="button">{{ 'summary.btn.view_ar_mv'|trans }}</button>
+        {# El botón de RA original (WebXR propio) se mantiene oculto en el
+           DOM a propósito: "Ver en RA" (btnVerRAmv, abajo) sigue
+           necesitando su función buildARLockerForExport para construir el
+           mueble, aunque ya no se use su interfaz. #}
+        <button class="btn" id="btnVerRA" type="button" style="display:none !important;">{{ 'summary.btn.view_ar'|trans }}</button>
+        <button class="btn" id="btnVerRAmv" type="button">{{ 'summary.btn.view_ar'|trans }}</button>
       {% endif %}
     </div>
 
@@ -4357,9 +4361,11 @@
       const btnAR = document.getElementById('btnVerRA');
       if (!btnAR) return;
 
-      // El botón empieza oculto (style="display:none" en el HTML) y solo
-      // se muestra si el propio navegador confirma que soporta RA.
-      if (navigator.xr && navigator.xr.isSessionSupported) {
+      // Este botón se queda oculto siempre (ver comentario en el HTML):
+      // ya no se usa su interfaz, solo la función buildARLockerForExport
+      // que define este bloque, así que aquí ya no se vuelve a mostrar
+      // aunque el navegador soporte RA.
+      if (false && navigator.xr && navigator.xr.isSessionSupported) {
         navigator.xr.isSessionSupported('immersive-ar').then(function (supported) {
           if (supported) btnAR.style.display = '';
         }).catch(function () {});
@@ -5192,6 +5198,19 @@
 
               mvStatus.style.display = 'none';
               mvContainer.style.display = 'block';
+
+              // El botón debe abrir la cámara directamente, sin que haya
+              // que tocar además el icono de RA de model-viewer: en
+              // cuanto el modelo termina de cargar, se activa la RA sola.
+              // Si el dispositivo/navegador no la soporta (o falla), se
+              // deja la vista 3D normal dentro del modal como alternativa.
+              modelViewerEl.addEventListener('load', function onMvLoad() {
+                modelViewerEl.removeEventListener('load', onMvLoad);
+                if (!modelViewerEl.canActivateAR) return;
+                modelViewerEl.activateAR().catch(function (err) {
+                  console.warn('No se pudo activar la RA automáticamente, se deja la vista 3D:', err);
+                });
+              });
             }, { binary: true, animations: doorAnimations });
           });
         }).catch(function (err) {
