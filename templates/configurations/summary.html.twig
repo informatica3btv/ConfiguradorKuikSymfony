@@ -5111,6 +5111,12 @@
           // de más, una vez por cada puerta que lo usa).
           const convertedMats = new Set();
           lockerGroup.traverse(function (obj) {
+            // "arDoorEntry" (puesto por buildARLocker para la RA real) es
+            // { pivot, open } con pivot === el propio ancestro de obj: una
+            // referencia circular que el exportador no puede serializar y
+            // llena la consola de avisos de JSON.stringify. No hace falta
+            // en el .glb (la apertura va por la animación), así que se quita.
+            if (obj.userData && obj.userData.arDoorEntry) delete obj.userData.arDoorEntry;
             if (!obj.material) return;
             const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
             mats.forEach(function (m) {
@@ -5254,9 +5260,16 @@
           console.log('[RA puertas] hit:', hit, 'doorHitTargets:', doorHitTargets.length);
           if (!hit) return;
 
+          // model-viewer carga su propia copia interna de three.js (aviso
+          // "Multiple instances of Three.js" en consola): lo que devuelve
+          // positionAndNormalFromPoint es un objeto plano {x,y,z}, no un
+          // THREE.Vector3 de verdad, así que no tiene .distanceTo().
+          // Distancia calculada a mano en vez de depender de ese método.
+          const hp = hit.position;
           let nearest = null, nearestDist = Infinity;
           doorHitTargets.forEach(function (d) {
-            const dist = hit.position.distanceTo(d.worldPos);
+            const dx = hp.x - d.worldPos.x, dy = hp.y - d.worldPos.y, dz = hp.z - d.worldPos.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist < nearestDist) { nearestDist = dist; nearest = d; }
           });
           console.log('[RA puertas] más cercana:', nearest && nearest.clipName, 'distancia:', nearestDist);
