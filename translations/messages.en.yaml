@@ -311,6 +311,7 @@ summary:
         ar_mv_title: 'View in AR (model-viewer test)'
         ar_mv_preparing: Preparing the model…
         ar_mv_hint: 'Tap the AR icon to place the locker in your space (requires a compatible phone)'
+        ar_mv_hint_qr: 'Scan this code with your phone camera to view the locker in Augmented Reality'
     preview:
         title: Preview
         no_columns: There are no columns in this configuration.

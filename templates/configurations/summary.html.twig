@@ -1029,7 +1029,7 @@
         <div class="modal3d__body">
           <div id="mvStatus" data-preparing-text="{{ 'summary.view3d.ar_mv_preparing'|trans }}" style="padding:20px; text-align:center; color:#6b7280;">{{ 'summary.view3d.ar_mv_preparing'|trans }}</div>
           <div id="mvContainer" style="width:100%; height:100%; display:none;"></div>
-          <div class="modal3d__hint">{{ 'summary.view3d.ar_mv_hint'|trans }}</div>
+          <div class="modal3d__hint" id="mvHint" data-hint-ar="{{ 'summary.view3d.ar_mv_hint'|trans }}" data-hint-qr="{{ 'summary.view3d.ar_mv_hint_qr'|trans }}">{{ 'summary.view3d.ar_mv_hint'|trans }}</div>
         </div>
       </div>
     </div>
@@ -5033,10 +5033,20 @@
       const modalMV = document.getElementById('modalMV');
       const mvStatus = document.getElementById('mvStatus');
       const mvContainer = document.getElementById('mvContainer');
+      const mvHint = document.getElementById('mvHint');
       if (!btnMV || !modalMV) return;
+
+      // En ordenador no tiene sentido exportar el mueble ni intentar abrir
+      // la cámara (no hay RA): se muestra un código QR a esta misma página
+      // para escanear con el móvil, igual que hace kuikConfigurator.
+      function isMobileDeviceMV() {
+        return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+          || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS se identifica como Mac
+      }
 
       let modelViewerLoaded = false;
       let gltfExporterLoaded = false;
+      let qrLibLoaded = false;
       let currentBlobUrl = null;
       let modelViewerEl = null;
 
@@ -5055,6 +5065,12 @@
         if (modelViewerLoaded || customElements.get('model-viewer')) { modelViewerLoaded = true; return Promise.resolve(); }
         return loadScriptMV('https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js', true)
           .then(function () { modelViewerLoaded = true; });
+      }
+
+      function ensureQRLib() {
+        if (qrLibLoaded || window.qrcode) { qrLibLoaded = true; return Promise.resolve(); }
+        return loadScriptMV('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js', false)
+          .then(function () { qrLibLoaded = true; });
       }
 
       function ensureThreeMV() {
@@ -5082,8 +5098,12 @@
         if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
         if (modelViewerEl) { modelViewerEl.remove(); modelViewerEl = null; }
         mvContainer.style.display = 'none';
+        mvContainer.style.alignItems = '';
+        mvContainer.style.justifyContent = '';
+        mvContainer.innerHTML = '';
         mvStatus.style.display = '';
         mvStatus.textContent = mvStatus.dataset.preparingText || 'Preparando…';
+        if (mvHint) mvHint.textContent = mvHint.dataset.hintAr || '';
       }
 
       modalMV.addEventListener('click', function (e) {
@@ -5093,7 +5113,40 @@
         if (e.key === 'Escape' && modalMV.classList.contains('is-open')) closeModalMV();
       });
 
+      function showQRCodeMV() {
+        openModalMV();
+        mvContainer.style.display = 'none';
+        mvStatus.style.display = '';
+        mvStatus.textContent = mvStatus.dataset.preparingText || 'Preparando…';
+
+        ensureQRLib().then(function () {
+          const qr = window.qrcode(0, 'M');
+          qr.addData(window.location.href);
+          qr.make();
+
+          const img = document.createElement('img');
+          img.src = qr.createDataURL(6, 8);
+          img.alt = 'QR';
+          img.style.cssText = 'max-width:260px; width:80%; height:auto;';
+          mvContainer.innerHTML = '';
+          mvContainer.appendChild(img);
+          mvContainer.style.display = 'flex';
+          mvContainer.style.alignItems = 'center';
+          mvContainer.style.justifyContent = 'center';
+          mvStatus.style.display = 'none';
+          if (mvHint) mvHint.textContent = mvHint.dataset.hintQr || '';
+        }).catch(function (err) {
+          console.error('Error generando el QR:', err);
+          mvStatus.textContent = 'No se pudo generar el código QR.';
+        });
+      }
+
       btnMV.addEventListener('click', function () {
+        if (!isMobileDeviceMV()) {
+          showQRCodeMV();
+          return;
+        }
+
         openModalMV();
         mvStatus.style.display = '';
         mvContainer.style.display = 'none';

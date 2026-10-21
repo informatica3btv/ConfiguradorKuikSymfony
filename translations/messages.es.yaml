@@ -311,6 +311,7 @@ summary:
         ar_mv_title: 'Ver en RA (prueba con model-viewer)'
         ar_mv_preparing: Preparando el modelo…
         ar_mv_hint: 'Toca el icono de RA para colocar la taquilla en tu espacio (requiere móvil compatible)'
+        ar_mv_hint_qr: 'Escanea este código con la cámara de tu móvil para ver la taquilla en Realidad Aumentada'
     preview:
         title: Vista previa
         no_columns: No hay columnas en esta configuración.
