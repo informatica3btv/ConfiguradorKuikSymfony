@@ -4563,6 +4563,14 @@
           addBoxAR(groupWidth, sideW, depth, bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof - sideW / 2, depth / 2);
           addBoxAR(groupWidth, mmToM(10), depth, bodyMat, groupStartX + groupWidth / 2, baseY + mmToM(5), depth / 2);
 
+          // Placa trasera única, de una sola pieza, por detrás de todos
+          // los compartimentos huecos de este grupo: sin esto, cada
+          // puerta muestra su propio fondo individual (con juntas/huecos
+          // entre ellos visibles al mirar la taquilla desde atrás o de
+          // lado), en vez de una única chapa trasera como en un mueble
+          // real.
+          addBoxAR(groupWidth, totalHeightWithRoof, mmToM(10), bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof / 2, -mmToM(5));
+
           if (legsApply) {
             const legSize = mmToM(40) * 1.5 * 1.2;
             const addLegAR = function (x) {
