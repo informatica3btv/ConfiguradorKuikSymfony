@@ -5226,7 +5226,20 @@
             requestAnimationFrame(step);
         }
 
-        el.addEventListener('click', function (e) {
+        // El evento "click" normal no sirve aquí: camera-controls de
+        // model-viewer captura el gesto para orbitar la cámara y, al
+        // arrastrar aunque sea un pelín (lo normal al tocar con el dedo),
+        // no llega a disparar un "click" sintético. Se detecta el toque a
+        // mano con pointerdown/pointerup + una distancia máxima de
+        // arrastre, igual que ya hace el visor 3D normal para sus puertas.
+        let downX = 0, downY = 0;
+        el.addEventListener('pointerdown', function (e) {
+          downX = e.clientX;
+          downY = e.clientY;
+        });
+
+        el.addEventListener('pointerup', function (e) {
+          if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) return;
           if (animating || typeof el.positionAndNormalFromPoint !== 'function') return;
           const rect = el.getBoundingClientRect();
           const hit = el.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
