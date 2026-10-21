@@ -5120,8 +5120,12 @@
         mvStatus.textContent = mvStatus.dataset.preparingText || 'Preparando…';
 
         ensureQRLib().then(function () {
+          // window.location.href no vale: a veces esta página se llega vía
+          // un envío de formulario sin redirección y la barra de
+          // direcciones se queda con esa URL (que no admite GET). Se usa
+          // la URL absoluta real y conocida de este resumen.
           const qr = window.qrcode(0, 'M');
-          qr.addData(window.location.href);
+          qr.addData('{{ url('configuration_summary', { id: configuration.id }) }}');
           qr.make();
 
           const img = document.createElement('img');
