@@ -4616,6 +4616,11 @@
       let arDoorPivots = [];
       let arClickableMeshes = [];
       const AR_DOOR_OPEN_ANGLE = Math.PI * 0.6;
+      // Mismas referencias, expuestas para que "Ver en RA (nuevo)" pueda
+      // generar una animación de apertura por puerta al exportar a .glb
+      // (incluyendo el mismo ángulo de apertura que usa esta RA).
+      window.arDoorPivotsForExport = arDoorPivots;
+      window.AR_DOOR_OPEN_ANGLE_FOR_EXPORT = AR_DOOR_OPEN_ANGLE;
       let arHitTestSource = null, arSession = null, arPlaced = false;
       let arLockerDepthM = 0;
       let arPlaneDetectionOn = false;
@@ -5116,6 +5121,38 @@
             });
           });
 
+          // --- Animaciones de apertura, una por puerta ---
+          // model-viewer no da acceso a los objetos tres.js reales que
+          // renderiza (ni en el visor normal ni en RA): la única forma
+          // oficial de abrir una puerta es que el propio .glb lleve una
+          // animación "horneada" y reproducirla/pararla con la API de
+          // model-viewer. Por puerta: un giro en el eje Y del pivote
+          // (igual que el de la RA real) de 0 (cerrada) a
+          // AR_DOOR_OPEN_ANGLE (abierta) en el segundo 0 a 1 del clip.
+          lockerGroup.updateMatrixWorld(true);
+          const doorPivotsForExport = window.arDoorPivotsForExport || [];
+          const openAngle = window.AR_DOOR_OPEN_ANGLE_FOR_EXPORT || (Math.PI * 0.6);
+          const doorAnimations = [];
+          const doorHitTargets = [];
+          doorPivotsForExport.forEach(function (entry, i) {
+            const pivot = entry.pivot;
+            if (!pivot) return;
+            pivot.name = pivot.name || ('ar_door_pivot_' + i);
+
+            const qClosed = new THREE.Quaternion();
+            const qOpen = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), openAngle);
+            const track = new THREE.QuaternionKeyframeTrack(
+              pivot.uuid + '.quaternion',
+              [0, 1],
+              [qClosed.x, qClosed.y, qClosed.z, qClosed.w, qOpen.x, qOpen.y, qOpen.z, qOpen.w]
+            );
+            doorAnimations.push(new THREE.AnimationClip('door_' + i, 1, [track]));
+
+            const worldPos = new THREE.Vector3();
+            pivot.getWorldPosition(worldPos);
+            doorHitTargets.push({ clipName: 'door_' + i, worldPos: worldPos, open: false });
+          });
+
           // La imagen de la pantalla (y las de los buzones) se cargan de
           // forma asíncrona dentro de buildARLockerForExport: si se
           // exporta en el mismo tick, el modelo sale sin esa textura. Un
@@ -5145,16 +5182,67 @@
               modelViewerEl.style.width = '100%';
               modelViewerEl.style.height = '100%';
               mvContainer.appendChild(modelViewerEl);
+              setupDoorTapsMV(modelViewerEl, doorHitTargets);
 
               mvStatus.style.display = 'none';
               mvContainer.style.display = 'block';
-            }, { binary: true });
+            }, { binary: true, animations: doorAnimations });
           });
         }).catch(function (err) {
           console.error('Error cargando RA (model-viewer):', err);
           mvStatus.textContent = 'Error al cargar la Realidad Aumentada.';
         });
       });
+
+      // Toques para abrir/cerrar puertas: tanto en el visor normal (antes
+      // de colocar en RA) como dentro de una sesión WebXR, model-viewer
+      // sigue disparando 'click' con coordenadas de pantalla normales, así
+      // que se puede usar la misma lógica para ambos casos.
+      // IMPORTANTE (limitación conocida): cuando la RA se abre vía "Scene
+      // Viewer" (Android, fuera de Chrome) o "Quick Look" (iPhone), el
+      // control pasa por completo a una app del sistema operativo fuera de
+      // esta página, así que ahí NO hay forma de interceptar el toque: las
+      // puertas no se podrán abrir en esos dos modos.
+      function setupDoorTapsMV(el, doorHitTargets) {
+        if (!doorHitTargets.length) return;
+        const DOOR_TAP_MAX_DIST = 0.5; // metros; si no hay puerta tan cerca, no se considera un toque válido
+        const ANIM_MS = 300;
+        let animating = false;
+
+        function animateTo(target, from, to) {
+            animating = true;
+            el.pause();
+            el.animationName = target.clipName;
+            const start = performance.now();
+            function step(now) {
+              const t = Math.min(1, (now - start) / ANIM_MS);
+              el.currentTime = from + (to - from) * t;
+              if (t < 1) {
+                requestAnimationFrame(step);
+              } else {
+                animating = false;
+              }
+            }
+            requestAnimationFrame(step);
+        }
+
+        el.addEventListener('click', function (e) {
+          if (animating || typeof el.positionAndNormalFromPoint !== 'function') return;
+          const rect = el.getBoundingClientRect();
+          const hit = el.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
+          if (!hit) return;
+
+          let nearest = null, nearestDist = Infinity;
+          doorHitTargets.forEach(function (d) {
+            const dist = hit.position.distanceTo(d.worldPos);
+            if (dist < nearestDist) { nearestDist = dist; nearest = d; }
+          });
+          if (!nearest || nearestDist > DOOR_TAP_MAX_DIST) return;
+
+          nearest.open = !nearest.open;
+          animateTo(nearest, nearest.open ? 0 : 1, nearest.open ? 1 : 0);
+        });
+      }
     });
   </script>
 
