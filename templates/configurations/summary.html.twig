@@ -5239,10 +5239,19 @@
         });
 
         el.addEventListener('pointerup', function (e) {
-          if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) return;
-          if (animating || typeof el.positionAndNormalFromPoint !== 'function') return;
+          // TODO quitar estos console.log cuando esté depurado.
+          if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) {
+            console.log('[RA puertas] ignorado: hubo arrastre');
+            return;
+          }
+          if (animating) { console.log('[RA puertas] ignorado: animación en curso'); return; }
+          if (typeof el.positionAndNormalFromPoint !== 'function') {
+            console.log('[RA puertas] positionAndNormalFromPoint no existe en esta versión de model-viewer');
+            return;
+          }
           const rect = el.getBoundingClientRect();
           const hit = el.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
+          console.log('[RA puertas] hit:', hit, 'doorHitTargets:', doorHitTargets.length);
           if (!hit) return;
 
           let nearest = null, nearestDist = Infinity;
@@ -5250,6 +5259,7 @@
             const dist = hit.position.distanceTo(d.worldPos);
             if (dist < nearestDist) { nearestDist = dist; nearest = d; }
           });
+          console.log('[RA puertas] más cercana:', nearest && nearest.clipName, 'distancia:', nearestDist);
           if (!nearest || nearestDist > DOOR_TAP_MAX_DIST) return;
 
           nearest.open = !nearest.open;
