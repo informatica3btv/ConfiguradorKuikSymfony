@@ -5092,11 +5092,19 @@
           // model-viewer. Se convierte aquí mismo, solo en esta copia de
           // exportación (los materiales son nuevos, no se comparten con la
           // RA normal ni con el visor 3D), así que no afecta a nada más.
+          // OJO: un mismo material (p.ej. "doorMat") se reutiliza en
+          // muchas puertas, así que hay que convertir cada instancia UNA
+          // sola vez (si no, las puertas que comparten material se oscurecen
+          // de más, una vez por cada puerta que lo usa).
+          const convertedMats = new Set();
           lockerGroup.traverse(function (obj) {
             if (!obj.material) return;
             const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
             mats.forEach(function (m) {
-              if (m && m.color) m.color.convertSRGBToLinear();
+              if (m && m.color && !convertedMats.has(m)) {
+                convertedMats.add(m);
+                m.color.convertSRGBToLinear();
+              }
             });
           });
 
