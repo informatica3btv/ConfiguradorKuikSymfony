@@ -26,8 +26,16 @@ class ProjectController extends AbstractController
 
         $status = (int) $request->query->get('status', 0);
 
+        $criteria = ['status' => $status];
+        // Los distribuidores (login vía API de BTV) solo ven sus propios
+        // proyectos; el resto (comerciales internos) sigue viendo todos,
+        // como hasta ahora.
+        if ($this->isGranted('ROLE_DISTRIBUIDOR')) {
+            $criteria['user'] = $this->getUser();
+        }
+
         $projects = $projectRepo->findBy(
-            ['status' => $status],
+            $criteria,
             ['id' => 'DESC']
         );
 
@@ -59,10 +67,13 @@ class ProjectController extends AbstractController
             throw $this->createNotFoundException('Project not found');
         }
 
-        // Seguridad: que el proyecto sea del usuario
-        /*if ($project->getUser() !== $this->getUser()) {
+        // Los distribuidores solo pueden entrar a sus propios proyectos
+        // (aunque sepan/adivinen el id de uno ajeno). Los comerciales
+        // internos (ROLE_USER) siguen pudiendo ver cualquiera, como hasta
+        // ahora.
+        if ($this->isGranted('ROLE_DISTRIBUIDOR') && $project->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
-        }*/
+        }
 
         $configurations = $configRepo->findBy(
             ['project' => $project],
@@ -102,10 +113,11 @@ class ProjectController extends AbstractController
     }
 
     /**
-     * @Route("/proyecto/rechazar-proyecto/{id}", name="project_reject", methods={"GET"})
+     * @Route("/proyecto/rechazar-proyecto/{id}", name="project_reject", methods={"POST"})
      */
     public function rejectProject(
         int $id,
+        Request $request,
         ProjectRepository $repoProject,
         EntityManagerInterface $em
     ): Response {
@@ -118,8 +130,12 @@ class ProjectController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        
+        if (!$this->isCsrfTokenValid('reject_project_' . $project->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
         $project->setStatus(Project::STATUS_REJECTED);
+        $project->setObservations(trim((string) $request->request->get('observations', '')) ?: null);
 
 
         $em->persist($project);

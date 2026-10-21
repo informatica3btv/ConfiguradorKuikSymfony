@@ -6,10 +6,12 @@ security:
             algorithm: auto
 
     providers:
+        # Sin "property": usa UserRepository::loadUserByIdentifier(), que
+        # busca por email (login normal) o por código de distribuidor
+        # (login vía API de BTV).
         app_user_provider:
             entity:
                 class: App\Entity\User
-                property: email
 
     firewalls:
         dev:

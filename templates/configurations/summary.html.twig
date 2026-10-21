@@ -993,6 +993,8 @@
           <button type="button" class="scenario-btn" data-scenario="home">{{ 'summary.view3d.scenario_building'|trans }}</button>
           <button type="button" class="scenario-btn" data-scenario="profesional">{{ 'summary.view3d.scenario_office'|trans }}</button>
           <button type="button" class="scenario-btn" data-scenario="exterior">{{ 'summary.view3d.scenario_exterior'|trans }}</button>
+          <button type="button" class="scenario-btn" data-scenario="portal">{{ 'summary.view3d.scenario_portal'|trans }}</button>
+          <button type="button" class="scenario-btn" data-scenario="vacio">{{ 'summary.view3d.scenario_empty'|trans }}</button>
         </div>
         <div class="modal3d__body">
           <div id="viewer3d"></div>
@@ -1528,6 +1530,14 @@
             style="width:130px; padding:6px 10px; border:1px solid rgba(15,23,42,.15); border-radius:8px; font-size:14px;">
           <span id="instalacionStatus" style="font-size:12px; color:#6b7280; display:none;">{{ 'summary.installation.saved'|trans }}</span>
         </div>
+
+        <div style="margin-top:16px; border-top:1px solid rgba(15,23,42,.08); padding-top:16px;">
+          <label for="configObservations" style="font-size:14px; font-weight:700; display:block; margin-bottom:6px;">{{ 'summary.observations.label'|trans }}</label>
+          <textarea id="configObservations" rows="3"
+            placeholder="{{ 'summary.observations.placeholder'|trans }}"
+            style="width:100%; max-width:520px; padding:8px 10px; border:1px solid rgba(15,23,42,.15); border-radius:8px; font-size:14px; font-family:inherit; resize:vertical;">{{ configuration.observations }}</textarea>
+          <span id="configObservationsStatus" style="font-size:12px; color:#6b7280; display:none;">{{ 'summary.observations.saved'|trans }}</span>
+        </div>
       </div>
 
       <div class="card">
@@ -1883,11 +1893,34 @@
           b.setAttribute('aria-pressed', b.dataset.scenario === currentScenario ? 'true' : 'false');
         });
       }
+      // Sin esto, cambiar de escenario varias veces va dejando geometrías
+      // y texturas de las escenas anteriores sin liberar en la GPU
+      // (renderer.dispose() solo limpia el propio renderer, no lo que
+      // había dentro de la escena vieja) — con suficientes cambios de
+      // escenario (sobre todo entrando/saliendo de "Portal", que tiene
+      // muchísimos más objetos), eso termina notándose como que todo
+      // (incluido el zoom) va cada vez más lento.
+      function disposeSceneResources(sceneObj) {
+        if (!sceneObj) return;
+        sceneObj.traverse(function (obj) {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(function (m) {
+              if (!m) return;
+              if (m.map) m.map.dispose();
+              m.dispose();
+            });
+          }
+        });
+      }
+
       function setScenario(name) {
         if (name === currentScenario) return;
         currentScenario = name;
         updateScenarioButtons();
         if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        disposeSceneResources(scene);
         if (renderer) { renderer.dispose(); renderer = null; }
         doorPivots.length = 0;
         clickableMeshes.length = 0;
@@ -2252,6 +2285,11 @@
         });
 
         const totalWidth = Math.max(cursorX - groupGap, colW);
+        // Para los escenarios "oficina" y "exterior": aunque la taquilla
+        // tenga pocas columnas, la sala/fachada no debe encogerse por
+        // debajo de lo que ocuparía una taquilla de 4 columnas, para que no
+        // quede un entorno minúsculo alrededor de un mueble pequeño.
+        const roomSizeRefWidth = Math.max(totalWidth, colW * 4);
 
         // Entorno muy esquemático (solo para "home"): un suelo y una pared
         // de fondo neutros, para dar la idea de un portal/vestíbulo sin
@@ -2700,7 +2738,7 @@
           // (mesa + sillas). A la derecha, la zona de trabajo abierta con
           // la taquilla pegada a la pared de fondo y varios escritorios con
           // pantalla delante.
-          const margin = Math.max(totalWidth, baseY + maxHeight) * 1.6;
+          const margin = Math.max(roomSizeRefWidth, baseY + maxHeight) * 1.6;
           const roomHeight = (baseY + maxHeight) * 2.2;
           const wallT = mmToUnits(100);
           const floorY = -wallT / 2;
@@ -2978,7 +3016,7 @@
           // (fachada con ventanas y barandillas, jardineras con seto,
           // árboles low-poly, farola y banco), siguiendo el render de
           // referencia que pasó el cliente.
-          const margin = Math.max(totalWidth, baseY + maxHeight) * 3.2;
+          const margin = Math.max(roomSizeRefWidth, baseY + maxHeight) * 3.2;
           const mU = function (m) { return m * 100; }; // metros -> unidades (1 unidad = 1cm)
 
           function makeExtTex(w, h, draw, rx, ry) {
@@ -3030,11 +3068,11 @@
             tex.needsUpdate = true;
             tex.repeat.set(pieceWidth / wallTileW, pieceHeight / wallTileH);
             tex.offset.set(((worldLeftX || 0) / wallTileW) % 1, ((worldBottomY || 0) / wallTileH) % 1);
-            return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 });
+            return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, side: THREE.DoubleSide });
           }
 
           const extFloorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.95 });
-          const extWallPlainMat = new THREE.MeshStandardMaterial({ color: 0xebe6dd, roughness: 0.95 });
+          const extWallPlainMat = new THREE.MeshStandardMaterial({ color: 0xebe6dd, roughness: 0.95, side: THREE.DoubleSide });
           const extFrameMat = new THREE.MeshStandardMaterial({ color: 0xf2f0ec, roughness: 0.7 });
           const extGlassMat = new THREE.MeshStandardMaterial({ color: 0x7fa8cf, roughness: 0.15, metalness: 0.2 });
           const extRailMat = new THREE.MeshStandardMaterial({ color: 0x8a837b, roughness: 0.5, metalness: 0.4 });
@@ -3208,6 +3246,406 @@
           // bastante lejos como para ver la escena completa, no solo el
           // mueble.
           minCameraDist = wallWidth * 0.75;
+        } else if (currentScenario === 'portal') {
+          // Entorno "portal": port fiel de un portal de comunidad de
+          // vecinos (referencia del cliente): sala con suelo de mármol,
+          // zócalo de madera, escalera con barandilla, ascensor, buzones +
+          // tablón de anuncios, espejo con consola, banco, plantas y
+          // puerta de entrada acristalada. Igual técnica que "home": todo
+          // (menos la taquilla real) vive en un único grupo que solo se
+          // gira/desplaza en bloque para que la pared de los buzones (en
+          // la referencia) quede justo donde está la taquilla real.
+          const mU = function (m) { return m * 100; };
+          function makePortalTex(w, h, draw, rx, ry) {
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            draw(canvas.getContext('2d'), w, h);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(rx, ry);
+            // Sin esto, un suelo visto en ángulo (como aquí, con la
+            // cámara casi a ras) se ve "temblando"/con destellos raros
+            // (aliasing), que es justo lo que se veía como brillo molesto.
+            // (El renderer todavía no existe en este punto de la
+            // construcción de la escena, así que no se puede consultar su
+            // máximo real; 8 es un valor seguro y ampliamente soportado.)
+            tex.anisotropy = 8;
+            return tex;
+          }
+          function rngPortal(seed) {
+            return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+          }
+
+          const lobby = new THREE.Group();
+          scene.add(lobby);
+
+          // La pared de los buzones en la referencia es la de X1=5 (eje X
+          // de la referencia); tras girar el grupo 90º, esa pared pasa a
+          // ser nuestra "pared de fondo" (z=0, donde se apoya la
+          // taquilla). "refZAtLocker" es el punto a lo largo de esa pared
+          // (eje Z de la referencia) en el que estaba el buzón de
+          // referencia; se usa para centrar la taquilla real ahí.
+          const refWallX = 5;
+          const refZAtLocker = -5.4;
+          // Pequeño hueco extra entre la pared y la taquilla (se seguía
+          // viendo demasiado pegada/clavada en la pared). Se resta porque
+          // la pared, tras el giro del grupo, queda en -mU(refWallX) +
+          // lobby.position.z: restar aquí la aleja (más negativa),
+          // dejándola detrás de la taquilla en vez de atravesándola.
+          const wallGap = mU(0.12);
+          lobby.rotation.y = Math.PI / 2;
+          lobby.position.set(totalWidth / 2 - mU(refZAtLocker), 0, mU(refWallX) - wallGap);
+
+          function lbox(w, h, d, m, x, y, z, parent, noShadow) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+            mesh.position.set(x, y, z);
+            (parent || lobby).add(mesh);
+            return mesh;
+          }
+
+          // --- Texturas (igual técnica que el archivo original) ---
+          // Mármol: tonos más apagados que antes (el beige muy claro
+          // "deslumbraba" bajo la luz de la escena) y vetas finas, no solo
+          // baldosas lisas con junta.
+          const marbleTex = makePortalTex(512, 512, function (g, w, h) {
+            const r = rngPortal(5), T = 128;
+            const tonesA = ['#b9a888', '#c3b091'], tonesB = ['#d6cdbb', '#ddd4c3'];
+            for (let y = 0; y < 4; y++) {
+              for (let x = 0; x < 4; x++) {
+                const tones = (x + y) % 2 ? tonesA : tonesB;
+                g.fillStyle = tones[Math.floor(r() * tones.length)];
+                g.fillRect(x * T, y * T, T, T);
+                // Vetas finas dentro de cada baldosa.
+                g.strokeStyle = (x + y) % 2 ? 'rgba(90,75,55,.16)' : 'rgba(255,255,255,.22)';
+                g.lineWidth = 1;
+                for (let v = 0; v < 2; v++) {
+                  g.beginPath();
+                  let px = x * T + r() * T, py = y * T;
+                  g.moveTo(px, py);
+                  for (let s = 0; s < 5; s++) {
+                    px += (r() - 0.5) * 34; py += T / 5;
+                    g.lineTo(Math.max(x * T, Math.min(x * T + T, px)), py);
+                  }
+                  g.stroke();
+                }
+              }
+            }
+            g.strokeStyle = '#a89878'; g.lineWidth = 2;
+            for (let i = 0; i <= 4; i++) {
+              g.beginPath(); g.moveTo(i * T, 0); g.lineTo(i * T, h); g.stroke();
+              g.beginPath(); g.moveTo(0, i * T); g.lineTo(w, i * T); g.stroke();
+            }
+          }, 10 / 2.4, 10 / 2.4);
+          // Madera: vetas curvas reales (antes solo tenía el marco de
+          // cada panel, sin textura de grano dentro).
+          const woodTex = makePortalTex(512, 128, function (g, w, h) {
+            g.fillStyle = '#8f5f3b'; g.fillRect(0, 0, w, h);
+            const r = rngPortal(9);
+            for (let i = 0; i < 55; i++) {
+              g.strokeStyle = 'rgba(55,32,16,' + (0.08 + r() * 0.1) + ')';
+              g.beginPath();
+              const y = r() * h;
+              g.moveTo(0, y);
+              g.bezierCurveTo(w / 3, y + (r() - 0.5) * 10, 2 * w / 3, y + (r() - 0.5) * 10, w, y);
+              g.stroke();
+            }
+            for (let x = 0; x < 4; x++) {
+              g.strokeStyle = 'rgba(40,22,10,.45)'; g.lineWidth = 3;
+              g.strokeRect(x * 128 + 14, 14, 100, h - 28);
+              g.strokeStyle = 'rgba(255,220,180,.18)'; g.lineWidth = 2;
+              g.strokeRect(x * 128 + 18, 18, 92, h - 36);
+            }
+          }, 1, 1);
+
+          // --- Materiales ---
+          const P = {
+            floor: new THREE.MeshStandardMaterial({ map: marbleTex, color: 0xd8d2c4, roughness: 0.85, metalness: 0 }),
+            paint: new THREE.MeshStandardMaterial({ color: 0xeadcc2, roughness: 0.95 }),
+            ceiling: new THREE.MeshStandardMaterial({ color: 0xf7f4ee, roughness: 0.95 }),
+            wood: new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.6 }),
+            woodSolid: new THREE.MeshStandardMaterial({ color: 0x8f5f3b, roughness: 0.6 }),
+            base: new THREE.MeshStandardMaterial({ color: 0xb9a988, roughness: 0.4 }),
+            stone: new THREE.MeshStandardMaterial({ color: 0xe7dccb, roughness: 0.5 }),
+            steel: new THREE.MeshStandardMaterial({ color: 0xc4c9cf, roughness: 0.28, metalness: 0.75 }),
+            darkSteel: new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.4, metalness: 0.6 }),
+            brass: new THREE.MeshStandardMaterial({ color: 0xc2a25f, roughness: 0.35, metalness: 0.7 }),
+            glass: new THREE.MeshStandardMaterial({ color: 0xbcd7e8, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28 }),
+            mirror: new THREE.MeshStandardMaterial({ color: 0xb7c4cc, roughness: 0.05, metalness: 0.95 }),
+            outside: new THREE.MeshStandardMaterial({ color: 0xd9d3c8, roughness: 1 }),
+            matRug: new THREE.MeshStandardMaterial({ color: 0x4a4640, roughness: 1 }),
+            pot: new THREE.MeshStandardMaterial({ color: 0xb86a46, roughness: 0.85 }),
+            leaf1: new THREE.MeshStandardMaterial({ color: 0x4f9a3f, flatShading: true, roughness: 0.9 }),
+            leaf2: new THREE.MeshStandardMaterial({ color: 0x72bb5c, flatShading: true, roughness: 0.9 }),
+            cork: new THREE.MeshStandardMaterial({ color: 0xb98d5b, roughness: 1 }),
+            paperW: new THREE.MeshStandardMaterial({ color: 0xfbfaf6, roughness: 0.9 }),
+            paperY: new THREE.MeshStandardMaterial({ color: 0xf6dc6a, roughness: 0.9 }),
+            paperB: new THREE.MeshStandardMaterial({ color: 0x9cc6ea, roughness: 0.9 }),
+            red: new THREE.MeshStandardMaterial({ color: 0xc9302c, roughness: 0.4, metalness: 0.2 }),
+            lamp: new THREE.MeshStandardMaterial({ color: 0xfff6e6, emissive: 0xffe9c4, emissiveIntensity: 0.9 }),
+            black: new THREE.MeshStandardMaterial({ color: 0x1d2024, roughness: 0.5 })
+          };
+
+          // --- Sala: suelo, paredes y techo ---
+          const X0 = -5, X1 = 5, Z0 = -8, Z1 = 2, H = 3.2;
+          const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(mU(10), mU(10)), P.floor);
+          floorMesh.rotation.x = -Math.PI / 2;
+          floorMesh.position.set(0, 0, mU(-3));
+          lobby.add(floorMesh);
+          const outMesh = new THREE.Mesh(new THREE.PlaneGeometry(mU(40), mU(20)), P.outside);
+          outMesh.rotation.x = -Math.PI / 2;
+          outMesh.position.set(0, -mU(0.01), mU(12.2));
+          lobby.add(outMesh);
+
+          const portalWalls = {};
+          function portalWall(name, x, z, rotY, segs) {
+            const g = new THREE.Group();
+            g.position.set(mU(x), 0, mU(z));
+            g.rotation.y = rotY;
+            lobby.add(g);
+            portalWalls[name] = g;
+            segs.forEach(function (seg) {
+              const a = seg[0], b = seg[1], y0 = seg[2], y1 = seg[3];
+              lbox(mU(b - a), mU(y1 - y0), mU(0.2), P.paint, mU((a + b) / 2), mU((y0 + y1) / 2), mU(-0.1), g);
+              if (y0 < 1.1) {
+                const top = Math.min(y1, 1.1);
+                lbox(mU(b - a), mU(top - y0), mU(0.03), P.wood, mU((a + b) / 2), mU((y0 + top) / 2), mU(0.015), g);
+                lbox(mU(b - a), mU(0.05), mU(0.06), P.woodSolid, mU((a + b) / 2), mU(1.12), mU(0.03), g);
+                lbox(mU(b - a), mU(0.12), mU(0.05), P.base, mU((a + b) / 2), mU(0.06), mU(0.04), g);
+              }
+            });
+          }
+          portalWall('back', 0, Z0, 0, [[-5, 1.5, 0, H], [2.5, 5, 0, H], [1.5, 2.5, 2.1, H]]);
+          portalWall('front', 0, Z1, Math.PI, [[-5, -1.4, 0, H], [1.4, 5, 0, H], [-1.4, 1.4, 2.6, H]]);
+          portalWall('left', X0, -3, Math.PI / 2, [[-5, 5, 0, H]]);
+          portalWall('right', X1, -3, -Math.PI / 2, [[-5, 5, 0, H]]);
+
+          // Techo con hueco de escalera, agrupado para poder ocultarlo
+          // según la posición de la cámara (ver más abajo): si no, al
+          // mirar desde fuera/arriba (la cámara inicial del archivo
+          // original está fuera del portal) solo se ve la tapa de arriba.
+          const ceilGroup = new THREE.Group();
+          lobby.add(ceilGroup);
+          portalWalls.ceil = ceilGroup;
+          function cbox2(w, h, d, m, x, y, z) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+            mesh.position.set(x, y, z);
+            ceilGroup.add(mesh);
+          }
+          cbox2(mU(5.4), mU(0.15), mU(10), P.ceiling, mU(2.3), mU(H + 0.075), mU(-3));
+          cbox2(mU(4.6), mU(0.15), mU(8.5), P.ceiling, mU(-2.7), mU(H + 0.075), mU(-2.25));
+          cbox2(mU(4.6), mU(1.8), mU(0.1), P.paint, mU(-2.7), mU(H + 0.9), mU(-6.55));
+          cbox2(mU(0.1), mU(1.8), mU(1.5), P.paint, mU(-0.4), mU(H + 0.9), mU(-7.25));
+          cbox2(mU(4.6), mU(0.1), mU(1.5), P.ceiling, mU(-2.7), mU(H + 1.8), mU(-7.25));
+          cbox2(mU(0.1), mU(1.8), mU(1.5), P.paint, mU(-5.05), mU(H + 0.9), mU(-7.25));
+          cbox2(mU(4.6), mU(1.8), mU(0.1), P.paint, mU(-2.7), mU(H + 0.9), mU(-8.05));
+          [[0, -0.3], [0, -4], [2.5, -6.5]].forEach(function (p) {
+            const l = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.32), mU(0.32), mU(0.04), 28), P.lamp);
+            l.position.set(mU(p[0]), mU(H) - mU(0.02), mU(p[1]));
+            ceilGroup.add(l);
+          });
+
+          // --- Puerta de entrada acristalada ---
+          [-1.36, 1.36].forEach(function (x) { lbox(mU(0.08), mU(2.6), mU(0.14), P.darkSteel, mU(x), mU(1.3), mU(Z1 - 0.07)); });
+          lbox(mU(2.8), mU(0.08), mU(0.14), P.darkSteel, 0, mU(2.56), mU(Z1 - 0.07));
+          [-0.66, 0.66].forEach(function (x) {
+            lbox(mU(1.2), mU(2.44), mU(0.03), P.glass, mU(x), mU(1.3), mU(Z1 - 0.1));
+            lbox(mU(0.03), mU(0.6), mU(0.05), P.brass, mU(x > 0 ? x - 0.5 : x + 0.5), mU(1.1), mU(Z1 - 0.15));
+          });
+          lbox(mU(0.06), mU(2.5), mU(0.1), P.darkSteel, 0, mU(1.3), mU(Z1 - 0.1));
+          lbox(mU(2), mU(0.015), mU(1), P.matRug, 0, mU(0.008), mU(Z1 - 0.75));
+
+          // --- Escalera ---
+          const SH = 0.16, ST = 0.4;
+          for (let i = 0; i < 10; i++) {
+            lbox(mU(1.4), mU((i + 1) * SH), mU(ST), P.stone, mU(-4.3), mU((i + 1) * SH / 2), mU(-2.5 - ST / 2 - i * ST));
+          }
+          lbox(mU(1.4), mU(1.6), mU(1.5), P.stone, mU(-4.3), mU(0.8), mU(-7.25));
+          for (let i = 0; i < 8; i++) {
+            const h = 1.6 + (i + 1) * SH;
+            lbox(mU(ST), mU(h), mU(1.4), P.stone, mU(-3.6 + ST / 2 + i * ST), mU(h / 2), mU(-7.3));
+          }
+          function portalRail(x1, y1, z1, x2, y2, z2) {
+            const a = new THREE.Vector3(mU(x1), mU(y1), mU(z1));
+            const b = new THREE.Vector3(mU(x2), mU(y2), mU(z2));
+            const len = a.distanceTo(b);
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.025), mU(0.025), len, 10), P.brass);
+            m.position.copy(a).add(b).multiplyScalar(0.5);
+            m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+            lobby.add(m);
+          }
+          for (let i = 0; i <= 10; i += 2) {
+            const z = -2.5 - ST / 2 - i * ST, y = Math.min(10, i + 1) * SH;
+            portalRail(-3.65, y, z, -3.65, y + 0.9, z);
+          }
+          portalRail(-3.65, SH + 0.9, -2.7, -3.65, 1.6 + 0.9, -6.5);
+          for (let i = 0; i <= 8; i += 2) {
+            const x = -3.6 + ST / 2 + i * ST, y = 1.6 + Math.min(8, i + 1) * SH;
+            if (x < -0.4) portalRail(x, y, -6.65, x, y + 0.9, -6.65);
+          }
+          portalRail(-3.6, 1.6 + SH + 0.9, -6.65, -0.6, 1.6 + 8 * SH + 0.9, -6.65);
+          portalRail(-3.65, 2.5, -6.5, -3.6, 2.5 + SH, -6.65);
+
+          // --- Ascensor (cerrado, decorativo) ---
+          const EX = 2, EZ = Z0;
+          [-0.54, 0.54].forEach(function (x) { lbox(mU(0.08), mU(2.2), mU(0.08), P.steel, mU(EX + x), mU(1.1), mU(EZ + 0.03)); });
+          lbox(mU(1.16), mU(0.08), mU(0.08), P.steel, mU(EX), mU(2.14), mU(EZ + 0.03));
+          lbox(mU(0.5), mU(2.1), mU(0.04), P.steel, mU(EX - 0.25), mU(1.05), mU(EZ - 0.1));
+          lbox(mU(0.5), mU(2.1), mU(0.04), P.steel, mU(EX + 0.25), mU(1.05), mU(EZ - 0.1));
+          lbox(mU(0.012), mU(2.1), mU(0.045), P.darkSteel, mU(EX), mU(1.05), mU(EZ - 0.1));
+          lbox(mU(1.2), mU(0.04), mU(1.4), P.stone, mU(EX), mU(0.02), mU(EZ - 0.9));
+          lbox(mU(1.2), mU(0.04), mU(1.4), P.ceiling, mU(EX), mU(2.2), mU(EZ - 0.9));
+          lbox(mU(1.2), mU(2.2), mU(0.04), P.mirror, mU(EX), mU(1.1), mU(EZ - 1.6));
+          [-0.6, 0.6].forEach(function (x) { lbox(mU(0.04), mU(2.2), mU(1.4), P.steel, mU(EX + x), mU(1.1), mU(EZ - 0.9)); });
+          // z algo más alejado de la pared (antes casi coincidía con el
+          // panel de madera del zócalo, dando parpadeo/z-fighting).
+          lbox(mU(0.14), mU(0.3), mU(0.02), P.steel, mU(EX + 0.82), mU(1.15), mU(EZ + 0.1));
+
+          // --- Buzones + tablón de anuncios (pared de la taquilla real) ---
+          const mbGroup = new THREE.Group();
+          mbGroup.position.set(mU(X1), 0, 0);
+          mbGroup.rotation.y = -Math.PI / 2;
+          lobby.add(mbGroup);
+          function mbox(w, h, d, m, x, y, z) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(mU(w), mU(h), mU(d)), m);
+            mesh.position.set(mU(x), mU(y), mU(z));
+            mbGroup.add(mesh);
+            return mesh;
+          }
+          mbox(2.0, 1.0, 0.3, P.woodSolid, -2.65, 1.45, 0.15);
+          // Los 24 buzones son 4 piezas repetidas (placa, numerito, papel,
+          // llave) x 24 = 96 objetos sueltos, cada uno su propio "draw
+          // call". Con InstancedMesh son solo 4 draw calls en total (una
+          // mesh por pieza, con 24 copias dentro) — esto es lo que hacía
+          // que, según hacia dónde mirara la cámara, fuera más lento.
+          const slotCount = 24;
+          const plateMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(mU(0.29), mU(0.21), mU(0.02)), P.brass, slotCount);
+          const labelMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(mU(0.16), mU(0.018), mU(0.01)), P.black, slotCount);
+          const paperMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(mU(0.09), mU(0.03), mU(0.01)), P.paperW, slotCount);
+          const keyMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(mU(0.012), mU(0.012), mU(0.01), 10), P.steel, slotCount);
+          const dummy = new THREE.Object3D();
+          let slotIdx = 0;
+          for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 6; c++) {
+              const x = -3.5 + c * 0.32 + 0.16, y = 1.07 + r * 0.24 + 0.12;
+              dummy.position.set(mU(x), mU(y), mU(0.31));
+              dummy.rotation.set(0, 0, 0);
+              dummy.updateMatrix();
+              plateMesh.setMatrixAt(slotIdx, dummy.matrix);
+              dummy.position.set(mU(x), mU(y + 0.05), mU(0.322));
+              dummy.updateMatrix();
+              labelMesh.setMatrixAt(slotIdx, dummy.matrix);
+              dummy.position.set(mU(x - 0.06), mU(y - 0.05), mU(0.322));
+              dummy.updateMatrix();
+              paperMesh.setMatrixAt(slotIdx, dummy.matrix);
+              dummy.position.set(mU(x + 0.09), mU(y - 0.05), mU(0.325));
+              dummy.rotation.set(Math.PI / 2, 0, 0);
+              dummy.updateMatrix();
+              keyMesh.setMatrixAt(slotIdx, dummy.matrix);
+              slotIdx++;
+            }
+          }
+          [plateMesh, labelMesh, paperMesh, keyMesh].forEach(function (im) { im.instanceMatrix.needsUpdate = true; });
+          mbGroup.add(plateMesh, labelMesh, paperMesh, keyMesh);
+          mbox(1.2, 0.75, 0.04, P.cork, -0.1, 1.65, 0.02);
+          mbox(1.26, 0.81, 0.03, P.woodSolid, -0.1, 1.65, 0.005);
+          [[-0.45, 1.82, P.paperW], [-0.12, 1.75, P.paperY], [0.25, 1.85, P.paperB], [0.1, 1.5, P.paperW], [-0.4, 1.5, P.paperY]].forEach(function (p) {
+            mbox(0.24, 0.3, 0.005, p[2], p[0], p[1], 0.045);
+            const pin = new THREE.Mesh(new THREE.SphereGeometry(mU(0.012), 8, 8), P.red);
+            pin.position.set(mU(p[0]), mU(p[1] + 0.13), mU(0.05));
+            mbGroup.add(pin);
+          });
+
+          // --- Espejo, consola, plantas, extintor ---
+          const mirrorGroup = new THREE.Group();
+          mirrorGroup.position.set(mU(X0), 0, 0);
+          mirrorGroup.rotation.y = Math.PI / 2;
+          lobby.add(mirrorGroup);
+          function mirbox(w, h, d, m, x, y, z) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(mU(w), mU(h), mU(d)), m);
+            mesh.position.set(mU(x), mU(y), mU(z));
+            mirrorGroup.add(mesh);
+            return mesh;
+          }
+          mirbox(1.5, 1.1, 0.04, P.brass, 0.4, 1.85, 0.02);
+          mirbox(1.38, 0.98, 0.02, P.mirror, 0.4, 1.85, 0.05);
+          mirbox(1.6, 0.08, 0.42, P.woodSolid, 0.4, 0.46, 0.25);
+          [-0.3, 1.1].forEach(function (x) { mirbox(0.06, 0.42, 0.36, P.darkSteel, x, 0.21, 0.25); });
+
+          function portalLowpolyBlob(r, seed, m) {
+            const geo = new THREE.IcosahedronGeometry(r, 1);
+            const pos = geo.attributes.position, cache = {}, rand = rngPortal(seed);
+            for (let i = 0; i < pos.count; i++) {
+              const k = pos.getX(i).toFixed(3) + ',' + pos.getY(i).toFixed(3) + ',' + pos.getZ(i).toFixed(3);
+              if (!cache[k]) cache[k] = 0.85 + rand() * 0.3;
+              pos.setXYZ(i, pos.getX(i) * cache[k], pos.getY(i) * cache[k], pos.getZ(i) * cache[k]);
+            }
+            geo.computeVertexNormals();
+            return new THREE.Mesh(geo, m);
+          }
+          function portalPlant(x, z, seed) {
+            const g = new THREE.Group();
+            g.position.set(mU(x), 0, mU(z));
+            lobby.add(g);
+            const p = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.28), mU(0.22), mU(0.55), 10), P.pot);
+            p.position.y = mU(0.275);
+            g.add(p);
+            const t = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.03), mU(0.04), mU(0.6), 6), P.woodSolid);
+            t.position.y = mU(0.8);
+            g.add(t);
+            [[0, 1.35, 0, 0.5, P.leaf1], [-0.22, 1.1, 0.1, 0.35, P.leaf2], [0.2, 1.15, -0.1, 0.36, P.leaf2], [0, 1.65, 0.05, 0.3, P.leaf2]].forEach(function (b, i) {
+              const m = portalLowpolyBlob(mU(b[3]), seed + i * 7, b[4]);
+              m.position.set(mU(b[0]), mU(b[1]), mU(b[2]));
+              g.add(m);
+            });
+          }
+          portalPlant(-4.45, 1.45, 3);
+          portalPlant(4.45, 1.45, 17);
+          portalPlant(0.55, -7.45, 29);
+
+          const extMesh = new THREE.Mesh(new THREE.CylinderGeometry(mU(0.08), mU(0.08), mU(0.5), 14), P.red);
+          extMesh.position.set(mU(2.1), mU(0.85), mU(Z1 - 0.12));
+          lobby.add(extMesh);
+          lbox(mU(0.05), mU(0.08), mU(0.05), P.black, mU(2.1), mU(1.13), mU(Z1 - 0.12));
+          lbox(mU(0.22), mU(0.3), mU(0.03), P.paperW, mU(2.1), mU(1.45), mU(Z1 - 0.03));
+
+          // --- Banco ---
+          lbox(mU(1.6), mU(0.08), mU(0.42), P.woodSolid, mU(-4.6), mU(0.46), mU(-1.1));
+          [[-4.9, -1.35], [-4.3, -1.35], [-4.9, -0.85], [-4.3, -0.85]].forEach(function (p) {
+            lbox(mU(0.06), mU(0.42), mU(0.06), P.darkSteel, mU(p[0]), mU(0.21), mU(p[1]));
+          });
+
+          // Cámara: misma posición/objetivo que el archivo original,
+          // trasladados al mundo real a través del propio grupo (gira y
+          // desplaza igual que el resto de la escena).
+          lobby.updateMatrixWorld(true);
+          cameraPosOverride = lobby.localToWorld(new THREE.Vector3(mU(-8), mU(6.5), mU(9)));
+          cameraTargetOverride = lobby.localToWorld(new THREE.Vector3(mU(0.5), mU(1.2), mU(-3)));
+
+          // Oculta la pared/techo que queda "delante" de la cámara, igual
+          // que el archivo original: si no, al mirar desde fuera o desde
+          // arriba (como la cámara inicial, que está fuera del portal) no
+          // se vería nada del interior.
+          const localCamPos = new THREE.Vector3();
+          sceneUpdaters.push(function () {
+            if (!camera) return;
+            localCamPos.copy(camera.position);
+            lobby.worldToLocal(localCamPos);
+            const lx = localCamPos.x / 100, ly = localCamPos.y / 100, lz = localCamPos.z / 100;
+            if (portalWalls.front) portalWalls.front.visible = lz < Z1;
+            if (portalWalls.back) portalWalls.back.visible = lz > Z0;
+            if (portalWalls.left) portalWalls.left.visible = lx > X0;
+            if (portalWalls.right) portalWalls.right.visible = lx < X1;
+            if (portalWalls.ceil) portalWalls.ceil.visible = ly < H;
+          });
+        } else if (currentScenario === 'vacio') {
+          // Escenario "vacío": sin entorno, solo un suelo neutro para que
+          // la taquilla se apoye en algo y se vea bien, sin más contexto.
+          const emptyFloorMat = new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: 0.95 });
+          const emptyFloorSize = Math.max(totalWidth, baseY + maxHeight, depth) * 6;
+          const emptyFloor = new THREE.Mesh(new THREE.PlaneGeometry(emptyFloorSize, emptyFloorSize), emptyFloorMat);
+          emptyFloor.rotation.x = -Math.PI / 2;
+          emptyFloor.position.set(totalWidth / 2, 0, depth * 0.3);
+          scene.add(emptyFloor);
         }
 
         const sceneTotalHeight = baseY + maxHeight;
@@ -3248,6 +3686,10 @@
         }
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
+        // No dejar que la cámara baje del todo hasta el plano horizontal
+        // del objetivo (y menos aún que se meta "bajo tierra"/debajo del
+        // suelo al orbitar).
+        controls.maxPolarAngle = Math.PI / 2 - 0.03;
         // Límite de alejamiento proporcional al encuadre inicial, no un
         // número fijo: así cada escenario (desde una taquilla sola hasta
         // el edificio con calle) permite alejarse un poco más de lo normal
@@ -3256,6 +3698,22 @@
         // "dist" sino la distancia a ese punto fijo.
         const initialCamDist = cameraPosOverride ? camera.position.distanceTo(controls.target) : dist;
         controls.maxDistance = Math.max(initialCamDist * 1.5, 500);
+
+        // El escenario "exterior" es solo una fachada plana (sin fondo
+        // modelado detrás): si se pudiera orbitar libremente, la cámara
+        // podría colarse detrás de la pared y ver el "reverso" de la
+        // fachada con los setos/banco/farola pegados a ella. Se limita el
+        // giro horizontal para no pasar de los lados de la fachada.
+        if (currentScenario === 'exterior') {
+          const initialAzimuth = Math.atan2(
+            camera.position.x - controls.target.x,
+            camera.position.z - controls.target.z
+          );
+          const azimuthRange = Math.PI * 0.42;
+          controls.minAzimuthAngle = initialAzimuth - azimuthRange;
+          controls.maxAzimuthAngle = initialAzimuth + azimuthRange;
+        }
+
         controls.update();
 
         resizeRenderer();
@@ -3304,6 +3762,17 @@
           const dt = (lastT === null || typeof t !== 'number') ? 0 : Math.min((t - lastT) / 1000, 0.05);
           lastT = typeof t === 'number' ? t : lastT;
           controls.update();
+          // maxPolarAngle evita mirar desde abajo, pero con el botón
+          // derecho (desplazar/pan) la cámara igualmente podía acabar
+          // bajo el suelo, porque el pan mueve cámara y objetivo juntos
+          // sin pasar por esa restricción. Si ocurre, se sube cámara y
+          // objetivo la misma cantidad (no solo la cámara), para no
+          // deformar el encuadre de golpe.
+          if (camera.position.y < 1) {
+            const liftY = 1 - camera.position.y;
+            camera.position.y += liftY;
+            controls.target.y += liftY;
+          }
           doorPivots.forEach(function (entry) {
             const target = entry.open ? DOOR_OPEN_ANGLE : 0;
             entry.pivot.rotation.y += (target - entry.pivot.rotation.y) * 0.18;
@@ -3464,6 +3933,26 @@
     }
 
     function bindIvaCheck() {}
+
+    const _observationsUrl = '{{ path('configuration_observations', { id: configuration.id }) }}';
+    const _observationsEl = document.getElementById('configObservations');
+    const _observationsStatus = document.getElementById('configObservationsStatus');
+    if (_observationsEl) {
+      let _observationsSavedValue = _observationsEl.value;
+      _observationsEl.addEventListener('blur', async function () {
+        if (_observationsEl.value === _observationsSavedValue) return;
+        await fetch(_observationsUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ observations: _observationsEl.value })
+        });
+        _observationsSavedValue = _observationsEl.value;
+        if (_observationsStatus) {
+          _observationsStatus.style.display = 'inline';
+          setTimeout(() => { _observationsStatus.style.display = 'none'; }, 2000);
+        }
+      });
+    }
 
     document.addEventListener('change', function (e) {
       console.log('change event', e.target?.id);

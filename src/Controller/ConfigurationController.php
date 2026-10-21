@@ -908,6 +908,11 @@ class ConfigurationController extends AbstractController
             return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
         }
 
+        if ($project->getStatus() !== Project::STATUS_OPEN) {
+            $this->addFlash('error', 'No se pueden eliminar configuraciones de un proyecto aceptado o rechazado.');
+            return $this->redirectToRoute('project_configurations', ['project_id' => $project->getId()]);
+        }
+
         $em->remove($configuration);
         $em->flush();
 
@@ -969,6 +974,7 @@ class ConfigurationController extends AbstractController
         $configuration->setPayload(json_encode($payloadArr));
         $configuration->setStatus(Configuration::STATUS_ACCEPTED);
         $project->setStatus(1);
+        $project->setObservations(trim((string) $request->request->get('observations', '')) ?: null);
 
         $em->persist($configuration);
         $em->persist($project);
@@ -1125,6 +1131,39 @@ class ConfigurationController extends AbstractController
         $payloadArr = $configuration->getDecodedPayload() ?? [];
         $payloadArr['_manualLines'] = $lines;
         $configuration->setPayload(json_encode($payloadArr));
+
+        $em->persist($configuration);
+        $em->flush();
+
+        return new JsonResponse(['ok' => true]);
+    }
+
+    /**
+     * Notas internas de la configuración (nunca se muestran en el PDF).
+     *
+     * @Route("/configuracion/observaciones/{id}", name="configuration_observations", methods={"POST"})
+     */
+    public function saveObservations(
+        int $id,
+        Request $request,
+        ConfigurationRepository $repo,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            return new JsonResponse(['ok' => false], 404);
+        }
+
+        $project = $configuration->getProject();
+        if (!$project || $project->getUser() !== $this->getUser()) {
+            return new JsonResponse(['ok' => false], 403);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $observations = trim((string) ($data['observations'] ?? ''));
+        $configuration->setObservations($observations !== '' ? $observations : null);
 
         $em->persist($configuration);
         $em->flush();

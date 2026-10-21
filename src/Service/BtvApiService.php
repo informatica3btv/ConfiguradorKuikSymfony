@@ -47,6 +47,41 @@ class BtvApiService
         $this->password   = $password;
     }
 
+    /**
+     * Valida un usuario/contraseña de distribuidor contra BTV (distinto de
+     * getToken(), que usa la cuenta de servicio fija de este servicio):
+     * se usa en el login de la web para dejar entrar a distribuidores con
+     * su propio código BTV, sin guardar su contraseña en nuestra BD.
+     */
+    public function verifyCredentials(string $username, string $password): bool
+    {
+        try {
+            $response = $this->httpClient->request('POST', $this->baseUrl . '/api/login_check', array_merge($this->httpOptions, [
+                'json' => [
+                    'username' => $username,
+                    'password' => $password,
+                ],
+            ]));
+
+            $status = $response->getStatusCode();
+            return $status >= 200 && $status < 300;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('BTV login_check transport error for distribuidor {user}: {msg}', [
+                'user' => $username,
+                'msg' => $e->getMessage(),
+            ]);
+            return false;
+        } catch (\Throwable $e) {
+            // Un 4xx/5xx de credenciales incorrectas también cae aquí
+            // (el cliente HTTP de Symfony lanza excepción en status >= 400).
+            $this->logger->info('BTV login_check rejected for distribuidor {user}: {msg}', [
+                'user' => $username,
+                'msg' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
     private function getToken(): string
     {
         return $this->cache->get('btv_api_token', function (ItemInterface $item) {

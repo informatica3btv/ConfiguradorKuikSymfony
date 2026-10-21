@@ -658,6 +658,14 @@
                      placeholder="{{ 'project_configs.client_code_placeholder'|trans }}" required>
             </div>
           </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label for="acceptConfigObservations">{{ 'project_configs.observations_label'|trans }}</label>
+              <textarea id="acceptConfigObservations" name="observations" rows="3"
+                        placeholder="{{ 'project_configs.observations_placeholder'|trans }}"></textarea>
+            </div>
+          </div>
         </div>
 
         <div class="modalx__footer">
@@ -706,15 +714,52 @@
     {% endif %}
 
     {% if project.status == 0 and app.user.id == user.id %}
-      <a class="btn reject icon" href="{{ path('project_reject', { id: project.id }) }}"
-          onclick="return confirm('{{ 'project_configs.confirm_reject_project'|trans|e('js') }}');">
+      <button type="button" class="btn reject icon" id="openRejectProject">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
           <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
         </svg>
         {{ 'project_configs.reject_project'|trans }}
-      </a>
+      </button>
     {% endif %}
+  </div>
+
+  {% if project.status in [1, 2] and project.observations %}
+    <div class="card" style="margin-bottom:20px; border-left:4px solid {{ project.status == 2 ? '#dc2626' : '#16a34a' }};">
+      <h3 style="margin:0 0 8px;">{{ 'project_configs.observations_label'|trans }}</h3>
+      <p class="muted" style="margin:0; white-space:pre-wrap;">{{ project.observations }}</p>
+    </div>
+  {% endif %}
+
+  <div class="modalx" id="rejectProjectModal" aria-hidden="true">
+    <div class="modalx__backdrop" data-close="1"></div>
+
+    <div class="modalx__dialog" role="dialog" aria-modal="true" aria-labelledby="rejectProjectTitle">
+      <div class="modalx__head">
+        <h4 class="modalx__title" id="rejectProjectTitle">{{ 'project_configs.reject_project'|trans }}</h4>
+        <button type="button" class="modalx__close" aria-label="{{ 'project_configs.close'|trans }}" data-close="1">×</button>
+      </div>
+
+      <form method="post" id="rejectProjectForm" action="{{ path('project_reject', { id: project.id }) }}">
+        <div class="modalx__body">
+          <input type="hidden" name="_token" value="{{ csrf_token('reject_project_' ~ project.id) }}">
+
+          <div class="form-row">
+            <div class="field">
+              <p class="muted" style="margin:0 0 10px;">{{ 'project_configs.confirm_reject_project'|trans }}</p>
+              <label for="rejectProjectObservations">{{ 'project_configs.observations_label'|trans }}</label>
+              <textarea id="rejectProjectObservations" name="observations" rows="3"
+                        placeholder="{{ 'project_configs.observations_placeholder'|trans }}"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modalx__footer">
+          <button type="button" class="btn" data-close="1">{{ 'project_configs.cancel'|trans }}</button>
+          <button type="submit" class="btn danger">{{ 'project_configs.reject_project'|trans }}</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   {% if items is empty %}
@@ -870,7 +915,7 @@
               </a>
             {% endif %}
 
-            {% if c.status == 0 and (app.user.id == user.id or is_granted('ROLE_ADMIN')) %}
+            {% if c.status == 0 and project.status == 0 and (app.user.id == user.id or is_granted('ROLE_ADMIN')) %}
               <form method="post" action="{{ path('configuration_delete', { id: c.id }) }}" class="config-delete-form" style="display:inline;">
                 <input type="hidden" name="_token" value="{{ csrf_token('delete_configuration_' ~ c.id) }}">
                 <button type="submit" class="btn icon danger" data-confirm-message="{{ 'project_configs.delete_confirm'|trans({'%id%': c.id}) }}">
@@ -1303,6 +1348,38 @@
 
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape' && acceptModal.classList.contains('is-open')) closeAccept();
+        });
+      }
+
+      // -------- Modal rechazar proyecto --------
+      const rejectModal = document.getElementById('rejectProjectModal');
+      const openRejectBtn = document.getElementById('openRejectProject');
+
+      if (rejectModal && openRejectBtn) {
+        const openReject = () => {
+          rejectModal.classList.add('is-open');
+          document.body.style.overflow = 'hidden';
+          rejectModal.setAttribute('aria-hidden', 'false');
+
+          const first = rejectModal.querySelector('textarea[name="observations"]');
+          if (first) first.focus();
+        };
+
+        const closeReject = () => {
+          rejectModal.classList.remove('is-open');
+          document.body.style.overflow = '';
+          rejectModal.setAttribute('aria-hidden', 'true');
+        };
+
+        openRejectBtn.addEventListener('click', openReject);
+
+        rejectModal.addEventListener('click', (e) => {
+          const closeEl = e.target.closest('[data-close="1"]');
+          if (closeEl) closeReject();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && rejectModal.classList.contains('is-open')) closeReject();
         });
       }
 

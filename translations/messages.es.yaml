@@ -259,6 +259,8 @@ project_configs:
     client_code_label: Código de cliente
     client_code_placeholder: Ej. 12345
     accept_submit: Aceptar y crear oferta
+    observations_label: 'Observaciones'
+    observations_placeholder: Notas internas, no se mostrarán en el PDF ni al cliente.
     copy: Copiar
     summary: Resumen
     pdf: PDF
@@ -303,6 +305,8 @@ summary:
         scenario_building: Edificio
         scenario_office: Oficina
         scenario_exterior: Exterior
+        scenario_portal: Portal
+        scenario_empty: Vacío
     preview:
         title: Vista previa
         no_columns: No hay columnas en esta configuración.
@@ -313,6 +317,10 @@ summary:
         usb: USB
     installation:
         label: 'Instalación (€):'
+        saved: 'Guardado ✓'
+    observations:
+        label: 'Observaciones (uso interno)'
+        placeholder: Notas internas, no se mostrarán en el PDF ni al cliente.
         saved: 'Guardado ✓'
     config:
         title: Configuración
@@ -543,6 +551,7 @@ home:
 login:
     title: Iniciar sesión
     email: Email
+    identifier: 'Email o código de distribuidor'
     password: Contraseña
     submit: Entrar
     recover_link: '¿Tienes un código de proyecto? Haz click aquí'

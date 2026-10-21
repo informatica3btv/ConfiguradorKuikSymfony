@@ -39,8 +39,9 @@
 
   <form method="post">
     <div style="margin-bottom:12px;">
-      <label>{{ 'login.email'|trans }}</label>
-      <input type="email" name="email" value="{{ last_username }}" required autofocus
+      <label>{{ 'login.identifier'|trans }}</label>
+      <input type="text" name="identifier" value="{{ last_username }}" required autofocus
+             autocomplete="username" inputmode="email"
              style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc">
     </div>
 

@@ -45,6 +45,13 @@ class Configuration
     private string $payload = '{}';
 
     /**
+     * Notas internas, nunca se muestran en el PDF ni se exponen al cliente.
+     *
+     * @ORM\Column(type="text", nullable=true)
+     */
+    private ?string $observations = null;
+
+    /**
      * @ORM\Column(name="created_at", type="datetime")
      */
     private \DateTimeInterface $createdAt;
@@ -123,6 +130,17 @@ class Configuration
     public function setUpdatedAt(\DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getObservations(): ?string
+    {
+        return $this->observations;
+    }
+
+    public function setObservations(?string $observations): self
+    {
+        $this->observations = $observations;
         return $this;
     }
 

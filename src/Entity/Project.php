@@ -50,7 +50,15 @@ class Project
      * @ORM\Column(type="smallint")
      */
     private int $status = 0;
-    
+
+    /**
+     * Notas internas (motivo de aceptación/rechazo, etc.), nunca se muestran
+     * en el PDF ni se exponen al cliente.
+     *
+     * @ORM\Column(type="text", nullable=true)
+     */
+    private ?string $observations = null;
+
     /**
      * @ORM\Column(name="created_at", type="datetime")
      */
@@ -111,6 +119,17 @@ class Project
     public function setStatus(int $status): self
     {
         $this->status = $status;
+        return $this;
+    }
+
+    public function getObservations(): ?string
+    {
+        return $this->observations;
+    }
+
+    public function setObservations(?string $observations): self
+    {
+        $this->observations = $observations;
         return $this;
     }
 }

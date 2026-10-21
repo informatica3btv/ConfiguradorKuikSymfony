@@ -2,12 +2,13 @@
 
 namespace App\Entity;
 
+use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 /**
- * @ORM\Entity
+ * @ORM\Entity(repositoryClass=UserRepository::class)
  * @ORM\Table(name="user")
  */
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -35,9 +36,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private array $roles = [];
 
     /**
-     * @ORM\Column(type="string")
+     * Nula para los usuarios normales (email). Nunca se usa para
+     * autenticar (eso lo valida la API de BTV en cada login), solo para
+     * cumplir con el tipo de columna existente.
+     *
+     * @ORM\Column(type="string", nullable=true)
      */
-    private string $password;
+    private ?string $password = null;
+
+    /**
+     * Código numérico (4-5 dígitos) de distribuidor, igual que su usuario
+     * en BTV. Nulo para los usuarios que se loguean con email.
+     *
+     * @ORM\Column(type="string", length=10, unique=true, nullable=true)
+     */
+    private ?string $distributorCode = null;
 
 
     public function __construct()
@@ -103,15 +116,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // 👇 PASSWORD
-    public function getPassword(): string
+    // 👇 PASSWORD (nulo para usuarios de distribuidor, que no tienen)
+    public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    public function setPassword(string $password): self
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
+        return $this;
+    }
+
+    public function getDistributorCode(): ?string
+    {
+        return $this->distributorCode;
+    }
+
+    public function setDistributorCode(?string $distributorCode): self
+    {
+        $this->distributorCode = $distributorCode;
         return $this;
     }
 
