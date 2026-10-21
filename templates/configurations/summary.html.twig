@@ -690,6 +690,8 @@
       cursor:grab;
     }
     #viewer3d:active{ cursor:grabbing; }
+    #mvStatus, #mvContainer{ flex:1; min-height:0; }
+    #mvContainer{ background:#eef2f7; }
     .modal3d__hint{
       padding:8px 14px;
       font-size:12px;
@@ -978,6 +980,7 @@
       {% if is_granted('ROLE_ADMIN') %}
         <button class="btn" id="btnVer3D" type="button">{{ 'summary.btn.view_3d'|trans }}</button>
         <button class="btn" id="btnVerRA" type="button" style="display:none;">{{ 'summary.btn.view_ar'|trans }}</button>
+        <button class="btn" id="btnVerRAmv" type="button">{{ 'summary.btn.view_ar_mv'|trans }}</button>
       {% endif %}
     </div>
 
@@ -999,6 +1002,30 @@
         <div class="modal3d__body">
           <div id="viewer3d"></div>
           <div class="modal3d__hint">{{ 'summary.view3d.hint'|trans }}</div>
+        </div>
+      </div>
+    </div>
+
+    {# ============================================================
+       Prueba: "Ver en RA (nuevo)" usando <model-viewer> de Google en
+       vez de nuestra sesión WebXR propia. Totalmente aparte del botón
+       de RA actual (btnVerRA) y de su lógica: solo reutiliza la misma
+       función de construcción del mueble (buildARLockerForExport) para
+       no duplicar cientos de líneas, pero no toca nada de su
+       comportamiento. Es solo para comparar y decidir con cuál
+       quedarse; se puede quitar sin afectar al resto.
+       ============================================================ #}
+    <div class="modal3d" id="modalMV" aria-hidden="true">
+      <div class="modal3d__backdrop" data-closemv="1"></div>
+      <div class="modal3d__dialog">
+        <div class="modal3d__head">
+          <h4 class="modal3d__title">{{ 'summary.view3d.ar_mv_title'|trans }}</h4>
+          <button type="button" class="modal3d__close" aria-label="{{ 'summary.btn.close'|trans }}" data-closemv="1">×</button>
+        </div>
+        <div class="modal3d__body">
+          <div id="mvStatus" data-preparing-text="{{ 'summary.view3d.ar_mv_preparing'|trans }}" style="padding:20px; text-align:center; color:#6b7280;">{{ 'summary.view3d.ar_mv_preparing'|trans }}</div>
+          <div id="mvContainer" style="width:100%; height:100%; display:none;"></div>
+          <div class="modal3d__hint">{{ 'summary.view3d.ar_mv_hint'|trans }}</div>
         </div>
       </div>
     </div>
@@ -4566,6 +4593,11 @@
 
         return root;
       }
+      // Expuesta en window únicamente para que el botón "Ver en RA (nuevo)"
+      // (bloque aparte, más abajo) pueda reconstruir el mismo mueble y
+      // exportarlo a .glb. No cambia nada del comportamiento de esta
+      // función ni de la RA actual.
+      window.buildARLockerForExport = buildARLocker;
 
       let arRenderer = null, arScene = null, arCamera = null, arReticle = null, arLockerGroup = null;
       // Puertas de la taquilla en RA: cada entrada es { pivot, open }. Son
@@ -4965,6 +4997,124 @@
       }
 
       btnAR.addEventListener('click', startAR);
+    });
+  </script>
+
+  {# ============================================================
+     "Ver en RA (nuevo)" — prueba con <model-viewer> de Google, igual
+     que hace kuikConfigurator: exporta el mueble a .glb y deja que el
+     propio <model-viewer> gestione colocar/mover/rotar/escalar en RA.
+     Completamente aparte del botón de RA actual: no toca arScene,
+     arRenderer ni ninguna variable de ese bloque, solo llama a
+     window.buildARLockerForExport() para no duplicar la geometría.
+     ============================================================ #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnMV = document.getElementById('btnVerRAmv');
+      const modalMV = document.getElementById('modalMV');
+      const mvStatus = document.getElementById('mvStatus');
+      const mvContainer = document.getElementById('mvContainer');
+      if (!btnMV || !modalMV) return;
+
+      let modelViewerLoaded = false;
+      let gltfExporterLoaded = false;
+      let currentBlobUrl = null;
+      let modelViewerEl = null;
+
+      function loadScriptMV(src, isModule) {
+        return new Promise(function (resolve, reject) {
+          const s = document.createElement('script');
+          s.src = src;
+          if (isModule) s.type = 'module';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      function ensureModelViewer() {
+        if (modelViewerLoaded || customElements.get('model-viewer')) { modelViewerLoaded = true; return Promise.resolve(); }
+        return loadScriptMV('https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js', true)
+          .then(function () { modelViewerLoaded = true; });
+      }
+
+      function ensureThreeMV() {
+        if (window.THREE && window.THREE.Group) return Promise.resolve();
+        return loadScriptMV('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', false);
+      }
+
+      function ensureGLTFExporter() {
+        if (gltfExporterLoaded || (window.THREE && window.THREE.GLTFExporter)) { gltfExporterLoaded = true; return Promise.resolve(); }
+        return ensureThreeMV().then(function () {
+          return loadScriptMV('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js', false);
+        }).then(function () { gltfExporterLoaded = true; });
+      }
+
+      function openModalMV() {
+        modalMV.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        modalMV.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModalMV() {
+        modalMV.classList.remove('is-open');
+        document.body.style.overflow = '';
+        modalMV.setAttribute('aria-hidden', 'true');
+        if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+        if (modelViewerEl) { modelViewerEl.remove(); modelViewerEl = null; }
+        mvContainer.style.display = 'none';
+        mvStatus.style.display = '';
+        mvStatus.textContent = mvStatus.dataset.preparingText || 'Preparando…';
+      }
+
+      modalMV.addEventListener('click', function (e) {
+        if (e.target.closest('[data-closemv="1"]')) closeModalMV();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modalMV.classList.contains('is-open')) closeModalMV();
+      });
+
+      btnMV.addEventListener('click', function () {
+        openModalMV();
+        mvStatus.style.display = '';
+        mvContainer.style.display = 'none';
+
+        Promise.all([ensureModelViewer(), ensureGLTFExporter()]).then(function () {
+          if (typeof window.buildARLockerForExport !== 'function') {
+            throw new Error('No se pudo construir el mueble (buildARLockerForExport no disponible).');
+          }
+          const lockerGroup = window.buildARLockerForExport();
+          const exportScene = new THREE.Scene();
+          exportScene.add(lockerGroup);
+
+          // La versión de GLTFExporter que trae three@0.128.0 solo acepta
+          // (input, onDone, options) -- sin callback de error -- así que
+          // los fallos se capturan con try/catch alrededor de la llamada.
+          const exporter = new THREE.GLTFExporter();
+          exporter.parse(exportScene, function (gltf) {
+            const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+            currentBlobUrl = URL.createObjectURL(blob);
+
+            modelViewerEl = document.createElement('model-viewer');
+            modelViewerEl.setAttribute('src', currentBlobUrl);
+            modelViewerEl.setAttribute('ar', '');
+            modelViewerEl.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+            modelViewerEl.setAttribute('ar-placement', 'floor');
+            modelViewerEl.setAttribute('camera-controls', '');
+            modelViewerEl.setAttribute('auto-rotate', '');
+            modelViewerEl.setAttribute('shadow-intensity', '1');
+            modelViewerEl.style.width = '100%';
+            modelViewerEl.style.height = '100%';
+            mvContainer.appendChild(modelViewerEl);
+
+            mvStatus.style.display = 'none';
+            mvContainer.style.display = 'block';
+          }, { binary: true });
+        }).catch(function (err) {
+          console.error('Error cargando RA (model-viewer):', err);
+          mvStatus.textContent = 'Error al cargar la Realidad Aumentada.';
+        });
+      });
     });
   </script>
 

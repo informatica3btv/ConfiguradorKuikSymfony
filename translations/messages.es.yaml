@@ -297,6 +297,7 @@ summary:
         download_pdf: Descargar PDF
         view_3d: Ver en 3D
         view_ar: Ver en RA
+        view_ar_mv: 'Ver en RA (nuevo)'
         close: Cerrar
     view3d:
         title: Vista 3D de la configuración
@@ -307,6 +308,9 @@ summary:
         scenario_exterior: Exterior
         scenario_portal: Portal
         scenario_empty: Vacío
+        ar_mv_title: 'Ver en RA (prueba con model-viewer)'
+        ar_mv_preparing: Preparando el modelo…
+        ar_mv_hint: 'Toca el icono de RA para colocar la taquilla en tu espacio (requiere móvil compatible)'
     preview:
         title: Vista previa
         no_columns: No hay columnas en esta configuración.

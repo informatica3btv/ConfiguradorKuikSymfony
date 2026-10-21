@@ -297,6 +297,7 @@ summary:
         download_pdf: Download PDF
         view_3d: View in 3D
         view_ar: View in AR
+        view_ar_mv: 'View in AR (new)'
         close: Close
     view3d:
         title: 3D view of the configuration
@@ -307,6 +308,9 @@ summary:
         scenario_exterior: Outdoor
         scenario_portal: Lobby
         scenario_empty: Empty
+        ar_mv_title: 'View in AR (model-viewer test)'
+        ar_mv_preparing: Preparing the model…
+        ar_mv_hint: 'Tap the AR icon to place the locker in your space (requires a compatible phone)'
     preview:
         title: Preview
         no_columns: There are no columns in this configuration.
