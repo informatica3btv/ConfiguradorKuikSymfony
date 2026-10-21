@@ -29,6 +29,10 @@ security:
         - { path: ^/configuration/recover, roles: PUBLIC_ACCESS }
         - { path: ^/api/configurations/public-recover, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
+        # Vista pública de solo-RA (sin datos de proyecto/cliente), para
+        # abrirla desde el móvil al escanear el QR del resumen sin tener
+        # que iniciar sesión ahí.
+        - { path: ^/ar/, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_ADMIN }
 

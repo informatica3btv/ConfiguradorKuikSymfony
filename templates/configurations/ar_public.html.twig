@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+{#
+  Vista pública de Realidad Aumentada (sin login), pensada para abrirse
+  escaneando el QR del resumen desde el móvil. A propósito NO extiende
+  layout.html.twig (nada de menú/usuario/datos de proyecto): solo lo
+  necesario para construir el mueble en 3D y abrir la cámara de RA.
+
+  Es una copia reducida, independiente, del bloque "Ver en RA" (model-viewer)
+  del resumen normal (templates/configurations/summary.html.twig): mismo
+  enfoque (exportar a .glb + <model-viewer>), pero sin el fallback de QR (no
+  tiene sentido un QR dentro de la propia página del QR) ni el botón "Ver en
+  3D" antiguo. Un cambio aquí no puede romper el resumen, y viceversa.
+#}
+{% set p = payload ?? {} %}
+{% if p is not iterable %}{% set p = {} %}{% endif %}
+
+{% set groups = p.groups ?? [] %}
+{% if groups is not iterable %}{% set groups = [] %}{% endif %}
+
+{% set columnsFlat = p.columns ?? [] %}
+{% if columnsFlat is not iterable %}{% set columnsFlat = [] %}{% endif %}
+
+{% if groups is empty and columnsFlat is not empty %}
+  {% set groups = [columnsFlat] %}
+{% endif %}
+
+{% set type = p.type ?? '' %}
+{% set instalacion = p.instalacion ?? '' %}
+{% set doorColor = p.colorDoor ?? '#3a9efc' %}
+{% set bodyColor = p.colorBody ?? '#000' %}
+{% set bg = p.fondo ?? '' %}
+{% set isHome = (type == 'home') %}
+{% set isHomeSerie400 = isHome and bg == '400' %}
+{% set fondoMm = isHomeSerie400 ? 403 : (kuik.fondo_mm[bg] ?? null) %}
+{% set selectedType = p.bracketType ?? '' %}
+{% set isSoporteSuelo = (instalacion == 'soporte_suelo') %}
+
+{% set groups3d = [] %}
+{% for groupCols in groups %}
+  {% if groupCols is not iterable %}{% set groupCols = [] %}{% endif %}
+  {% set cols3d = [] %}
+  {% for col in groupCols %}
+    {% set isColEmpotrado = (col.single is defined and col.single is not empty) %}
+    {% if isColEmpotrado %}
+      {% set srcBlocks = col.single.blocks_prepared ?? col.single.blocks ?? [] %}
+    {% else %}
+      {% set srcBlocks = (col.top.blocks_prepared ?? col.top.blocks ?? [])|merge(col.bottom.blocks_prepared ?? col.bottom.blocks ?? []) %}
+    {% endif %}
+    {% set doorBlocks = [] %}
+    {% for blk in srcBlocks %}
+      {% set hh = blk.h|default(blk) %}
+      {% set hmm = hh * kuik.h_unit_mm %}
+      {% set btype = blk.type|default('door') %}
+      {% set doorBlocks = doorBlocks|merge([{
+        'h': hmm,
+        'type': btype,
+        'electronico': blk.electronico ?? false,
+        'tarjetero': blk.tarjetero ?? false,
+        'methacrylate': blk.methacrylate ?? false
+      }]) %}
+    {% endfor %}
+    {% set cols3d = cols3d|merge([doorBlocks]) %}
+  {% endfor %}
+  {% set groups3d = groups3d|merge([cols3d]) %}
+{% endfor %}
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ 'summary.btn.view_ar'|trans }}</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #0f172a; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    #arStage { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; box-sizing: border-box; text-align: center; color: #e2e8f0; }
+    #arContainer { width: 100%; height: 100%; display: none; }
+    #arBtn { border: 0; border-radius: 999px; padding: 14px 28px; font-size: 16px; font-weight: 700; background: #2563eb; color: #fff; cursor: pointer; }
+    #arBtn:disabled { opacity: .6; }
+    #arHint { font-size: 13px; color: #94a3b8; max-width: 320px; }
+  </style>
+</head>
+<body>
+  <div id="arStage">
+    <button type="button" id="arBtn">{{ 'summary.btn.view_ar'|trans }}</button>
+    <div id="arHint">{{ 'summary.view3d.ar_mv_hint'|trans }}</div>
+  </div>
+  <div id="arContainer"></div>
+
+  <script>
+    window.LOCKER_3D_DATA = {{ {
+      groups: groups3d,
+      doorColor: doorColor,
+      bodyColor: bodyColor,
+      fondoMm: fondoMm ?: 400,
+      doorWidthMm: kuik.door_width_mm,
+      screenImageUrl: asset(kuik.img_pantalla),
+      isSoporteSuelo: isSoporteSuelo,
+      bracketType: selectedType,
+      mailboxImages: {
+        elecTarj:   asset('assets/buzon_kuik_electronico_con_tarjetero.png'),
+        elecNoTarj: asset('assets/buzon_kuik_electronico_sin_tarjetero.png'),
+        mecTarj:    asset('assets/buzon_kuik_mecanico_con_tarjetero.png'),
+        mecNoTarj:  asset('assets/buzon_kuik_mecanico_sin_tarjetero.png')
+      }
+    }|json_encode|raw }};
+  </script>
+
+  <script>
+    (function () {
+      const arBtn = document.getElementById('arBtn');
+      const arHint = document.getElementById('arHint');
+      const arContainer = document.getElementById('arContainer');
+      const AR_DOOR_OPEN_ANGLE = Math.PI * 0.6;
+
+      let modelViewerLoaded = false;
+      let threeLoaded = false;
+      let gltfExporterLoaded = false;
+      let currentBlobUrl = null;
+      let modelViewerEl = null;
+
+      function loadScript(src, isModule) {
+        return new Promise(function (resolve, reject) {
+          const s = document.createElement('script');
+          s.src = src;
+          if (isModule) s.type = 'module';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      function ensureModelViewer() {
+        if (modelViewerLoaded || customElements.get('model-viewer')) { modelViewerLoaded = true; return Promise.resolve(); }
+        return loadScript('https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js', true)
+          .then(function () { modelViewerLoaded = true; });
+      }
+
+      function ensureThree() {
+        if (threeLoaded || (window.THREE && window.THREE.Group)) { threeLoaded = true; return Promise.resolve(); }
+        return loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', false)
+          .then(function () { threeLoaded = true; });
+      }
+
+      function ensureGLTFExporter() {
+        if (gltfExporterLoaded || (window.THREE && window.THREE.GLTFExporter)) { gltfExporterLoaded = true; return Promise.resolve(); }
+        return ensureThree().then(function () {
+          return loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js', false);
+        }).then(function () { gltfExporterLoaded = true; });
+      }
+
+      function mmToM(mm) { return (mm || 0) / 1000; }
+
+      // Construye el mueble (solo el mueble, sin suelo ni edificio) a
+      // tamaño real en metros. Copia reducida e independiente de
+      // buildARLocker() en summary.html.twig: misma geometría, pero sin
+      // nada de la sesión WebXR propia (no hace falta aquí).
+      function buildARLockerPublic() {
+        const doorPivots = [];
+        const data = window.LOCKER_3D_DATA || { groups: [], doorColor: '#3a9efc', bodyColor: '#111', fondoMm: 400, doorWidthMm: 380 };
+        const root = new THREE.Group();
+        const inner = new THREE.Group();
+        root.add(inner);
+
+        const depth = mmToM(data.fondoMm || 400);
+        const colW = mmToM(data.doorWidthMm || 380);
+        const sideW = mmToM(25);
+        const groupGap = mmToM(450);
+
+        const doorMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: data.bodyColor || '#111111', roughness: 0.7, metalness: 0.05 });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.5, metalness: 0.3 });
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 });
+
+        const frontTextureMatsCache = {};
+        function makeFrontTextureMats(imageUrl, heightMultiplier) {
+          if (!imageUrl) return doorMat;
+          const cacheKey = imageUrl + '|' + (heightMultiplier || 1);
+          if (frontTextureMatsCache[cacheKey]) return frontTextureMatsCache[cacheKey];
+
+          const frontMat = new THREE.MeshStandardMaterial({ color: data.doorColor || '#3a9efc', roughness: 0.4, metalness: 0.1 });
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = data.doorColor || '#3a9efc';
+            ctx.fillRect(0, 0, size, size);
+            const scale = Math.min(size / img.width, size / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale * (heightMultiplier || 1);
+            ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+            const texture = new THREE.CanvasTexture(canvas);
+            frontMat.map = texture;
+            frontMat.color.set(0xffffff);
+            frontMat.needsUpdate = true;
+          };
+          img.src = imageUrl;
+
+          const mats = [doorMat, doorMat, doorMat, doorMat, frontMat, doorMat];
+          frontTextureMatsCache[cacheKey] = mats;
+          return mats;
+        }
+
+        const screenMats = makeFrontTextureMats(data.screenImageUrl);
+
+        function mailboxImageUrl(blk) {
+          const imgs = data.mailboxImages || {};
+          if (blk.electronico) return blk.tarjetero ? imgs.elecTarj : imgs.elecNoTarj;
+          return blk.tarjetero ? imgs.mecTarj : imgs.mecNoTarj;
+        }
+
+        function legPositionsFor(n) {
+          if (n === 1) return [1];
+          if (n === 2) return [1, 2];
+          if (n === 3) return [1, 3];
+          if (n === 4) return [2, 3];
+          if (n === 5) return [2, 4];
+          if (n === 6) return [2, 4, 6];
+          if (n === 7) return [2, 4, 6, 7];
+          if (n === 8) return [2, 4, 6, 8];
+          if (n === 9) return [2, 4, 7, 8];
+          return [2, 4, 7, 9];
+        }
+
+        function addBox(w, h, d, mat, x, y, z) {
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(x, y, z);
+          inner.add(mesh);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMat);
+          line.position.copy(mesh.position);
+          inner.add(line);
+          return mesh;
+        }
+
+        function addOpenBox(w, h, d, mat, x, y, z) {
+          const t = Math.max(0.005, Math.min(w, h) * 0.03);
+          addBox(w, h, t, mat, x, y, z - d / 2 + t / 2);
+          addBox(w, t, d, mat, x, y + h / 2 - t / 2, z);
+          addBox(w, t, d, mat, x, y - h / 2 + t / 2, z);
+          addBox(t, h, d, mat, x - w / 2 + t / 2, y, z);
+          addBox(t, h, d, mat, x + w / 2 - t / 2, y, z);
+        }
+
+        function addDoorLeaf(w, h, d, mat, x, y, z) {
+          const t = Math.min(d, mmToM(20));
+          const geo = new THREE.BoxGeometry(w, h, t);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(-w / 2, 0, 0);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMat);
+          line.position.copy(mesh.position);
+
+          const pivot = new THREE.Group();
+          pivot.position.set(x + w / 2, y, z + d / 2 - t / 2);
+          pivot.add(mesh, line);
+          inner.add(pivot);
+
+          doorPivots.push({ pivot: pivot, open: false });
+          return mesh;
+        }
+
+        const legsApply = !!(data.isSoporteSuelo && (data.bracketType === 'patas' || data.bracketType === 'brazos'));
+        const legHeight = mmToM(700);
+        const baseY = legsApply ? legHeight : 0;
+
+        let cursorX = 0;
+        let maxHeight = 0;
+        const groups = Array.isArray(data.groups) ? data.groups : [];
+
+        groups.forEach(function (cols3d) {
+          if (!Array.isArray(cols3d) || cols3d.length === 0) return;
+          const numCols = cols3d.length;
+          const groupWidth = numCols * colW + sideW * 2;
+          const groupStartX = cursorX;
+
+          cols3d.forEach(function (doorBlocks, colIdx) {
+            const blocks = Array.isArray(doorBlocks) ? doorBlocks : [];
+            const colTotalH = blocks.reduce(function (s, b) { return s + mmToM(b.h || 125); }, 0);
+            let cursorY = colTotalH;
+            blocks.forEach(function (blk) {
+              const h = mmToM(blk.h || 125);
+              cursorY -= h;
+              const cx = groupStartX + sideW + colIdx * colW + colW / 2;
+              const cy = cursorY + h / 2 + baseY;
+              if (blk.type === 'screen') {
+                addBox(colW - 0.004, h - 0.004, depth - 0.02, screenMats, cx, cy, depth / 2);
+              } else {
+                addOpenBox(colW - 0.004, h - 0.004, depth - 0.02, doorMat, cx, cy, depth / 2);
+                const blockMat = blk.type === 'mailbox' ? makeFrontTextureMats(mailboxImageUrl(blk), 2) : doorMat;
+                addDoorLeaf(colW - 0.004, h - 0.004, depth - 0.02, blockMat, cx, cy, depth / 2);
+              }
+            });
+            if (colTotalH > maxHeight) maxHeight = colTotalH;
+          });
+
+          const totalHeightWithRoof = maxHeight + sideW;
+          addBox(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+          addBox(sideW, totalHeightWithRoof, depth, bodyMat, groupStartX + groupWidth - sideW / 2, baseY + totalHeightWithRoof / 2, depth / 2);
+          addBox(groupWidth, sideW, depth, bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof - sideW / 2, depth / 2);
+          addBox(groupWidth, mmToM(10), depth, bodyMat, groupStartX + groupWidth / 2, baseY + mmToM(5), depth / 2);
+          addBox(groupWidth, totalHeightWithRoof, mmToM(10), bodyMat, groupStartX + groupWidth / 2, baseY + totalHeightWithRoof / 2, -mmToM(5));
+
+          if (legsApply) {
+            const legSize = mmToM(40) * 1.5 * 1.2;
+            const addLeg = function (x) {
+              addBox(legSize, legHeight, legSize, legMat, x, legHeight / 2, depth / 2);
+            };
+            if (data.bracketType === 'patas') {
+              legPositionsFor(numCols).forEach(function (pos) {
+                addLeg(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+              });
+            } else {
+              addLeg(groupStartX + sideW / 2);
+              addLeg(groupStartX + groupWidth - sideW / 2);
+              if (numCols >= 5) {
+                legPositionsFor(numCols).forEach(function (pos) {
+                  addLeg(groupStartX + sideW + (pos - 1) * colW + colW / 2);
+                });
+              }
+            }
+          }
+
+          cursorX = groupStartX + groupWidth + groupGap;
+        });
+
+        const totalWidth = Math.max(cursorX - groupGap, colW);
+        inner.position.x = -totalWidth / 2;
+
+        return { root: root, doorPivots: doorPivots };
+      }
+
+      function setupDoorTaps(el, doorHitTargets) {
+        if (!doorHitTargets.length) return;
+        const DOOR_TAP_MAX_DIST = 0.5;
+        const ANIM_MS = 300;
+        let animating = false;
+
+        function animateTo(target, from, to) {
+          animating = true;
+          el.pause();
+          el.animationName = target.clipName;
+          const start = performance.now();
+          function step(now) {
+            const t = Math.min(1, (now - start) / ANIM_MS);
+            el.currentTime = from + (to - from) * t;
+            if (t < 1) { requestAnimationFrame(step); } else { animating = false; }
+          }
+          requestAnimationFrame(step);
+        }
+
+        let downX = 0, downY = 0, lastHandledAt = 0;
+        const DOUBLE_TAP_GUARD_MS = 400;
+        el.addEventListener('pointerdown', function (e) { downX = e.clientX; downY = e.clientY; });
+
+        el.addEventListener('pointerup', function (e) {
+          const now = performance.now();
+          if (now - lastHandledAt < DOUBLE_TAP_GUARD_MS) return;
+          if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) return;
+          if (animating || typeof el.positionAndNormalFromPoint !== 'function') return;
+          const rect = el.getBoundingClientRect();
+          const hit = el.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
+          if (!hit) return;
+
+          const hp = hit.position;
+          let nearest = null, nearestDist = Infinity;
+          doorHitTargets.forEach(function (d) {
+            const dx = hp.x - d.worldPos.x, dy = hp.y - d.worldPos.y, dz = hp.z - d.worldPos.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist < nearestDist) { nearestDist = dist; nearest = d; }
+          });
+          if (!nearest || nearestDist > DOOR_TAP_MAX_DIST) return;
+
+          lastHandledAt = now;
+          nearest.open = !nearest.open;
+          animateTo(nearest, nearest.open ? 0 : 1, nearest.open ? 1 : 0);
+        });
+      }
+
+      function startAR() {
+        arBtn.disabled = true;
+        arBtn.textContent = '…';
+
+        Promise.all([ensureModelViewer(), ensureGLTFExporter()]).then(function () {
+          const built = buildARLockerPublic();
+          const lockerGroup = built.root;
+
+          const convertedMats = new Set();
+          lockerGroup.traverse(function (obj) {
+            if (!obj.material) return;
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(function (m) {
+              if (m && m.color && !convertedMats.has(m)) {
+                convertedMats.add(m);
+                m.color.convertSRGBToLinear();
+              }
+            });
+          });
+
+          lockerGroup.updateMatrixWorld(true);
+          const doorAnimations = [];
+          const doorHitTargets = [];
+          built.doorPivots.forEach(function (entry, i) {
+            const pivot = entry.pivot;
+            const qClosed = new THREE.Quaternion();
+            const qOpen = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), AR_DOOR_OPEN_ANGLE);
+            const track = new THREE.QuaternionKeyframeTrack(
+              pivot.uuid + '.quaternion',
+              [0, 1],
+              [qClosed.x, qClosed.y, qClosed.z, qClosed.w, qOpen.x, qOpen.y, qOpen.z, qOpen.w]
+            );
+            doorAnimations.push(new THREE.AnimationClip('door_' + i, 1, [track]));
+            const worldPos = new THREE.Vector3();
+            pivot.getWorldPosition(worldPos);
+            doorHitTargets.push({ clipName: 'door_' + i, worldPos: worldPos, open: false });
+          });
+
+          new Promise(function (resolve) { setTimeout(resolve, 500); }).then(function () {
+            const exportScene = new THREE.Scene();
+            exportScene.add(lockerGroup);
+
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(exportScene, function (gltf) {
+              const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+              currentBlobUrl = URL.createObjectURL(blob);
+
+              modelViewerEl = document.createElement('model-viewer');
+              modelViewerEl.setAttribute('src', currentBlobUrl);
+              modelViewerEl.setAttribute('ar', '');
+              modelViewerEl.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+              modelViewerEl.setAttribute('ar-placement', 'floor');
+              modelViewerEl.setAttribute('camera-controls', '');
+              modelViewerEl.setAttribute('auto-rotate', '');
+              modelViewerEl.setAttribute('shadow-intensity', '1');
+              modelViewerEl.style.width = '100%';
+              modelViewerEl.style.height = '100%';
+              arContainer.appendChild(modelViewerEl);
+              setupDoorTaps(modelViewerEl, doorHitTargets);
+
+              document.getElementById('arStage').style.display = 'none';
+              arContainer.style.display = 'block';
+
+              modelViewerEl.addEventListener('load', function onLoad() {
+                modelViewerEl.removeEventListener('load', onLoad);
+                if (!modelViewerEl.canActivateAR) return;
+                modelViewerEl.activateAR().catch(function (err) {
+                  console.warn('No se pudo activar la RA automáticamente:', err);
+                });
+              });
+            }, { binary: true, animations: doorAnimations });
+          });
+        }).catch(function (err) {
+          console.error('Error cargando RA:', err);
+          arBtn.disabled = false;
+          arBtn.textContent = '{{ 'summary.btn.view_ar'|trans|e('js') }}';
+          arHint.textContent = 'Error al cargar la Realidad Aumentada.';
+        });
+      }
+
+      arBtn.addEventListener('click', startAR);
+    })();
+  </script>
+</body>
+</html>

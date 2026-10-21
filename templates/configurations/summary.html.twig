@@ -5120,12 +5120,13 @@
         mvStatus.textContent = mvStatus.dataset.preparingText || 'Preparando…';
 
         ensureQRLib().then(function () {
-          // window.location.href no vale: a veces esta página se llega vía
-          // un envío de formulario sin redirección y la barra de
-          // direcciones se queda con esa URL (que no admite GET). Se usa
-          // la URL absoluta real y conocida de este resumen.
+          // Apunta a la vista pública de solo-RA (sin login ni datos del
+          // proyecto/cliente), no al resumen: el resumen exige sesión
+          // iniciada, así que el móvil que escanee el QR tendría que
+          // loguearse antes de ver nada. Esta vista es de propósito
+          // único y no expone más que el mueble.
           const qr = window.qrcode(0, 'M');
-          qr.addData('{{ url('configuration_summary', { id: configuration.id }) }}');
+          qr.addData('{{ url('configuration_ar_public', { id: configuration.id }) }}');
           qr.make();
 
           const img = document.createElement('img');

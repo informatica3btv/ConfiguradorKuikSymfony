@@ -51,6 +51,29 @@ class ConfigurationSummaryController extends AbstractController
     }
 
     /**
+     * Vista pública (sin login) solo para abrir la Realidad Aumentada desde
+     * el móvil al escanear el QR del resumen: no expone nada del proyecto
+     * ni del cliente, solo lo mínimo para construir el mueble en 3D (igual
+     * que window.LOCKER_3D_DATA en el resumen normal).
+     *
+     * @Route("/ar/{id}", name="configuration_ar_public", methods={"GET"})
+     */
+    public function arPublic(int $id, ConfigurationRepository $repo): Response
+    {
+        $configuration = $repo->find($id);
+        if (!$configuration) {
+            throw $this->createNotFoundException('Configuration not found');
+        }
+
+        $payload = $configuration->getDecodedPayload();
+        $payloadPrepared = $this->configService->prepareSummaryPayload($payload);
+
+        return $this->render('configurations/ar_public.html.twig', [
+            'payload' => $payloadPrepared,
+        ]);
+    }
+
+    /**
      * @Route("/btv-debug", name="btv_debug", methods={"GET"})
      */
     public function btvDebug(\App\Service\BtvApiService $btvApi): JsonResponse
