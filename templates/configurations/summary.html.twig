@@ -5084,32 +5084,56 @@
             throw new Error('No se pudo construir el mueble (buildARLockerForExport no disponible).');
           }
           const lockerGroup = window.buildARLockerForExport();
-          const exportScene = new THREE.Scene();
-          exportScene.add(lockerGroup);
 
-          // La versión de GLTFExporter que trae three@0.128.0 solo acepta
-          // (input, onDone, options) -- sin callback de error -- así que
-          // los fallos se capturan con try/catch alrededor de la llamada.
-          const exporter = new THREE.GLTFExporter();
-          exporter.parse(exportScene, function (gltf) {
-            const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-            currentBlobUrl = URL.createObjectURL(blob);
+          // Este GLTFExporter antiguo (three@0.128.0) exporta el color del
+          // material tal cual, sin convertirlo a espacio lineal, pero el
+          // propio formato glTF espera "baseColorFactor" en lineal: el
+          // resultado es que los colores salen apagados/grisáceos en
+          // model-viewer. Se convierte aquí mismo, solo en esta copia de
+          // exportación (los materiales son nuevos, no se comparten con la
+          // RA normal ni con el visor 3D), así que no afecta a nada más.
+          lockerGroup.traverse(function (obj) {
+            if (!obj.material) return;
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(function (m) {
+              if (m && m.color) m.color.convertSRGBToLinear();
+            });
+          });
 
-            modelViewerEl = document.createElement('model-viewer');
-            modelViewerEl.setAttribute('src', currentBlobUrl);
-            modelViewerEl.setAttribute('ar', '');
-            modelViewerEl.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
-            modelViewerEl.setAttribute('ar-placement', 'floor');
-            modelViewerEl.setAttribute('camera-controls', '');
-            modelViewerEl.setAttribute('auto-rotate', '');
-            modelViewerEl.setAttribute('shadow-intensity', '1');
-            modelViewerEl.style.width = '100%';
-            modelViewerEl.style.height = '100%';
-            mvContainer.appendChild(modelViewerEl);
+          // La imagen de la pantalla (y las de los buzones) se cargan de
+          // forma asíncrona dentro de buildARLockerForExport: si se
+          // exporta en el mismo tick, el modelo sale sin esa textura. Un
+          // pequeño margen es suficiente porque esas imágenes ya se
+          // mostraron antes en la página (vista previa/3D), así que el
+          // navegador las sirve desde caché.
+          new Promise(function (resolve) { setTimeout(resolve, 500); }).then(function () {
+            const exportScene = new THREE.Scene();
+            exportScene.add(lockerGroup);
 
-            mvStatus.style.display = 'none';
-            mvContainer.style.display = 'block';
-          }, { binary: true });
+            // La versión de GLTFExporter que trae three@0.128.0 solo acepta
+            // (input, onDone, options) -- sin callback de error -- así que
+            // los fallos se capturan con try/catch alrededor de la llamada.
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(exportScene, function (gltf) {
+              const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+              currentBlobUrl = URL.createObjectURL(blob);
+
+              modelViewerEl = document.createElement('model-viewer');
+              modelViewerEl.setAttribute('src', currentBlobUrl);
+              modelViewerEl.setAttribute('ar', '');
+              modelViewerEl.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+              modelViewerEl.setAttribute('ar-placement', 'floor');
+              modelViewerEl.setAttribute('camera-controls', '');
+              modelViewerEl.setAttribute('auto-rotate', '');
+              modelViewerEl.setAttribute('shadow-intensity', '1');
+              modelViewerEl.style.width = '100%';
+              modelViewerEl.style.height = '100%';
+              mvContainer.appendChild(modelViewerEl);
+
+              mvStatus.style.display = 'none';
+              mvContainer.style.display = 'block';
+            }, { binary: true });
+          });
         }).catch(function (err) {
           console.error('Error cargando RA (model-viewer):', err);
           mvStatus.textContent = 'Error al cargar la Realidad Aumentada.';
