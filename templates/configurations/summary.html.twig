@@ -5238,13 +5238,21 @@
         // no llega a disparar un "click" sintético. Se detecta el toque a
         // mano con pointerdown/pointerup + una distancia máxima de
         // arrastre, igual que ya hace el visor 3D normal para sus puertas.
-        let downX = 0, downY = 0;
+        // En táctil, el navegador a veces dispara pointerdown/up dos veces
+        // seguidas para el mismo toque (p.ej. un evento "touch" real más un
+        // evento de compatibilidad con "mouse"): sin este margen, una sola
+        // puerta se abre y se vuelve a cerrar al instante porque se cuenta
+        // como dos toques distintos.
+        let downX = 0, downY = 0, lastHandledAt = 0;
+        const DOUBLE_TAP_GUARD_MS = 400;
         el.addEventListener('pointerdown', function (e) {
           downX = e.clientX;
           downY = e.clientY;
         });
 
         el.addEventListener('pointerup', function (e) {
+          const now = performance.now();
+          if (now - lastHandledAt < DOUBLE_TAP_GUARD_MS) { console.log('[RA puertas] ignorado: doble evento del mismo toque'); return; }
           // TODO quitar estos console.log cuando esté depurado.
           if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) {
             console.log('[RA puertas] ignorado: hubo arrastre');
@@ -5275,6 +5283,7 @@
           console.log('[RA puertas] más cercana:', nearest && nearest.clipName, 'distancia:', nearestDist);
           if (!nearest || nearestDist > DOOR_TAP_MAX_DIST) return;
 
+          lastHandledAt = now;
           nearest.open = !nearest.open;
           animateTo(nearest, nearest.open ? 0 : 1, nearest.open ? 1 : 0);
         });
