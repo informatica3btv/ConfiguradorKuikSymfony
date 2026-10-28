@@ -208,6 +208,72 @@ class ConfigurationController extends AbstractController
     }
 
     /**
+     * Configurador alternativo "3D en vivo": una sola página con el modelo
+     * 3D a la derecha (se reconstruye en el navegador al cambiar cualquier
+     * opción) y todos los pasos (tipo, instalación, columnas/puertas,
+     * colores) en un panel lateral, en vez de navegar por varias páginas.
+     *
+     * A propósito usa el MISMO endpoint de guardado (api_configurations_create)
+     * que el configurador clásico: el JSON que construye el JS de esta
+     * página tiene que tener la misma forma que el payload de siempre
+     * (groups/columns/blocks/colores/...), así que el resto del backend
+     * (precios, PDF, resumen, 3D del resumen) no necesita ningún cambio.
+     *
+     * @Route("/configurador-3d", name="configuration_live", methods={"GET"})
+     */
+    public function live(
+        Request $request,
+        ConfigurationRepository $repo,
+        ColorRepository $colorRepo,
+        ConfigurationTypeRepository $configurationTypeRepo,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        $configId  = $request->query->getInt('config_id');
+        $projectId = $request->query->getInt('project_id');
+
+        if ($configId > 0) {
+            $configuration = $repo->find($configId);
+            if (!$configuration) {
+                throw $this->createNotFoundException('Configuration not found');
+            }
+
+            $project = $configuration->getProject();
+            if (!$project || $project->getUser() !== $this->getUser()) {
+                throw $this->createAccessDeniedException();
+            }
+        } else {
+            if ($projectId <= 0) {
+                throw $this->createNotFoundException('Missing project_id');
+            }
+
+            $project = $em->getRepository(Project::class)->find($projectId);
+            if (!$project) {
+                throw $this->createNotFoundException('Project not found');
+            }
+
+            if ($project->getUser() !== $this->getUser()) {
+                throw $this->createAccessDeniedException();
+            }
+
+            $configuration = new Configuration();
+            $configuration->setProject($project);
+            $em->persist($configuration);
+            $em->flush();
+        }
+
+        return $this->render('configurations/live.html.twig', [
+            'project'       => $project,
+            'configuration' => $configuration,
+            'payload'       => $configuration->getDecodedPayload(),
+            'types'         => $configurationTypeRepo->findAll(),
+            'coloresPuerta' => $colorRepo->findBy(['type' => 'door']),
+            'coloresCuerpo' => $colorRepo->findBy(['type' => 'body']),
+        ]);
+    }
+
+    /**
      * @Route("/configuracion", name="configuration_columns", methods={"GET"})
      */
     public function configurador(

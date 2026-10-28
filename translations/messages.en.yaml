@@ -10,6 +10,37 @@ config_type:
     select_heading: 'Select configuration type'
     next_button: 'Next'
     select_type_error: 'Select a column type to continue.'
+    try_live_title: 'Prefer to see it in 3D while you configure it?'
+    try_live_subtitle: 'Try the live 3D configurator (beta): the model updates as you pick options.'
+    try_live_button: 'Try live 3D configurator'
+
+config_live:
+    page_title: 'Live 3D configurator'
+    loading: Loading the 3D viewer…
+    badge_columns: columns
+    badge_doors: doors
+    panel_title: 'Configure your locker'
+    step_type: '1. Type'
+    step_instalacion: '2. Installation'
+    inst_empotrado: Built-in
+    inst_zocalo: Plinth
+    inst_soporte_suelo: Floor bracket
+    inst_colgado: Wall-hung
+    step_columns: '3. Columns and doors'
+    step_columns_help: 'Add columns and, inside each one, doors or screens. The 3D model updates instantly.'
+    column_label: Column
+    block_door: Door
+    block_screen: Screen
+    add_column: Add column
+    add_screen: '+ Screen'
+    step_door_color: '4. Door color'
+    step_body_color: 'Body color'
+    back_classic: Back to classic configurator
+    save_button: Save and continue
+    error_type: Select a type to continue.
+    error_instalacion: Select an installation type to continue.
+    error_columns: Add at least one column with a door.
+    error_3d: Could not load the 3D viewer.
 
 home_installation:
     page_title: 'Installation (Home)'

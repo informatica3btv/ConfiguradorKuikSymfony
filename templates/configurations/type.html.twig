@@ -66,6 +66,19 @@
 {% endblock %}
 
 {% block content %}
+<div class="config-form" style="margin-bottom:0; padding-bottom:0;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:14px 18px; border-radius:16px; background:linear-gradient(135deg,#eaf7fd,#ffffff); border:1px solid rgba(17,135,230,.18);">
+    <div>
+      <div style="font-weight:800; color:#003DA5;">{{ 'config_type.try_live_title'|trans }}</div>
+      <div style="font-size:13px; color:#6b7280;">{{ 'config_type.try_live_subtitle'|trans }}</div>
+    </div>
+    <a class="primary-btn" style="white-space:nowrap;"
+       href="{{ path('configuration_live', { project_id: project.id, config_id: configuration.id }) }}">
+      {{ 'config_type.try_live_button'|trans }}
+    </a>
+  </div>
+</div>
+
 <form method="get"
       action=""
       id="typeForm"

@@ -1,0 +1,628 @@
+{% extends 'layout.html.twig' %}
+
+{#
+  Configurador alternativo "3D en vivo": modelo 3D a la derecha (75%),
+  panel de opciones a la izquierda (25%, bueno: a la derecha del modelo
+  en la maqueta de referencia, pero aquí el modelo va a la izquierda y el
+  panel a la derecha para que el menú del layout.html.twig no quede
+  tapado), que se reconstruye en el navegador cada vez que cambia algo.
+
+  A PROPÓSITO es una versión reducida frente al configurador clásico
+  (home.html.twig, ~2500 líneas): cubre tipo, instalación, columnas con
+  puertas/pantallas y colores, con UN solo grupo de columnas. No incluye
+  (de momento): agrupación combinada de buzones, buzones individuales
+  como bloque, dispositivo de control de acceso, ni atributos dinámicos
+  por tipo (p.ej. "fondo/serie"). Para "profesional" o "soporte a suelo"
+  se guarda igual que el clásico y el propio endpoint de guardado
+  (api_configurations_create, sin cambios) redirige al paso de
+  complementos o de soporte, como siempre.
+
+  No comparte código con home.html.twig ni con el visor 3D del resumen:
+  monta su propia escena three.js reducida (sin escenarios/entornos), a
+  propósito, para no arriesgar nada de lo que ya funciona.
+#}
+
+{% block page_title %}{{ 'config_live.page_title'|trans }}{% endblock %}
+
+{% block stylesheets %}
+  {{ parent() }}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Titillium+Web:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --kuik:#00AFEA; --navy:#003DA5; --mid:#0085C3; --light:#4AC3F2;
+      --text:#605E5C; --ink:#2A3340; --muted:#8C8A88; --line:#E3E8EE;
+      --bg:#F3F6F9; --card:#FFFFFF; --tint:#EAF7FD;
+      --danger:#D6453D; --ok:#1E9E6A;
+      --gradient:linear-gradient(90deg,#00AFEA 0%,#003DA5 100%);
+      --radius:14px; --radius-sm:10px;
+      --shadow:0 1px 2px rgba(0,40,90,.06), 0 6px 20px rgba(0,40,90,.07);
+      --shadow-lg:0 10px 40px rgba(0,35,80,.18);
+    }
+    body.live-page{ background:var(--bg); }
+    .live-wrap{
+      display:grid;
+      grid-template-columns: 1fr 380px;
+      gap:16px;
+      height:calc(100vh - 160px);
+      min-height:560px;
+      padding:16px;
+      box-sizing:border-box;
+      font-family:'Inter Tight','Segoe UI',system-ui,sans-serif;
+      color:var(--ink);
+    }
+    @media (max-width: 980px){
+      .live-wrap{ grid-template-columns:1fr; height:auto; }
+      .live-viewer{ height:46vh; }
+    }
+    .live-viewer{
+      position:relative;
+      border-radius:var(--radius);
+      overflow:hidden;
+      background:#E8EDF2;
+      box-shadow:var(--shadow);
+      min-height:360px;
+    }
+    #liveCanvasHost{ position:absolute; inset:0; }
+    .live-badge{
+      position:absolute; left:14px; bottom:14px;
+      background:rgba(255,255,255,.88); backdrop-filter:blur(12px);
+      border-radius:var(--radius-sm); box-shadow:var(--shadow);
+      padding:10px 14px; display:flex; gap:16px; font-size:12px; color:var(--muted);
+    }
+    .live-badge b{ display:block; font-size:16px; color:var(--navy); font-family:'Titillium Web',sans-serif; }
+    .live-loading{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:10px; background:#EEF2F6; color:var(--muted); font-size:13px;
+      transition:opacity .25s ease;
+    }
+    .live-spinner{
+      width:34px; height:34px; border-radius:50%;
+      border:3px solid rgba(0,61,165,.15); border-top-color:var(--kuik);
+      animation:live-spin .9s linear infinite;
+    }
+    @keyframes live-spin{ to{ transform:rotate(360deg); } }
+
+    .live-panel{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      display:flex; flex-direction:column; min-height:0; overflow:hidden;
+    }
+    .live-panel__head{
+      padding:16px 18px; border-bottom:1px solid var(--line);
+    }
+    .live-panel__head h2{
+      margin:0; font-family:'Titillium Web',sans-serif; font-weight:700; font-size:17px; color:var(--navy);
+    }
+    .live-panel__body{ flex:1; overflow:auto; padding:16px 18px; display:flex; flex-direction:column; gap:22px; }
+    .live-section h3{
+      margin:0 0 8px; font-family:'Titillium Web',sans-serif; font-weight:600; font-size:14px; color:var(--ink);
+    }
+    .live-section p.help{ margin:0 0 10px; font-size:12px; color:var(--muted); }
+
+    .live-cards{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .live-card{
+      border:1.5px solid var(--line); border-radius:var(--radius-sm); background:#fff;
+      padding:10px 12px; cursor:pointer; text-align:left; font-family:inherit;
+      font-size:13px; font-weight:600; color:var(--ink);
+      transition:border-color .15s, box-shadow .15s, background .15s;
+    }
+    .live-card:hover{ border-color:var(--light); }
+    .live-card.is-selected{
+      border-color:var(--kuik); background:var(--tint);
+      box-shadow:0 0 0 3px rgba(0,175,234,.16);
+      color:var(--navy);
+    }
+
+    .live-chip{
+      display:inline-flex; align-items:center; gap:4px;
+      border:1.5px solid var(--line); border-radius:999px; padding:4px 10px;
+      font-size:12px; font-weight:600; color:var(--text); background:#fff; cursor:pointer;
+    }
+    .live-chip.is-selected{ border-color:var(--kuik); background:var(--tint); color:var(--navy); }
+
+    .live-col{
+      border:1px dashed var(--line); border-radius:var(--radius-sm); padding:10px; margin-bottom:10px;
+    }
+    .live-col__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .live-col__head b{ font-size:12px; color:var(--muted); }
+    .live-block{
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--tint); border-radius:8px; padding:6px 10px; margin-bottom:6px; font-size:12px;
+    }
+    .live-block button{ border:0; background:transparent; color:var(--danger); cursor:pointer; font-weight:700; font-size:14px; line-height:1; }
+    .live-addblock{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+
+    .live-swatches{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+    .live-swatch{
+      width:32px; height:32px; border-radius:8px; cursor:pointer; position:relative;
+      border:2px solid transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .live-swatch.is-selected{ border-color:var(--kuik); box-shadow:0 0 0 2px rgba(0,175,234,.25); }
+
+    .live-btn{
+      border:0; border-radius:999px; padding:10px 18px; font-weight:700; font-size:13px; cursor:pointer;
+      font-family:inherit;
+    }
+    .live-btn-primary{ background:var(--gradient); color:#fff; box-shadow:0 4px 14px rgba(0,110,200,.28); }
+    .live-btn-ghost{ background:#fff; border:1.5px solid var(--line); color:var(--navy); }
+    .live-btn-soft{ background:var(--tint); color:var(--navy); }
+    .live-btn[disabled]{ opacity:.5; cursor:not-allowed; }
+
+    .live-footer{ padding:14px 18px; border-top:1px solid var(--line); display:flex; gap:8px; }
+    .live-error{ color:var(--danger); font-size:12px; font-weight:600; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="live-wrap">
+  <div class="live-viewer">
+    <div id="liveCanvasHost"></div>
+    <div class="live-loading" id="liveLoading">
+      <div class="live-spinner"></div>
+      <div>{{ 'config_live.loading'|trans }}</div>
+    </div>
+    <div class="live-badge" id="liveBadge" style="display:none;">
+      <div><b id="liveBadgeCols">0</b>{{ 'config_live.badge_columns'|trans }}</div>
+      <div><b id="liveBadgeDoors">0</b>{{ 'config_live.badge_doors'|trans }}</div>
+    </div>
+  </div>
+
+  <div class="live-panel">
+    <div class="live-panel__head">
+      <h2>{{ 'config_live.panel_title'|trans }}</h2>
+    </div>
+
+    <div class="live-panel__body">
+      <div class="live-section">
+        <h3>{{ 'config_live.step_type'|trans }}</h3>
+        <div class="live-cards" id="liveTypeCards">
+          {% for t in types %}
+            <button type="button" class="live-card" data-type="{{ t.value }}">{{ t.name }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="live-section" id="liveInstalacionSection" style="display:none;">
+        <h3>{{ 'config_live.step_instalacion'|trans }}</h3>
+        <div class="live-cards">
+          <button type="button" class="live-card" data-instalacion="empotrado">{{ 'config_live.inst_empotrado'|trans }}</button>
+          <button type="button" class="live-card" data-instalacion="zocalo">{{ 'config_live.inst_zocalo'|trans }}</button>
+          <button type="button" class="live-card" data-instalacion="soporte_suelo">{{ 'config_live.inst_soporte_suelo'|trans }}</button>
+          <button type="button" class="live-card" data-instalacion="colgado">{{ 'config_live.inst_colgado'|trans }}</button>
+        </div>
+      </div>
+
+      <div class="live-section" id="liveColumnsSection" style="display:none;">
+        <h3>{{ 'config_live.step_columns'|trans }}</h3>
+        <p class="help">{{ 'config_live.step_columns_help'|trans }}</p>
+        <div id="liveColumnsList"></div>
+        <button type="button" class="live-btn live-btn-soft" id="liveAddColumn">+ {{ 'config_live.add_column'|trans }}</button>
+      </div>
+
+      <div class="live-section" id="liveColorsSection" style="display:none;">
+        <h3>{{ 'config_live.step_door_color'|trans }}</h3>
+        <div class="live-swatches" id="liveDoorColors">
+          {% for c in coloresPuerta %}
+            <div class="live-swatch" style="background:{{ c.hex }};" data-hex="{{ c.hex }}" data-ral="{{ c.ral }}" data-ref="{{ c.reference }}" title="{{ c.ral }}"></div>
+          {% endfor %}
+        </div>
+        <h3 style="margin-top:16px;">{{ 'config_live.step_body_color'|trans }}</h3>
+        <div class="live-swatches" id="liveBodyColors">
+          {% for c in coloresCuerpo %}
+            <div class="live-swatch" style="background:{{ c.hex }};" data-hex="{{ c.hex }}" data-ral="{{ c.ral }}" data-ref="{{ c.reference }}" title="{{ c.ral }}"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="live-footer">
+      <div class="live-error" id="liveError" style="flex:1;"></div>
+      <button type="button" class="live-btn live-btn-ghost" onclick="window.location.href='{{ path('configuration_type', { project_id: project.id, config_id: configuration.id }) }}'">{{ 'config_live.back_classic'|trans }}</button>
+      <button type="button" class="live-btn live-btn-primary" id="liveSave">{{ 'config_live.save_button'|trans }}</button>
+    </div>
+  </div>
+</div>
+
+<form id="liveSaveForm" method="post" action="{{ path('api_configurations_create') }}" style="display:none;">
+  <input type="hidden" name="_token" value="{{ csrf_token('save_configuration') }}">
+  <input type="hidden" name="project_id" value="{{ project.id }}">
+  <input type="hidden" name="configuration_id" value="{{ configuration.id }}">
+  <input type="hidden" name="payload" id="livePayloadInput">
+</form>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script>document.body.classList.add('live-page');</script>
+  <script>
+    (function () {
+      const H_HEIGHTS_MM = {{ kuik.h_heights_mm|json_encode|raw }};
+      const DOOR_WIDTH_MM = {{ kuik.door_width_mm }};
+      const SINGLE_CAP = {{ kuik.default_single_cap }};
+      const SCREEN_IMAGE_URL = '{{ asset(kuik.img_pantalla) }}';
+
+      const INITIAL_PAYLOAD = {{ payload|json_encode|raw }};
+
+      // ---------------------------------------------------------------
+      // Estado: igual de forma que el payload real (type, instalacion,
+      // groups=[[{single:{blocks:[{h,type}]}}]], colorDoor, colorBody),
+      // para poder guardarlo tal cual con el endpoint de siempre.
+      // ---------------------------------------------------------------
+      const state = {
+        type: INITIAL_PAYLOAD.type || '',
+        instalacion: INITIAL_PAYLOAD.instalacion || '',
+        colorDoor: INITIAL_PAYLOAD.colorDoor || '#3a9efc',
+        colorDoorRal: INITIAL_PAYLOAD.colorDoorRal || '',
+        colorDoorRef: INITIAL_PAYLOAD.colorDoorRef || '',
+        colorBody: INITIAL_PAYLOAD.colorBody || '#111111',
+        colorBodyRal: INITIAL_PAYLOAD.colorBodyRal || '',
+        colorBodyRef: INITIAL_PAYLOAD.colorBodyRef || '',
+        columns: [] // [{ blocks: [{h, type}] }]
+      };
+
+      // Si ya había columnas guardadas (grupo único / columns simple), se
+      // recuperan para poder seguir editando.
+      (function restoreColumns() {
+        const src = (Array.isArray(INITIAL_PAYLOAD.groups) && INITIAL_PAYLOAD.groups[0])
+          ? INITIAL_PAYLOAD.groups[0]
+          : (Array.isArray(INITIAL_PAYLOAD.columns) ? INITIAL_PAYLOAD.columns : []);
+        if (!Array.isArray(src)) return;
+        src.forEach(function (col) {
+          const blocksSrc = (col && col.single && Array.isArray(col.single.blocks)) ? col.single.blocks : [];
+          state.columns.push({
+            blocks: blocksSrc.map(function (b) { return { h: b.h || 10, type: b.type || 'door' }; })
+          });
+        });
+      })();
+
+      function addDefaultColumnIfEmpty() {
+        if (state.columns.length === 0) {
+          state.columns.push({ blocks: [{ h: 20, type: 'door' }, { h: 20, type: 'door' }] });
+        }
+      }
+
+      // ---------------------------------------------------------------
+      // UI: tipo / instalación
+      // ---------------------------------------------------------------
+      const typeCards = document.querySelectorAll('#liveTypeCards .live-card');
+      const instSection = document.getElementById('liveInstalacionSection');
+      const columnsSection = document.getElementById('liveColumnsSection');
+      const colorsSection = document.getElementById('liveColorsSection');
+      const instCards = document.querySelectorAll('#liveInstalacionSection .live-card');
+
+      function syncTypeUI() {
+        typeCards.forEach(function (c) { c.classList.toggle('is-selected', c.dataset.type === state.type); });
+        const isHome = state.type === 'home';
+        instSection.style.display = isHome ? '' : 'none';
+        const needsColumns = !isHome || !!state.instalacion;
+        columnsSection.style.display = needsColumns ? '' : 'none';
+        colorsSection.style.display = needsColumns ? '' : 'none';
+        if (needsColumns) addDefaultColumnIfEmpty();
+      }
+
+      typeCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+          state.type = card.dataset.type;
+          if (state.type !== 'home') state.instalacion = '';
+          syncTypeUI();
+          scheduleRebuild();
+          renderColumns();
+        });
+      });
+
+      instCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+          state.instalacion = card.dataset.instalacion;
+          instCards.forEach(function (c) { c.classList.toggle('is-selected', c === card); });
+          syncTypeUI();
+          scheduleRebuild();
+        });
+      });
+
+      // ---------------------------------------------------------------
+      // UI: columnas / puertas
+      // ---------------------------------------------------------------
+      const columnsList = document.getElementById('liveColumnsList');
+      const HEIGHT_OPTIONS = Object.keys(H_HEIGHTS_MM).map(Number).sort(function (a, b) { return a - b; });
+
+      function columnTotal(col) {
+        return col.blocks.reduce(function (s, b) { return s + (b.h || 0); }, 0);
+      }
+
+      function renderColumns() {
+        columnsList.innerHTML = '';
+        state.columns.forEach(function (col, colIdx) {
+          const wrap = document.createElement('div');
+          wrap.className = 'live-col';
+
+          const head = document.createElement('div');
+          head.className = 'live-col__head';
+          head.innerHTML = '<b>{{ 'config_live.column_label'|trans|e('js') }} ' + (colIdx + 1) + ' (' + columnTotal(col) + '/' + SINGLE_CAP + ')</b>';
+          const delColBtn = document.createElement('button');
+          delColBtn.type = 'button';
+          delColBtn.className = 'live-btn live-btn-ghost';
+          delColBtn.style.cssText = 'padding:2px 10px; font-size:11px;';
+          delColBtn.textContent = '×';
+          delColBtn.addEventListener('click', function () {
+            state.columns.splice(colIdx, 1);
+            renderColumns();
+            scheduleRebuild();
+          });
+          head.appendChild(delColBtn);
+          wrap.appendChild(head);
+
+          col.blocks.forEach(function (blk, blkIdx) {
+            const row = document.createElement('div');
+            row.className = 'live-block';
+            const label = blk.type === 'screen' ? '{{ 'config_live.block_screen'|trans|e('js') }}' : '{{ 'config_live.block_door'|trans|e('js') }}';
+            row.innerHTML = '<span>' + label + ' · H' + blk.h + ' (' + (H_HEIGHTS_MM[blk.h] || blk.h * 12.5) + 'mm)</span>';
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.textContent = '×';
+            rm.addEventListener('click', function () {
+              col.blocks.splice(blkIdx, 1);
+              renderColumns();
+              scheduleRebuild();
+            });
+            row.appendChild(rm);
+            wrap.appendChild(row);
+          });
+
+          const addRow = document.createElement('div');
+          addRow.className = 'live-addblock';
+          HEIGHT_OPTIONS.forEach(function (h) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'live-chip';
+            chip.textContent = 'H' + h;
+            chip.addEventListener('click', function () {
+              if (columnTotal(col) + h > SINGLE_CAP) return;
+              col.blocks.push({ h: h, type: 'door' });
+              renderColumns();
+              scheduleRebuild();
+            });
+            addRow.appendChild(chip);
+          });
+          const screenChip = document.createElement('button');
+          screenChip.type = 'button';
+          screenChip.className = 'live-chip';
+          screenChip.textContent = '{{ 'config_live.add_screen'|trans|e('js') }}';
+          screenChip.addEventListener('click', function () {
+            if (columnTotal(col) + 20 > SINGLE_CAP) return;
+            col.blocks.push({ h: 20, type: 'screen' });
+            renderColumns();
+            scheduleRebuild();
+          });
+          addRow.appendChild(screenChip);
+          wrap.appendChild(addRow);
+
+          columnsList.appendChild(wrap);
+        });
+      }
+
+      document.getElementById('liveAddColumn').addEventListener('click', function () {
+        state.columns.push({ blocks: [{ h: 20, type: 'door' }, { h: 20, type: 'door' }] });
+        renderColumns();
+        scheduleRebuild();
+      });
+
+      // ---------------------------------------------------------------
+      // UI: colores
+      // ---------------------------------------------------------------
+      function wireSwatches(containerId, applyFn) {
+        document.querySelectorAll('#' + containerId + ' .live-swatch').forEach(function (sw) {
+          sw.addEventListener('click', function () {
+            document.querySelectorAll('#' + containerId + ' .live-swatch').forEach(function (s) { s.classList.remove('is-selected'); });
+            sw.classList.add('is-selected');
+            applyFn(sw.dataset.hex, sw.dataset.ral, sw.dataset.ref);
+            scheduleRebuild();
+          });
+        });
+      }
+      wireSwatches('liveDoorColors', function (hex, ral, ref) { state.colorDoor = hex; state.colorDoorRal = ral; state.colorDoorRef = ref; });
+      wireSwatches('liveBodyColors', function (hex, ral, ref) { state.colorBody = hex; state.colorBodyRal = ral; state.colorBodyRef = ref; });
+
+      // ---------------------------------------------------------------
+      // Guardar: construye el payload en la MISMA forma que el
+      // configurador clásico y lo manda al mismo endpoint de siempre
+      // (api_configurations_create), con un POST normal (no AJAX): el
+      // propio endpoint decide la página siguiente (resumen directo,
+      // complementos o soporte a suelo) exactamente igual que hoy.
+      // ---------------------------------------------------------------
+      document.getElementById('liveSave').addEventListener('click', function () {
+        const err = document.getElementById('liveError');
+        err.textContent = '';
+        if (!state.type) { err.textContent = '{{ 'config_live.error_type'|trans|e('js') }}'; return; }
+        if (state.type === 'home' && !state.instalacion) { err.textContent = '{{ 'config_live.error_instalacion'|trans|e('js') }}'; return; }
+        if (state.columns.length === 0) { err.textContent = '{{ 'config_live.error_columns'|trans|e('js') }}'; return; }
+
+        const groupCols = state.columns.map(function (col) {
+          return {
+            single: { blocks: col.blocks.map(function (b) { return { h: b.h, type: b.type }; }), total: columnTotal(col) },
+            total: columnTotal(col)
+          };
+        });
+
+        const payload = {
+          type: state.type,
+          instalacion: state.instalacion,
+          groups: [groupCols],
+          columns: groupCols,
+          colorDoor: state.colorDoor,
+          colorDoorRal: state.colorDoorRal,
+          colorDoorRef: state.colorDoorRef,
+          colorBody: state.colorBody,
+          colorBodyRal: state.colorBodyRal,
+          colorBodyRef: state.colorBodyRef
+        };
+
+        document.getElementById('livePayloadInput').value = JSON.stringify(payload);
+        document.getElementById('liveSaveForm').submit();
+      });
+
+      // ---------------------------------------------------------------
+      // 3D en vivo: escena reducida propia (sin entornos/escenarios),
+      // solo el mueble sobre un suelo neutro, con OrbitControls. Se
+      // reconstruye entera (dispose + rebuild) cada vez que cambia algo,
+      // con un pequeño debounce.
+      // ---------------------------------------------------------------
+      let threeReady = false;
+      function ensureThree() {
+        if (threeReady || (window.THREE && window.THREE.OrbitControls)) { threeReady = true; return Promise.resolve(); }
+        return new Promise(function (resolve, reject) {
+          const s1 = document.createElement('script');
+          s1.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
+          s1.onload = function () {
+            const s2 = document.createElement('script');
+            s2.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+            s2.onload = function () { threeReady = true; resolve(); };
+            s2.onerror = reject;
+            document.head.appendChild(s2);
+          };
+          s1.onerror = reject;
+          document.head.appendChild(s1);
+        });
+      }
+
+      let renderer = null, scene = null, camera = null, controls = null, animId = null;
+      const host = document.getElementById('liveCanvasHost');
+      const loadingEl = document.getElementById('liveLoading');
+      const badgeEl = document.getElementById('liveBadge');
+      const badgeCols = document.getElementById('liveBadgeCols');
+      const badgeDoors = document.getElementById('liveBadgeDoors');
+
+      function mmToUnits(mm) { return mm / 10; }
+
+      function disposeScene() {
+        if (!scene) return;
+        scene.traverse(function (obj) {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(function (m) { if (m && m.map) m.map.dispose(); if (m) m.dispose(); });
+          }
+        });
+      }
+
+      function rebuildLocker() {
+        if (!renderer) return;
+        disposeScene();
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe8edf2);
+
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, 1.1));
+        const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+        dir.position.set(150, 300, 200);
+        scene.add(dir);
+
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({ color: 0xdfe6ec, roughness: 1 }));
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const doorMat = new THREE.MeshStandardMaterial({ color: state.colorDoor || '#3a9efc', roughness: 0.6, metalness: 0.05 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: state.colorBody || '#111111', roughness: 0.7, metalness: 0.05 });
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 });
+
+        const screenMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4 });
+
+        function addBox(w, h, d, mat, x, y, z) {
+          const geo = new THREE.BoxGeometry(w, h, d);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(x, y, z);
+          scene.add(mesh);
+          const line = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMat);
+          line.position.copy(mesh.position);
+          scene.add(line);
+          return mesh;
+        }
+
+        const colW = mmToUnits(DOOR_WIDTH_MM);
+        const sideW = 2.5;
+        const depth = mmToUnits(400);
+        let doorCount = 0;
+
+        let cursorX = 0;
+        let maxHeight = 0;
+        const cols = state.columns.length ? state.columns : [];
+
+        cols.forEach(function (col) {
+          const colX = cursorX + sideW;
+          let cursorY = 0;
+          col.blocks.forEach(function (blk) {
+            const hmm = H_HEIGHTS_MM[blk.h] || blk.h * 12.5;
+            const h = mmToUnits(hmm);
+            const mat = blk.type === 'screen' ? screenMat : doorMat;
+            addBox(colW - 0.4, h - 0.4, depth - 2, mat, colX + colW / 2, cursorY + h / 2, depth / 2);
+            cursorY += h;
+            if (blk.type !== 'screen') doorCount++;
+          });
+          if (cursorY > maxHeight) maxHeight = cursorY;
+          cursorX = colX + colW;
+        });
+
+        const totalWidth = cols.length ? (cursorX + sideW) : colW;
+        if (maxHeight === 0) maxHeight = mmToUnits(H_HEIGHTS_MM[20] * 2);
+
+        const roofH = sideW;
+        addBox(sideW, maxHeight + roofH, depth, bodyMat, sideW / 2, (maxHeight + roofH) / 2, depth / 2);
+        addBox(sideW, maxHeight + roofH, depth, bodyMat, totalWidth - sideW / 2, (maxHeight + roofH) / 2, depth / 2);
+        addBox(totalWidth, sideW, depth, bodyMat, totalWidth / 2, maxHeight + roofH - sideW / 2, depth / 2);
+        addBox(totalWidth, sideW, depth, bodyMat, totalWidth / 2, sideW / 2, depth / 2);
+
+        camera = new THREE.PerspectiveCamera(45, host.clientWidth / Math.max(1, host.clientHeight), 1, 20000);
+        const dist = Math.max(totalWidth, maxHeight, depth) * 2.1 + 60;
+        camera.position.set(totalWidth / 2 + dist * 0.6, maxHeight * 0.6 + dist * 0.3, dist * 0.9);
+
+        if (controls) controls.dispose();
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(totalWidth / 2, maxHeight / 2, depth / 2);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.maxPolarAngle = Math.PI / 2 - 0.02;
+        controls.update();
+
+        badgeCols.textContent = cols.length;
+        badgeDoors.textContent = doorCount;
+        badgeEl.style.display = cols.length ? 'flex' : 'none';
+        loadingEl.style.opacity = '0';
+        setTimeout(function () { loadingEl.style.display = 'none'; }, 260);
+      }
+
+      function resizeRenderer() {
+        if (!renderer || !camera) return;
+        const w = host.clientWidth, h = host.clientHeight;
+        if (w === 0 || h === 0) return;
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+
+      function animate() {
+        animId = requestAnimationFrame(animate);
+        if (controls) controls.update();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      let rebuildTimer = null;
+      function scheduleRebuild() {
+        if (rebuildTimer) clearTimeout(rebuildTimer);
+        rebuildTimer = setTimeout(rebuildLocker, 120);
+      }
+
+      ensureThree().then(function () {
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        host.appendChild(renderer.domElement);
+        resizeRenderer();
+        window.addEventListener('resize', resizeRenderer);
+
+        syncTypeUI();
+        renderColumns();
+        rebuildLocker();
+        animate();
+      }).catch(function (err) {
+        console.error('No se pudo cargar three.js:', err);
+        loadingEl.textContent = '{{ 'config_live.error_3d'|trans|e('js') }}';
+      });
+    })();
+  </script>
+{% endblock %}

@@ -10,6 +10,37 @@ config_type:
     select_heading: 'Selecciona tipo de configuracion'
     next_button: 'Siguiente'
     select_type_error: 'Selecciona un tipo de columna para continuar.'
+    try_live_title: '¿Prefieres verlo en 3D mientras lo configuras?'
+    try_live_subtitle: 'Prueba el configurador 3D en vivo (beta): el modelo se actualiza según vas eligiendo opciones.'
+    try_live_button: 'Probar configurador 3D en vivo'
+
+config_live:
+    page_title: 'Configurador 3D en vivo'
+    loading: Cargando el visor 3D…
+    badge_columns: columnas
+    badge_doors: puertas
+    panel_title: 'Configura tu taquilla'
+    step_type: '1. Tipo'
+    step_instalacion: '2. Instalación'
+    inst_empotrado: Empotrado
+    inst_zocalo: Zócalo
+    inst_soporte_suelo: Soporte a suelo
+    inst_colgado: Colgado
+    step_columns: '3. Columnas y puertas'
+    step_columns_help: 'Añade columnas y, dentro de cada una, puertas o pantallas. El modelo 3D se actualiza al momento.'
+    column_label: Columna
+    block_door: Puerta
+    block_screen: Pantalla
+    add_column: Añadir columna
+    add_screen: '+ Pantalla'
+    step_door_color: '4. Color de puerta'
+    step_body_color: 'Color de cuerpo'
+    back_classic: Volver al configurador clásico
+    save_button: Guardar y continuar
+    error_type: Selecciona un tipo para continuar.
+    error_instalacion: Selecciona un tipo de instalación para continuar.
+    error_columns: Añade al menos una columna con alguna puerta.
+    error_3d: No se pudo cargar el visor 3D.
 
 home_installation:
     page_title: 'Instalación (Home)'
